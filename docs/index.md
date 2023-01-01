@@ -5,5 +5,3 @@ applications.
 
 PICLE build on top of Python standart library CMD module and 
 uses Pydantic models to construct shell environments.
-
-[PICLE Documentation](https://dmulyalin.github.io/picle/)

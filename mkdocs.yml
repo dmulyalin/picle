@@ -1,0 +1,50 @@
+extra:
+  social:
+  - icon: fontawesome/brands/github-alt
+    link: https://github.com/dmulyalin
+  - icon: fontawesome/brands/twitter
+    link: https://twitter.com/DMulyalin
+markdown_extensions:
+- admonition
+- pymdownx.details
+- attr_list
+- md_in_html
+- pymdownx.superfences
+nav:
+- Overview: index.md
+- API Reference: api_reference.md
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        rendering:
+          docstring_section_style: list
+          heading_level: 3
+          merge_init_into_class: true
+          show_object_full_path: true
+          show_root_heading: true
+          show_root_toc_entry: true
+          show_signature_annotations: true
+        selection:
+          docstring_style: sphinx
+repo_name: dmulyalin/picle
+repo_url: https://github.com/dmulyalin/picle
+site_author: Denis Mulyalin
+site_description: Python Interactive Command Line Shells
+site_name: PICLE
+site_url: https://picle.github.io/
+theme:
+  custom_dir: docs/overrides
+  features:
+  - navigation.tabs
+  - navigation.tabs.sticky
+  - navigation.sections
+  - navigation.top
+  - toc.follow
+  icon:
+    repo: fontawesome/brands/github-alt
+  name: material
+  palette:
+    accent: teal
+    primary: orange

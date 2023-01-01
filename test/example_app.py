@@ -31,12 +31,16 @@ class model_nr_cli(filters):
         
     @staticmethod
     def run(target="*", tgt_type="glob", **kwargs):
-        print(f"Called nr.cli, target: {target}, tgt_type: {tgt_type}, kwargs: {kwargs}")
+        print(f"Called salt nr cli, target: {target}, tgt_type: {tgt_type}, kwargs: {kwargs}")
     
 class model_nr_cfg(filters):
     commands: Optional[Union[StrictStr, List[StrictStr]]] = Field(None, description="Configuration commands send to devices")
     plugin: NrCfgPlugins = Field("netmiko", description="Connection plugin name")
-                
+
+    @staticmethod
+    def run(target="*", tgt_type="glob", **kwargs):
+        print(f"Called salt nr cfg, target: {target}, tgt_type: {tgt_type}, kwargs: {kwargs}")
+        
 class model_nr(BaseModel):
     cli: model_nr_cli = Field(None, description="Send CLI commands to device")
     cfg: model_nr_cfg = Field(None, description="Send confguration to device")

@@ -35,6 +35,11 @@ class FieldKeyError(Exception):
 
 
 class App(cmd.Cmd):
+    """
+    PICLE App class to construct shell.
+    
+    :param root: Root/Top Pydantic model
+    """
     def __init__(self, root):
         self.root = root
         self.shell = self.root.construct()
