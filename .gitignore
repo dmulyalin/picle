@@ -1,0 +1,10 @@
+*.pyc
+*.log
+Data/*
+dist/*
+build/*
+private/*
+docs/build/*
+docs/make.bat
+docs/Makefile
+*ipynb_checkpoints*
