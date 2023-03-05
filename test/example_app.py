@@ -4,7 +4,7 @@ by building sample App.
 """
 from picle import App
 from enum import Enum
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Callable
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
 from pydantic.main import ModelMetaclass
 from pydantic.fields import ModelField
@@ -24,7 +24,12 @@ class NrCfgPlugins(str, Enum):
 class filters(BaseModel):
     FB: StrictStr = Field(None, description="Filter hosts using Glob Pattern")
     FL: List[StrictStr] = Field(None, description="Filter hosts using list of hosts' names")
+    hosts: Optional[Union[StrictStr, List[StrictStr]]] = Field(None, description="Select hostnames to run this task for")
 
+    @staticmethod
+    def source_hosts():
+        return ["ceos1", "ceos2", "ceos3"]
+        
 class model_nr_cli(filters):
     commands: Optional[Union[StrictStr, List[StrictStr]]] = Field(None, description="CLI commands to send to devices")
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
@@ -58,8 +63,23 @@ class model_salt(BaseModel):
         subshell = True
         prompt = "salt#"
     
+class model_show(BaseModel):
+    version: Callable = Field("show_version", description="Show software version")
+    clock: Callable = Field("show_clock", description="Show current clock")
+        
+    @staticmethod
+    def show_version():
+        return "0.1.0"
+    
+    @staticmethod
+    def show_clock():
+        import time
+        return time.ctime()
+    
+    
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
+    show: model_show = Field(None, description="Show commands")
     
     class PicleConfig:
         prompt = "picle#"

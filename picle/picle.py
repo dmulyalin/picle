@@ -11,7 +11,9 @@ uses Pydantic models to construct shell environments.
 import cmd
 import logging
 import enum
+import traceback
 
+from typing import Callable
 from pydantic import ValidationError
 from pydantic.main import ModelMetaclass
 from pydantic.fields import ModelField
@@ -40,21 +42,39 @@ class App(cmd.Cmd):
     
     :param root: Root/Top Pydantic model
     """
+    ruler = ""
+    intro = "PICLE APP"
+    prompt = "picle#"
+    newline = "\r\n"
+    completekey = "tab"
+    
     def __init__(self, root):
         self.root = root
         self.shell = self.root.construct()
-        self.ruler = self.shell.PicleConfig.ruler
-        self.intro = self.shell.PicleConfig.intro
-        self.prompt = self.shell.PicleConfig.prompt
-        self.newline = self.shell.PicleConfig.newline
-        self.completekey = self.shell.PicleConfig.completekey
         self.shells = [self.shell]
-
+        
+        # extract comnfig from shell model
+        if hasattr(self.shell, "PicleConfig"):
+            self.ruler = getattr(self.shell.PicleConfig, "ruler", self.ruler)
+            self.intro = getattr(self.shell.PicleConfig, "intro", self.intro)
+            self.prompt = getattr(self.shell.PicleConfig, "prompt", self.prompt)
+            self.newline = getattr(self.shell.PicleConfig, "newline", self.newline)
+            self.completekey = getattr(self.shell.PicleConfig, "completekey", self.completekey)
+        
+        # mount override methods
+        if getattr(self.shell.PicleConfig, "methods_override"):
+            for mount, override in self.shell.PicleConfig.methods_override.items():
+                setattr(self, mount, getattr(self.shell, override))
+            
         super(App, self).__init__()
 
     def start(self) -> None:
         self.cmdloop()
 
+    def emptyline(self) -> None:
+        """Override empty line method to not run last command"""
+        return None
+        
     def _save_collected_value(self, field: dict, value: str) -> None:
         """
         Helper function to save collected value into field values
@@ -174,9 +194,11 @@ class App(cmd.Cmd):
 
         return models
 
-    def print_model_help(self, model: dict, verbose: bool = False) -> None:
+    def print_model_help(self, model: dict, verbose: bool = False, match: str = None) -> None:
         """
         Function to form and print help message for model fields.
+        
+        :param match: only collect help for fields that start with ``match`` string
         """
         last_field = model["fields"][-1] if model["fields"] else None
         lines = {}  # dict of {cmd: cmd_help}
@@ -189,6 +211,10 @@ class App(cmd.Cmd):
             if isinstance(field.type_, enum.EnumMeta):
                 options = [i.value for i in field.type_]
                 lines[name] = ", ".join(options)
+            # check if model has method to source field choices
+            elif hasattr(model["model"], f"source_{last_field['name']}"):
+                options = getattr(model["model"], f"source_{last_field['name']}")()
+                lines[name] = ", ".join(options)
             else:
                 lines[name] = f"{field.field_info.description}"
                 if verbose:
@@ -199,9 +225,23 @@ class App(cmd.Cmd):
             width = max(width, len(name))
         # collect help message for all fields of this model
         else:
+            # check if model supports subshell
+            if (
+                hasattr(model["model"], "PicleConfig")
+                and getattr(model["model"].PicleConfig, "subshell", None) is True
+                # exclude <ENTER> if already in model's shell
+                and not self.shells[-1] == model["model"]
+            ):
+                name = "<ENTER>"
+                lines[name] = "Enter command subshell"
+                width = max(width, len(name))
+            # iterate over model fields
             for name, field in model["model"].__fields__.items():
                 # skip fields that already have values
                 if any(f["name"] == name for f in model["fields"]):
+                    continue
+                # filter fields
+                if match and not name.startswith(match):
                     continue
                 lines[name] = f"{field.field_info.description}"
                 if verbose:
@@ -212,9 +252,9 @@ class App(cmd.Cmd):
                 width = max(width, len(name))
         # form help lines
         help_msg = []
-        for k, v in lines.items():
+        for k in sorted(lines.keys()):
             padding = " " * (width - len(k)) + (" " * 4)
-            help_msg.append(f"{k}{padding}{v}")
+            help_msg.append(f"{k}{padding}{lines[k]}")
         # print help message
         print(self.newline.join(help_msg))
 
@@ -226,21 +266,30 @@ class App(cmd.Cmd):
         fieldnames = []
         try:
             command_models = self.parse_command(line)
-            # check if need to exctract enum values
             last_model = command_models[-1]["model"]
-            last_field_name = command_models[-1]["fields"][-1]["name"]
-            last_field = last_model.__fields__[last_field_name]
-            last_field_value = command_models[-1]["fields"][-1]["values"]
-            if isinstance(last_field_value, list):
-                last_field_value = last_field_value[-1]
-            elif last_field_value == ...:
-                last_field_value = ""
-            if isinstance(last_field.type_, enum.EnumMeta):
-                fieldnames = [
-                    i.value
-                    for i in last_field.type_
-                    if i.value.startswith(last_field_value)
-                ]
+            # check if last model has fields collected
+            if command_models[-1]["fields"]:
+                last_field_name = command_models[-1]["fields"][-1]["name"]
+                last_field = last_model.__fields__[last_field_name]
+                last_field_value = command_models[-1]["fields"][-1]["values"]
+                if isinstance(last_field_value, list):
+                    last_field_value = last_field_value[-1]
+                elif last_field_value == ...:
+                    last_field_value = ""
+                # check if need to exctract enum values
+                if isinstance(last_field.type_, enum.EnumMeta):
+                    fieldnames = [
+                        i.value
+                        for i in last_field.type_
+                        if i.value.startswith(last_field_value)
+                    ]
+                # check if model has method to source field choices
+                elif hasattr(last_model, f"source_{last_field_name}"):
+                    fieldnames = getattr(last_model, f"source_{last_field_name}")()
+                    fieldnames = [i for i in fieldnames if i.startswith(last_field_value)]
+            # return a list of all model fields
+            else:
+                fieldnames = list(last_model.__fields__)
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
             fieldnames = [
@@ -255,9 +304,13 @@ class App(cmd.Cmd):
                     and collected_field["values"] is not ...
                 )
             ]
-        except Exception as e:
-            print("\n", e)
-        return fieldnames
+        except FieldKeyError:
+            pass
+        except:
+            tb = traceback.format_exc()
+            print(tb)
+            
+        return sorted(fieldnames)
 
     def completenames(self, text, line, begidx, endidx):
         """
@@ -274,6 +327,7 @@ class App(cmd.Cmd):
         # collect model arguments
         try:
             command_models = self.parse_command(line)
+            fieldnames.extend(command_models[-1]["model"].__fields__)
         # collect arguments that startswith last parameter
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
@@ -283,7 +337,7 @@ class App(cmd.Cmd):
         # raised if no model fields matched last parameter
         except FieldKeyError as e:
             pass
-        return fieldnames
+        return sorted(fieldnames)
 
     def do_help(self, arg):
         """Print help message"""
@@ -343,11 +397,30 @@ class App(cmd.Cmd):
 
         # print help for given command or commands
         if line.strip().endswith("?"):
-            command_models = self.parse_command(line.strip().rstrip("?"))
-            self.print_model_help(
-                command_models[-1],
-                verbose=True if line.strip().endswith("??") else False,
-            )
+            try:
+                command_models = self.parse_command(line.strip().rstrip("?"))
+            except FieldLooseMatchOnly as e:
+                model, parameter = e.args
+                self.print_model_help(
+                    model,
+                    verbose=True if line.strip().endswith("??") else False,
+                    match=parameter
+                )          
+            except FieldKeyError as e:
+                model, parameter = e.args
+                model_name = (
+                    model["model"].__name__
+                    if hasattr(model["model"], "__name__")
+                    else model["model"].__repr_name__()
+                )
+                print(
+                    f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
+                )                
+            else:
+                self.print_model_help(
+                    command_models[-1],
+                    verbose=True if line.strip().endswith("??") else False,
+                )
         else:
             try:
                 command_models = self.parse_command(line, validate=True)
@@ -370,7 +443,7 @@ class App(cmd.Cmd):
                     else model["model"].__repr_name__()
                 )
                 print(
-                    f"Incorrect command, '{parameter}' not part of '{model_name}' model's fields"
+                    f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
                 )
             except ValidationError as e:
                 print(e)
@@ -382,7 +455,7 @@ class App(cmd.Cmd):
                     for f in model["fields"]
                     if f["values"] is not ...
                 }
-                # run model function
+                # run model "run" function if it exits
                 model = command_models[-1]["model"]
                 if hasattr(model, "run"):
                     ret = model.run(**run_kwargs)
@@ -400,14 +473,28 @@ class App(cmd.Cmd):
                         ):
                             if m not in self.shells:
                                 self.shells.append(m)
-                    # update
+                    # update prompt value
                     self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
                     self.shell = model
                     self.shells.append(self.shell)
                 else:
-                    print(f"Model '{model.__name__}' has no 'run' method defined")
+                    # check if last field refers to callable e.g. function
+                    last_field_name = command_models[-1]["fields"][-1]["name"]
+                    last_field = model.__fields__[last_field_name]
+                    if last_field.type_ is Callable:
+                        method_name = last_field.get_default()
+                        if method_name and hasattr(model, method_name):
+                            ret = getattr(model, method_name)(**run_kwargs)
+                        else:
+                            print(
+                                f"Model '{model.__name__}' has no '{method_name}' "
+                                f"method defined for '{last_field_name}' Callable field"
+                            )
+                    else:
+                        print(f"Model '{model.__name__}' has no 'run' method defined")
         # returning True will close the shell
         if ret is True:
             return True
-
-        return ret
+        elif ret:
+            print(ret)
+        return None
