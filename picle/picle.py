@@ -15,8 +15,10 @@ import traceback
 
 from typing import Callable
 from pydantic import ValidationError
-from pydantic.main import ModelMetaclass
-from pydantic.fields import ModelField
+from pydantic._internal._model_construction import ModelMetaclass
+from pydantic.fields import FieldInfo
+# from pydantic.main import ModelMetaclass
+# from pydantic.fields import ModelField
 
 
 log = logging.getLogger(__name__)
@@ -156,31 +158,31 @@ class App(cmd.Cmd):
                 value = " ".join(value_items)  # form value string
                 self._save_collected_value(current_field, value)
             # handle reference to model
-            elif current_model["model"].__fields__.get(parameter):
-                field = current_model["model"].__fields__[parameter]
+            elif current_model["model"].model_fields.get(parameter):
+                field = current_model["model"].model_fields[parameter]
                 # handle next level model reference
-                if isinstance(field.type_, ModelMetaclass):
+                if isinstance(field.annotation, ModelMetaclass):
                     current_model = {
-                        "model": field.type_,
+                        "model": field.annotation,
                         "fields": [],
                         "parameter": parameter,
                     }
                     models.append(current_model)
                     current_field = {}  # empty current field
                 # handle field value
-                elif isinstance(field, ModelField):
+                elif isinstance(field, FieldInfo):
                     current_field = {"name": parameter, "values": ...}
                     current_model["fields"].append(current_field)
                 else:
                     raise TypeError(
-                        f"Unsupported pydantic field type: '{type(field.type_)}', "
+                        f"Unsupported pydantic field type: '{type(field.annotation)}', "
                         f"parameter: '{parameter}', command: '{command}', current model: "
                         f"'{current_model['model']}'"
                     )
             # check if parameter value partially matches any of the model fields
             elif any(
                 field.startswith(parameter)
-                for field in current_model["model"].__fields__
+                for field in current_model["model"].model_fields
             ):
                 raise FieldLooseMatchOnly(current_model, parameter)
             # parameter is a value, save it to current model
@@ -205,18 +207,18 @@ class App(cmd.Cmd):
         width = 0  # record longest command width for padding
         # print help message only for last collected field
         if last_field and last_field["values"] == ...:
-            field = model["model"].__fields__[last_field["name"]]
+            field = model["model"].model_fields[last_field["name"]]
             name = f"<{last_field['name']} value>"
             # add options for enumerations
-            if isinstance(field.type_, enum.EnumMeta):
-                options = [i.value for i in field.type_]
+            if isinstance(field.annotation, enum.EnumMeta):
+                options = [i.value for i in field.annotation]
                 lines[name] = ", ".join(options)
             # check if model has method to source field choices
             elif hasattr(model["model"], f"source_{last_field['name']}"):
                 options = getattr(model["model"], f"source_{last_field['name']}")()
                 lines[name] = ", ".join(options)
             else:
-                lines[name] = f"{field.field_info.description}"
+                lines[name] = f"{field.description}"
                 if verbose:
                     lines[name] += (
                         f"; default '{field.get_default()}', type '{field._type_display()}', "
@@ -236,14 +238,14 @@ class App(cmd.Cmd):
                 lines[name] = "Enter command subshell"
                 width = max(width, len(name))
             # iterate over model fields
-            for name, field in model["model"].__fields__.items():
+            for name, field in model["model"].model_fields.items():
                 # skip fields that already have values
                 if any(f["name"] == name for f in model["fields"]):
                     continue
                 # filter fields
                 if match and not name.startswith(match):
                     continue
-                lines[name] = f"{field.field_info.description}"
+                lines[name] = f"{field.description}"
                 if verbose:
                     lines[name] += (
                         f"; default '{field.get_default()}', type '{field._type_display()}', "
@@ -270,17 +272,17 @@ class App(cmd.Cmd):
             # check if last model has fields collected
             if command_models[-1]["fields"]:
                 last_field_name = command_models[-1]["fields"][-1]["name"]
-                last_field = last_model.__fields__[last_field_name]
+                last_field = last_model.model_fields[last_field_name]
                 last_field_value = command_models[-1]["fields"][-1]["values"]
                 if isinstance(last_field_value, list):
                     last_field_value = last_field_value[-1]
                 elif last_field_value == ...:
                     last_field_value = ""
                 # check if need to exctract enum values
-                if isinstance(last_field.type_, enum.EnumMeta):
+                if isinstance(last_field.annotation, enum.EnumMeta):
                     fieldnames = [
                         i.value
-                        for i in last_field.type_
+                        for i in last_field.annotation
                         if i.value.startswith(last_field_value)
                     ]
                 # check if model has method to source field choices
@@ -289,12 +291,12 @@ class App(cmd.Cmd):
                     fieldnames = [i for i in fieldnames if i.startswith(last_field_value)]
             # return a list of all model fields
             else:
-                fieldnames = list(last_model.__fields__)
+                fieldnames = list(last_model.model_fields)
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
             fieldnames = [
                 f.name
-                for f in model["model"].__fields__.values()
+                for f in model["model"].model_fields.values()
                 # skip fields with already collected values from complete prompt
                 if f.name.startswith(parameter)
                 and not any(
@@ -327,11 +329,11 @@ class App(cmd.Cmd):
         # collect model arguments
         try:
             command_models = self.parse_command(line)
-            fieldnames.extend(command_models[-1]["model"].__fields__)
+            fieldnames.extend(command_models[-1]["model"].model_fields)
         # collect arguments that startswith last parameter
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
-            for f in model["model"].__fields__.values():
+            for f in model["model"].model_fields.values():
                 if f.name.startswith(parameter):
                     fieldnames.append(f.name)
         # raised if no model fields matched last parameter
@@ -429,7 +431,7 @@ class App(cmd.Cmd):
                 # filter fields to return message for
                 fields = [
                     f.name
-                    for f in model["model"].__fields__.values()
+                    for f in model["model"].model_fields.values()
                     if f.name.startswith(parameter)
                 ]
                 print(
@@ -477,11 +479,11 @@ class App(cmd.Cmd):
                     self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
                     self.shell = model
                     self.shells.append(self.shell)
-                else:
+                elif command_models[-1]["fields"]:
                     # check if last field refers to callable e.g. function
                     last_field_name = command_models[-1]["fields"][-1]["name"]
-                    last_field = model.__fields__[last_field_name]
-                    if last_field.type_ is Callable:
+                    last_field = model.model_fields[last_field_name]
+                    if last_field.annotation is Callable:
                         method_name = last_field.get_default()
                         if method_name and hasattr(model, method_name):
                             ret = getattr(model, method_name)(**run_kwargs)
@@ -492,6 +494,8 @@ class App(cmd.Cmd):
                             )
                     else:
                         print(f"Model '{model.__name__}' has no 'run' method defined")
+                else:
+                    print(f"Incorrect command")
         # returning True will close the shell
         if ret is True:
             return True
