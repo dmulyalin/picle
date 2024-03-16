@@ -6,88 +6,113 @@ from picle import App
 from enum import Enum
 from typing import List, Union, Optional, Callable
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
-from pydantic.main import ModelMetaclass
-from pydantic.fields import ModelField
+
 
 class NrCliPlugins(str, Enum):
-    netmiko = 'netmiko'
-    napalm = 'napalm'
-    pyats = 'pyats'
-    scrapli = 'scrapli'
+    netmiko = "netmiko"
+    napalm = "napalm"
+    pyats = "pyats"
+    scrapli = "scrapli"
+
 
 class NrCfgPlugins(str, Enum):
-    netmiko = 'netmiko'
-    napalm = 'napalm'
-    pyats = 'pyats'
-    scrapli = 'scrapli'
-    
+    netmiko = "netmiko"
+    napalm = "napalm"
+    pyats = "pyats"
+    scrapli = "scrapli"
+
+
 class filters(BaseModel):
     FB: StrictStr = Field(None, description="Filter hosts using Glob Pattern")
-    FL: List[StrictStr] = Field(None, description="Filter hosts using list of hosts' names")
-    hosts: Optional[Union[StrictStr, List[StrictStr]]] = Field(None, description="Select hostnames to run this task for")
+    FL: Union[StrictStr, List[StrictStr]] = Field(
+        None, description="Filter hosts using list of hosts' names"
+    )
+    hosts: Union[StrictStr, List[StrictStr]] = Field(
+        None, description="Select hostnames to run this task for"
+    )
 
     @staticmethod
     def source_hosts():
         return ["ceos1", "ceos2", "ceos3"]
-        
+
+
 class model_nr_cli(filters):
-    commands: Optional[Union[StrictStr, List[StrictStr]]] = Field(None, description="CLI commands to send to devices")
+    commands: Union[StrictStr, List[StrictStr]] = Field(
+        description="CLI commands to send to devices"
+    )
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
-        
+    add_details: StrictBool = Field(
+        None, description="Show detailed output", presence=True
+    )
+
     @staticmethod
-    def run(target="*", tgt_type="glob", **kwargs):
-        print(f"Called salt nr cli, target: {target}, tgt_type: {tgt_type}, kwargs: {kwargs}")
-    
+    def run(**kwargs):
+        return f"Called salt nr cli, kwargs: {kwargs}"
+
+
 class model_nr_cfg(filters):
-    commands: Optional[Union[StrictStr, List[StrictStr]]] = Field(None, description="Configuration commands send to devices")
+    commands: Optional[Union[StrictStr, List[StrictStr]]] = Field(
+        None, description="Configuration commands send to devices"
+    )
     plugin: NrCfgPlugins = Field("netmiko", description="Connection plugin name")
 
     @staticmethod
-    def run(target="*", tgt_type="glob", **kwargs):
-        print(f"Called salt nr cfg, target: {target}, tgt_type: {tgt_type}, kwargs: {kwargs}")
-        
+    def run(**kwargs):
+        return f"Called salt nr cfg, kwargs: {kwargs}"
+
+
 class model_nr(BaseModel):
     cli: model_nr_cli = Field(None, description="Send CLI commands to device")
-    cfg: model_nr_cfg = Field(None, description="Send confguration to device")
-    
+    cfg: model_nr_cfg = Field(None, description="Send configuration to device")
+
     class PicleConfig:
         subshell = True
         prompt = "salt[nr]#"
-    
+
+
 class model_salt(BaseModel):
-    target: StrictStr = Field("proxy:proxytype:nornir", description="SaltStack minions target value", title="target", required=False)
-    tgt_type: StrictStr = Field("pillar", description="SaltStack minions targeting type", title="tgt_type", required=False)
-    nr: model_nr = Field(None, description="Nornir Execution Module", title="nr", required=False)
-    
+    target: StrictStr = Field(
+        "proxy:proxytype:nornir",
+        description="SaltStack minions target value",
+        title="target",
+    )
+    tgt_type: StrictStr = Field(
+        "pillar", description="SaltStack minions targeting type", title="tgt_type"
+    )
+    nr: model_nr = Field(None, description="Nornir Execution Module", title="nr")
+
     class PicleConfig:
         subshell = True
         prompt = "salt#"
-    
+
+
 class model_show(BaseModel):
     version: Callable = Field("show_version", description="Show software version")
     clock: Callable = Field("show_clock", description="Show current clock")
-        
+
     @staticmethod
     def show_version():
         return "0.1.0"
-    
+
     @staticmethod
     def show_clock():
         import time
+
         return time.ctime()
-    
-    
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
-    
+
     class PicleConfig:
         prompt = "picle#"
         ruler = ""
         intro = "PICLE Sample app"
         newline = "\r\n"
         completekey = "tab"
-        
+
+
 if __name__ == "__main__":
     shell = App(Root)
     shell.start()

@@ -17,8 +17,6 @@ from typing import Callable
 from pydantic import ValidationError
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.fields import FieldInfo
-# from pydantic.main import ModelMetaclass
-# from pydantic.fields import ModelField
 
 
 log = logging.getLogger(__name__)
@@ -41,34 +39,37 @@ class FieldKeyError(Exception):
 class App(cmd.Cmd):
     """
     PICLE App class to construct shell.
-    
+
     :param root: Root/Top Pydantic model
     """
+
     ruler = ""
     intro = "PICLE APP"
     prompt = "picle#"
     newline = "\r\n"
     completekey = "tab"
-    
-    def __init__(self, root):
+
+    def __init__(self, root, stdin=None, stdout=None):
         self.root = root
-        self.shell = self.root.construct()
+        self.shell = self.root.model_construct()
         self.shells = [self.shell]
-        
-        # extract comnfig from shell model
+
+        # extract configuration from shell model
         if hasattr(self.shell, "PicleConfig"):
             self.ruler = getattr(self.shell.PicleConfig, "ruler", self.ruler)
             self.intro = getattr(self.shell.PicleConfig, "intro", self.intro)
             self.prompt = getattr(self.shell.PicleConfig, "prompt", self.prompt)
             self.newline = getattr(self.shell.PicleConfig, "newline", self.newline)
-            self.completekey = getattr(self.shell.PicleConfig, "completekey", self.completekey)
-        
+            self.completekey = getattr(
+                self.shell.PicleConfig, "completekey", self.completekey
+            )
+
         # mount override methods
-        if getattr(self.shell.PicleConfig, "methods_override"):
+        if hasattr(self.shell.PicleConfig, "methods_override"):
             for mount, override in self.shell.PicleConfig.methods_override.items():
                 setattr(self, mount, getattr(self.shell, override))
-            
-        super(App, self).__init__()
+
+        super(App, self).__init__(stdin=stdin, stdout=stdout)
 
     def start(self) -> None:
         self.cmdloop()
@@ -76,7 +77,20 @@ class App(cmd.Cmd):
     def emptyline(self) -> None:
         """Override empty line method to not run last command"""
         return None
-        
+
+    def write(self, text: str) -> None:
+        """
+        Method to write output to stdout
+
+        :param text: text output
+        """
+        if not isinstance(text, str):
+            text = str(text)
+        if not text.endswith(self.newline):
+            self.stdout.write(text + self.newline)
+        else:
+            self.stdout.write(text)
+
     def _save_collected_value(self, field: dict, value: str) -> None:
         """
         Helper function to save collected value into field values
@@ -85,19 +99,23 @@ class App(cmd.Cmd):
         :param value: value to save string
         """
         # attempt to mutate value
-        if value.title() == "False":  # convert value to boolean
-            value = False
-        elif value.title() == "True":
-            value = True
-        elif value.title() == "None":
-            value = None
-        elif value.isdigit():  # convert to integer
-            value = int(value)
-        elif "." in value:  # convert to float
-            try:
-                value = float(value)
-            except ValueError:
-                pass
+        if isinstance(value, str):
+            # convert value to boolean
+            if value.title() == "False":
+                value = False
+            elif value.title() == "True":
+                value = True
+            elif value.title() == "None":
+                value = None
+            # convert to integer
+            elif value.isdigit():
+                value = int(value)
+            # convert to float
+            elif "." in value:
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
 
         # save single value
         if field["values"] == ...:
@@ -129,12 +147,18 @@ class App(cmd.Cmd):
         else:
             self.shell(**data)
 
-    def parse_command(self, command: str, validate: bool = False) -> list:
+    def parse_command(
+        self, command: str, validate: bool = False, add_default_values: bool = False
+    ) -> list:
         """
-        Function to parse command string and construct
-        a list of model references and fields values.
+        Function to parse command string and construct list of model 
+        references and fields values.
 
         :param command: command string
+
+        Returns a list of dictionaries with collected models details
+        each dictionary containing ``model``, ``fields`` and ``parameter``
+        keys.
         """
         current_model = {"model": self.shell, "fields": [], "parameter": ...}
         current_field = {}
@@ -162,6 +186,7 @@ class App(cmd.Cmd):
                 field = current_model["model"].model_fields[parameter]
                 # handle next level model reference
                 if isinstance(field.annotation, ModelMetaclass):
+                    # goto next model
                     current_model = {
                         "model": field.annotation,
                         "fields": [],
@@ -169,10 +194,41 @@ class App(cmd.Cmd):
                     }
                     models.append(current_model)
                     current_field = {}  # empty current field
-                # handle field value
+                    # extract default values from the current model
+                    if add_default_values:
+                        for f_name, f_value in current_model[
+                            "model"
+                        ].model_fields.items():
+                            # skip references to other models
+                            if not isinstance(f_value, FieldInfo):
+                                continue
+                            # skip references to callables
+                            if f_value.annotation is Callable:
+                                continue
+                            # add field default value
+                            if f_value.get_default() is not None:
+                                current_model["fields"].append(
+                                    {"name": f_name, "values": f_value.get_default()}
+                                )
+                # handle actual field reference
                 elif isinstance(field, FieldInfo):
-                    current_field = {"name": parameter, "values": ...}
-                    current_model["fields"].append(current_field)
+                    # check need to record field presence before going to next field
+                    if (
+                        current_field.get("values") is ...
+                        and current_field["field"].json_schema_extra is not None
+                        and "presence" in current_field["field"].json_schema_extra
+                    ):
+                        value = current_field["field"].json_schema_extra["presence"]
+                        self._save_collected_value(current_field, value)
+                    # goto next field
+                    current_field = {"name": parameter, "values": ..., "field": field}
+                    # find and replace default value if present
+                    for index, field in enumerate(current_model["fields"]):
+                        if field["name"] == current_field["name"]:
+                            current_model["fields"][index] = current_field
+                            break
+                    else:
+                        current_model["fields"].append(current_field)
                 else:
                     raise TypeError(
                         f"Unsupported pydantic field type: '{type(field.annotation)}', "
@@ -190,16 +246,26 @@ class App(cmd.Cmd):
                 self._save_collected_value(current_field, parameter)
             else:
                 raise FieldKeyError(current_model, parameter)
+        # check presence for last parameter
+        if (
+            current_field.get("values") is ...
+            and current_field["field"].json_schema_extra is not None
+            and "presence" in current_field["field"].json_schema_extra
+        ):
+            value = current_field["field"].json_schema_extra["presence"]
+            self._save_collected_value(current_field, value)
         # validated collected values
         if validate:
             self._validate_values(models)
 
         return models
 
-    def print_model_help(self, model: dict, verbose: bool = False, match: str = None) -> None:
+    def print_model_help(
+        self, model: dict, verbose: bool = False, match: str = None
+    ) -> None:
         """
         Function to form and print help message for model fields.
-        
+
         :param match: only collect help for fields that start with ``match`` string
         """
         last_field = model["fields"][-1] if model["fields"] else None
@@ -221,8 +287,8 @@ class App(cmd.Cmd):
                 lines[name] = f"{field.description}"
                 if verbose:
                     lines[name] += (
-                        f"; default '{field.get_default()}', type '{field._type_display()}', "
-                        f"required {field.required}"
+                        f"; default '{field.get_default()}', type '{str(field.annotation)}', "
+                        f"is required - {field.is_required()}"
                     )
             width = max(width, len(name))
         # collect help message for all fields of this model
@@ -248,8 +314,8 @@ class App(cmd.Cmd):
                 lines[name] = f"{field.description}"
                 if verbose:
                     lines[name] += (
-                        f"; default '{field.get_default()}', type '{field._type_display()}', "
-                        f"required {field.required}"
+                        f"; default '{field.get_default()}', type '{str(field.annotation)}', "
+                        f"is required - {field.is_required()}"
                     )
                 width = max(width, len(name))
         # form help lines
@@ -258,7 +324,7 @@ class App(cmd.Cmd):
             padding = " " * (width - len(k)) + (" " * 4)
             help_msg.append(f"{k}{padding}{lines[k]}")
         # print help message
-        print(self.newline.join(help_msg))
+        self.write(self.newline.join(help_msg))
 
     def completedefault(self, text, line, begidx, endidx):
         """
@@ -288,21 +354,23 @@ class App(cmd.Cmd):
                 # check if model has method to source field choices
                 elif hasattr(last_model, f"source_{last_field_name}"):
                     fieldnames = getattr(last_model, f"source_{last_field_name}")()
-                    fieldnames = [i for i in fieldnames if i.startswith(last_field_value)]
+                    fieldnames = [
+                        i for i in fieldnames if i.startswith(last_field_value)
+                    ]
             # return a list of all model fields
             else:
                 fieldnames = list(last_model.model_fields)
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
             fieldnames = [
-                f.name
-                for f in model["model"].model_fields.values()
+                name
+                for name, f in model["model"].model_fields.items()
                 # skip fields with already collected values from complete prompt
-                if f.name.startswith(parameter)
+                if name.startswith(parameter)
                 and not any(
                     True
                     for collected_field in model["fields"]
-                    if collected_field["name"] == f.name
+                    if collected_field["name"] == name
                     and collected_field["values"] is not ...
                 )
             ]
@@ -310,8 +378,8 @@ class App(cmd.Cmd):
             pass
         except:
             tb = traceback.format_exc()
-            print(tb)
-            
+            self.write(tb)
+
         return sorted(fieldnames)
 
     def completenames(self, text, line, begidx, endidx):
@@ -333,9 +401,9 @@ class App(cmd.Cmd):
         # collect arguments that startswith last parameter
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
-            for f in model["model"].model_fields.values():
-                if f.name.startswith(parameter):
-                    fieldnames.append(f.name)
+            for name, f in model["model"].model_fields.items():
+                if name.startswith(parameter):
+                    fieldnames.append(name)
         # raised if no model fields matched last parameter
         except FieldKeyError as e:
             pass
@@ -363,7 +431,7 @@ class App(cmd.Cmd):
                     padding = " " * (width - len(k)) + (" " * 4)
                     help_msg.append(f"{k}{padding}{v}")
                 # print help message
-                print(self.newline.join(help_msg))
+                self.write(self.newline.join(help_msg))
 
     def do_exit(self, arg):
         """Exit current shell"""
@@ -391,7 +459,7 @@ class App(cmd.Cmd):
         path = ["Root"]
         for shell in self.shells[1:]:
             path.append(shell.__name__)
-        print("->".join(path))
+        self.write("->".join(path))
 
     def default(self, line: str):
         """Method called if no do_xyz methods found"""
@@ -406,8 +474,8 @@ class App(cmd.Cmd):
                 self.print_model_help(
                     model,
                     verbose=True if line.strip().endswith("??") else False,
-                    match=parameter
-                )          
+                    match=parameter,
+                )
             except FieldKeyError as e:
                 model, parameter = e.args
                 model_name = (
@@ -415,9 +483,9 @@ class App(cmd.Cmd):
                     if hasattr(model["model"], "__name__")
                     else model["model"].__repr_name__()
                 )
-                print(
+                self.write(
                     f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
-                )                
+                )
             else:
                 self.print_model_help(
                     command_models[-1],
@@ -425,16 +493,18 @@ class App(cmd.Cmd):
                 )
         else:
             try:
-                command_models = self.parse_command(line, validate=True)
+                command_models = self.parse_command(
+                    line, validate=True, add_default_values=True
+                )
             except FieldLooseMatchOnly as e:
                 model, parameter = e.args
                 # filter fields to return message for
                 fields = [
-                    f.name
-                    for f in model["model"].model_fields.values()
-                    if f.name.startswith(parameter)
+                    name
+                    for name, f in model["model"].model_fields.items()
+                    if name.startswith(parameter)
                 ]
-                print(
+                self.write(
                     f"Incomplete command, possible completions: " f"{', '.join(fields)}"
                 )
             except FieldKeyError as e:
@@ -444,11 +514,11 @@ class App(cmd.Cmd):
                     if hasattr(model["model"], "__name__")
                     else model["model"].__repr_name__()
                 )
-                print(
+                self.write(
                     f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
                 )
             except ValidationError as e:
-                print(e)
+                self.write(e)
             else:
                 # collect arguments
                 run_kwargs = {
@@ -459,7 +529,7 @@ class App(cmd.Cmd):
                 }
                 # run model "run" function if it exits
                 model = command_models[-1]["model"]
-                if hasattr(model, "run"):
+                if run_kwargs and hasattr(model, "run"):
                     ret = model.run(**run_kwargs)
                 # check if model has subshell
                 elif (
@@ -488,17 +558,19 @@ class App(cmd.Cmd):
                         if method_name and hasattr(model, method_name):
                             ret = getattr(model, method_name)(**run_kwargs)
                         else:
-                            print(
+                            self.write(
                                 f"Model '{model.__name__}' has no '{method_name}' "
                                 f"method defined for '{last_field_name}' Callable field"
                             )
                     else:
-                        print(f"Model '{model.__name__}' has no 'run' method defined")
+                        self.write(
+                            f"Model '{model.__name__}' has no 'run' method defined"
+                        )
                 else:
-                    print(f"Incorrect command")
+                    self.write(f"Incorrect command")
         # returning True will close the shell
         if ret is True:
             return True
         elif ret:
-            print(ret)
+            self.write(ret)
         return None

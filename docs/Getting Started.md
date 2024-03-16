@@ -1,35 +1,30 @@
 # Introducing PICLE
 
-The command-line interface (CLI) is the software interface used to
+Command-line interface (CLI) is the software interface used to
 interact with the system. From CLI you can run commands and receive
 output.
 
 The command-line interface usually includes lots of shortcuts and 
-commands for to get help, autocompletion, argument choices and validation 
+commands to get help, autocompletion, argument choices and validation 
 of input.
 
 PICLE creates structures of shell modes hierarchies, as illustrated in 
 Figure 1. The hierarchy of each mode is made up of cascading branches 
-of related functions commonly used together.
+of related functions used together.
 
 !!! TBD
 
 Figure 1.
 
-The top level of each hierarchy is much like the top of the UNIX filesystem
-(\), and shell mode hierarchies are similar to the directory structure on 
-UNIX systems, PCs, and Macs.
 
 ## Understanding Shell Modes Hierarchy
 
-The structured hierarchy of the command-line shell interfaces is one of the
-many advantages of PICLE and by making it capable of logically grouping 
-activities, PICLE helps to build a regular, consistent syntax for knowing 
-where you are, finding what you want, moving around the interface, and 
-entering commands.
+Structured hierarchy of the command-line shell interfaces is one of the
+advantages of PICLE. PICLE helps to build regular, consistent syntax enabling
+efficient navigation and command execution.
 
 When you first log in to the CLI, the command-line interface is at the top
-level of the CLI mode.
+level of the hierarchy.
 
 Figure 2 provides a view of the sample CLI’s tree structure from the top level, 
 with an example of its cascading hierarchy through the commands. For 
