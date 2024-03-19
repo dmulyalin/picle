@@ -23,3 +23,10 @@ Why not [python-fire](https://github.com/google/python-fire),
 all these libraries are great for building command line tools, 
 but they provide no support for interactive shell or input 
 comprehensive validation supported by Pydantic.
+
+Why not 
+[prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit) 
+or [textual](https://github.com/Textualize/textual)
+- those are extremely good libraries for building Terminal User Interface 
+(TUI) applications but they provide no support for interactive shell and 
+Pydantic validation of input.
