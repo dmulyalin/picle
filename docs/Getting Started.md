@@ -5,35 +5,102 @@ interact with the system. From CLI you can run commands and receive
 output.
 
 The command-line interface usually includes lots of shortcuts and 
-commands to get help, autocompletion, argument choices and validation 
+commands to get help, auto completion, argument choices and validation 
 of input.
 
 PICLE creates structures of shell modes hierarchies, as illustrated in 
 Figure 1. The hierarchy of each mode is made up of cascading branches 
-of related functions used together.
+of related commands and their functions.
 
-!!! TBD
+```
+Root
+   |-command -> Model
+     |-command -> Field
+	 |-command -> Field
+     |-command -> Field
+     |-RUN Function					
+   |-command -> Function
+   |-command -> Model
+     |-Shell
+       |-command -> Field
+       |-command -> Model
+	     |-command -> Field
+	     |-RUN Function	
+```			  
 
-Figure 1.
+Figure 1. Sample shells hierarchy.
+
+Each shell has its own prompt and a set of commands.
+
+Commands parsed sequentially in the order they are inputted on the 
+command line.
+
+Each command can point to one of:
+
+- Pydantic model with or without shell 
+- A Pydantic model field with values to collect
+- A function to run
+
+Each model may have a ``RUN`` function defined, this function
+executed with collected field values.
+
+## Sample Application
+
+PICLE uses Pydantic models to construct interactive shells and their commands. 
+For example, to create interactive shell that has this structure:
+
+```
+Root
+   |-show -> model_show
+     |-version -> Function - output software version
+   	 |-clock -> Function - display system time
+```
+
+Can use code below:
+
+```
+import time
+from picle import App
+from typing import Callable
+from pydantic import BaseModel, Field
 
 
-## Understanding Shell Modes Hierarchy
+class model_show(BaseModel):
+    version: Callable = Field("show_version", description="Show software version")
+    clock: Callable = Field("show_clock", description="Show current clock")
+    
+    @staticmethod
+    def show_version():
+        return "0.1.0"
+    
+    @staticmethod
+    def show_clock():
+        return time.ctime()
+    
+    
+class Root(BaseModel):
+    show: model_show = Field(None, description="Show commands")
+    
+    class PicleConfig:
+        prompt = "picle#"
+        intro = "PICLE Sample app"
+        
 
-Structured hierarchy of the command-line shell interfaces is one of the
-advantages of PICLE. PICLE helps to build regular, consistent syntax enabling
-efficient navigation and command execution.
+if __name__ == "__main__":
+    shell = App(Root)
+    shell.start()
+```
 
-When you first log in to the CLI, the command-line interface is at the top
-level of the hierarchy.
+Each Pydantic model can have ``PicleConfig`` subclass defined
+listing model configuration.
 
-Figure 2 provides a view of the sample CLI’s tree structure from the top level, 
-with an example of its cascading hierarchy through the commands. For 
-example, the show weather hierarchy includes today, last_hour, tomorrow, 
-and more. The structured grouping of commands makes it easy to move quickly
-up and down the hierarchical path or to a specific function anywhere in 
-the CLI.
+``Root -> show`` model field refers to ``model_show`` Pydantic model
+which has two fields ``version`` and ``clock`` each referring to 
+callable function which is executed when user hits ENTER on the
+command line.
 
-!!! TBD
+Run above code with ``python myshellfile.py`` command and interact with 
+the shell:
 
-Figure 2.
+![docs_sample_app_1](images/docs_sample_app_1.gif)
 

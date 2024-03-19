@@ -12,8 +12,8 @@ markdown_extensions:
 - pymdownx.superfences
 nav:
 - Overview: index.md
-- API Reference: api_reference.md
 - Getting Started: Getting Started.md
+- API Reference: api_reference.md
 plugins:
 - search
 - mkdocstrings:
