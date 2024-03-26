@@ -36,6 +36,12 @@ class FieldKeyError(Exception):
     """
 
 
+class SyntaxError(Exception):
+    """
+    Command syntax error
+    """
+    
+    
 class App(cmd.Cmd):
     """
     PICLE App class to construct shell.
@@ -164,13 +170,31 @@ class App(cmd.Cmd):
         current_field = {}
         models = [current_model]
         parameters = [i for i in command.split(" ") if i.strip()]
-
+        pipe_models = None
+        
         # iterate over command parameters and decide if its a reference
         # to a model or model's field value
         while parameters:
             parameter = parameters.pop(0)
+            # handle pipe - "|"
+            if parameter == "|":
+                if (
+                    hasattr(current_model["model"], "PicleConfig") and
+                    getattr(current_model["model"].PicleConfig, "pipe", None)
+                ):
+                    pipe_model = current_model["model"].PicleConfig.pipe
+                    # goto pipe model
+                    current_model = {
+                        "model": pipe_model,
+                        "fields": [],
+                        "parameter": parameter,
+                    }
+                else:
+                    raise SyntaxError(
+                        f"'{current_model['model']}' does not support pipe handling"
+                    )                    
             # collect single quoted field value
-            if '"' in parameter and current_field:
+            elif '"' in parameter and current_field:
                 value_items = [parameter.replace('"', "")]
                 # collect further values if first parameter not double quoted value e.g. "nrp1"
                 if parameter.count('"') != 2:

@@ -7,7 +7,21 @@ from enum import Enum
 from typing import List, Union, Optional, Callable
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
 
+   
+   
+class PipeModel(BaseModel):
+    include: Union[str, int] = Field(None, description="Filter output by pattern", function="call_include")
 
+    @staticmethod
+    def call_include(data, include):
+        return "\n",join(
+            [
+                iline 
+                for line in str(data).splitlines()
+                if include in line
+            ]
+        )
+        
 class NrCliPlugins(str, Enum):
     netmiko = "netmiko"
     napalm = "napalm"
@@ -89,7 +103,11 @@ class model_salt(BaseModel):
 class model_show(BaseModel):
     version: Callable = Field("show_version", description="Show software version")
     clock: Callable = Field("show_clock", description="Show current clock")
-
+    this: Callable = Field("show_this", description="Show this")
+    
+    class PicleConfig:
+        pipe = PipeModel
+    
     @staticmethod
     def show_version():
         return "0.1.0"
@@ -100,7 +118,15 @@ class model_show(BaseModel):
 
         return time.ctime()
 
+    @staticmethod
+    def show_this():
+        return """
+Why did the network engineer always carry a ladder?
 
+Because he wanted to reach the highest levels of connectivity... and occasionally fix the "cloud" when it crashed!
+        """
+        
+        
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
