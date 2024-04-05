@@ -40,8 +40,8 @@ class SyntaxError(Exception):
     """
     Command syntax error
     """
-    
-    
+
+
 class App(cmd.Cmd):
     """
     PICLE App class to construct shell.
@@ -157,7 +157,7 @@ class App(cmd.Cmd):
         self, command: str, validate: bool = False, add_default_values: bool = False
     ) -> list:
         """
-        Function to parse command string and construct list of model 
+        Function to parse command string and construct list of model
         references and fields values.
 
         :param command: command string
@@ -172,7 +172,7 @@ class App(cmd.Cmd):
         parameters = [i for i in command.split(" ") if i.strip()]
         pipe_models = None
         ret = [models]
-        
+
         # iterate over command parameters and decide if its a reference
         # to a model or model's field value
         while parameters:
@@ -180,9 +180,8 @@ class App(cmd.Cmd):
             # handle pipe - "|"
             if parameter == "|":
                 # check if current model has pipe defined
-                if (
-                    hasattr(current_model["model"], "PicleConfig") and
-                    getattr(current_model["model"].PicleConfig, "pipe", None)
+                if hasattr(current_model["model"], "PicleConfig") and getattr(
+                    current_model["model"].PicleConfig, "pipe", None
                 ):
                     if current_model["model"].PicleConfig.pipe == "self":
                         # reference pipe model to current model
@@ -190,7 +189,7 @@ class App(cmd.Cmd):
                             "model": current_model["model"],
                             "fields": [],
                             "parameter": parameter,
-                        }                        
+                        }
                     else:
                         # goto pipe model
                         current_model = {
@@ -203,7 +202,7 @@ class App(cmd.Cmd):
                 else:
                     raise SyntaxError(
                         f"'{current_model['model']}' does not support pipe handling"
-                    )                    
+                    )
             # collect single quoted field value
             elif '"' in parameter and current_field:
                 value_items = [parameter.replace('"', "")]
@@ -217,8 +216,19 @@ class App(cmd.Cmd):
                 value = " ".join(value_items)  # form value string
                 self._save_collected_value(current_field, value)
             # handle reference to model
-            elif current_model["model"].model_fields.get(parameter):
-                field = current_model["model"].model_fields[parameter]
+            elif current_model["model"].model_fields.get(parameter) or any(
+                parameter == f.alias
+                for f in current_model["model"].model_fields.values()
+            ):
+                # source field by name
+                if current_model["model"].model_fields.get(parameter):
+                    field = current_model["model"].model_fields[parameter]
+                else:
+                    # source field by alias
+                    for f_name, field in current_model["model"].model_fields.items():
+                        if parameter == field.alias:
+                            parameter = f_name  # use actual field name
+                            break
                 # handle next level model reference
                 if isinstance(field.annotation, ModelMetaclass):
                     # goto next model
@@ -303,7 +313,7 @@ class App(cmd.Cmd):
 
         :param match: only collect help for fields that start with ``match`` string
         """
-        model = models[-1][-1]
+        model = models[-1][-1]  # get last model
         last_field = model["fields"][-1] if model["fields"] else None
         lines = {}  # dict of {cmd: cmd_help}
         width = 0  # record longest command width for padding
@@ -345,6 +355,9 @@ class App(cmd.Cmd):
                 width = max(width, len(name))
             # iterate over model fields
             for name, field in model["model"].model_fields.items():
+                # check if field has alias
+                if field.alias:
+                    name = field.alias
                 # skip fields that already have values
                 if any(f["name"] == name for f in model["fields"]):
                     continue
@@ -359,9 +372,8 @@ class App(cmd.Cmd):
                     )
                 width = max(width, len(name))
         # check if model has pipe defined
-        if (
-            hasattr(model["model"], "PicleConfig") and
-            getattr(model["model"].PicleConfig, "pipe", None)
+        if hasattr(model["model"], "PicleConfig") and getattr(
+            model["model"].PicleConfig, "pipe", None
         ):
             name = "|"
             lines[name] = "Execute pipe command"
@@ -393,7 +405,7 @@ class App(cmd.Cmd):
                     last_field_value = last_field_value[-1]
                 elif last_field_value == ...:
                     last_field_value = ""
-                # check if need to exctract enum values
+                # check if need to extract enum values
                 if isinstance(last_field.annotation, enum.EnumMeta):
                     fieldnames = [
                         i.value
@@ -412,7 +424,7 @@ class App(cmd.Cmd):
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
             fieldnames = [
-                name
+                f.alias or name
                 for name, f in model["model"].model_fields.items()
                 # skip fields with already collected values from complete prompt
                 if name.startswith(parameter)
@@ -549,7 +561,7 @@ class App(cmd.Cmd):
                 model, parameter = e.args
                 # filter fields to return message for
                 fields = [
-                    name
+                    f.alias or name
                     for name, f in model["model"].model_fields.items()
                     if name.startswith(parameter)
                 ]
@@ -608,7 +620,9 @@ class App(cmd.Cmd):
                     elif command[-1]["fields"]:
                         last_field_name = command[-1]["fields"][-1]["name"]
                         last_field = model.model_fields[last_field_name]
-                        json_schema_extra = getattr(last_field, "json_schema_extra") or {}
+                        json_schema_extra = (
+                            getattr(last_field, "json_schema_extra") or {}
+                        )
                         # check if last field refers to callable e.g. function
                         if last_field.annotation is Callable:
                             method_name = last_field.get_default()
@@ -638,13 +652,18 @@ class App(cmd.Cmd):
                                 self.write(
                                     f"Model '{model.__name__}' has no '{method_name}' "
                                     f"method defined for '{last_field_name}' function"
-                                )                                    
+                                )
                         else:
                             self.write(
                                 f"Model '{model.__name__}' has no 'run' method defined"
                             )
+                        # run result through processors if any
+                        for processor in json_schema_extra.get("processors", []):
+                            ret = processor(ret)
                     else:
                         self.write(f"Incorrect command")
+                        continue
+
         # returning True will close the shell
         if ret is True:
             return True

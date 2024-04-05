@@ -1,6 +1,6 @@
 # PICLE APIs Reference
 
-## PicleConfig Attributes Reference
+## PicleConfig Class Reference
 
 Each Pydantic model can have ``PicleConfig`` subclass defined
 with model configuration parameters:
@@ -32,6 +32,41 @@ class ShellModel(BaseModel):
 		pipe = PipeFunctionsModel
 ```
 
+## Model json_schema_extra reference
+
+PICLE supports reading additional parameters for model ``json_schema_extra`` definition
+to control its behavior. These ``json_schema_extra`` parameters supported:
+
+- ``function`` - refers to ``@staticmethod`` of the model to call with command arguments
+- ``presence`` - command argument set to ``presence`` value if command given
+- ``processors`` - refers to a list of functions to use to process command execution results
+
+### How to use processors
+
+Processors allow to pass command execution results through a list of arbitrary functions.
+
+In example below results returned by ``produce_structured_data`` passed through
+pprint formatter function to produce pretty formatted string.
+
+```
+from picle.models import Formatters
+
+class model_show(BaseModel):
+    data_pprint: Callable = Field(
+        "produce_structured_data", 
+        description="Show data using pprint formatter", 
+        json_schema_extra={
+            "processors": [
+                    Formatters.formatter_pprint
+                ]
+            }
+    )
+
+    @staticmethod        
+    def produce_structured_data():
+        return {"some": {"dictionary": {"data": None}}, "more": {"dictionary": ["data"]}, "even": {"more": {"dictionary": "data"}}}
+```
+
 ## PICLE APP API
 
 ::: picle.App
@@ -41,3 +76,5 @@ class ShellModel(BaseModel):
 ### PipeFunctionsModel
 
 ::: picle.models.PipeFunctionsModel
+::: picle.models.Filters
+::: picle.models.Formatters

@@ -3,12 +3,12 @@ This file contains Pydantic models to test PICLE
 by building sample App.
 """
 from picle import App
-from picle.models import PipeFunctionsModel
+from picle.models import PipeFunctionsModel, Formatters
 from enum import Enum
 from typing import List, Union, Optional, Callable
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
 
-        
+
 class NrCliPlugins(str, Enum):
     netmiko = "netmiko"
     napalm = "napalm"
@@ -43,7 +43,7 @@ class model_nr_cli(filters):
     )
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
     add_details: StrictBool = Field(
-        None, description="Show detailed output", presence=True
+        None, description="Show detailed output", json_schema_extra={"presence": True}
     )
 
     @staticmethod
@@ -91,10 +91,18 @@ class model_show(BaseModel):
     version: Callable = Field("show_version", description="Show software version")
     clock: Callable = Field("show_clock", description="Show current clock")
     joke: Callable = Field("show_joke", description="Show joke")
-    
+    data: Callable = Field(
+        "produce_structured_data", description="Produce structured data"
+    )
+    data_pprint: Callable = Field(
+        "produce_structured_data",
+        description="Show data using pprint outputter",
+        json_schema_extra={"processors": [Formatters.formatter_pprint]},
+    )
+
     class PicleConfig:
         pipe = PipeFunctionsModel
-    
+
     @staticmethod
     def show_version():
         return "0.1.0"
@@ -114,8 +122,16 @@ Because he wanted to reach the highest levels of connectivity... and occasionall
 
 The End.
         """
-        
-        
+
+    @staticmethod
+    def produce_structured_data():
+        return {
+            "some": {"dictionary": {"data": None}},
+            "more": {"dictionary": ["data"]},
+            "even": {"more": {"dictionary": "data"}},
+        }
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
