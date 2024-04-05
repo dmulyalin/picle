@@ -162,7 +162,7 @@ class App(cmd.Cmd):
 
         :param command: command string
 
-        Returns a list of dictionaries with collected models details
+        Returns a list of lists of dictionaries with collected models details
         each dictionary containing ``model``, ``fields`` and ``parameter``
         keys.
         """
@@ -171,6 +171,7 @@ class App(cmd.Cmd):
         models = [current_model]
         parameters = [i for i in command.split(" ") if i.strip()]
         pipe_models = None
+        ret = [models]
         
         # iterate over command parameters and decide if its a reference
         # to a model or model's field value
@@ -178,17 +179,27 @@ class App(cmd.Cmd):
             parameter = parameters.pop(0)
             # handle pipe - "|"
             if parameter == "|":
+                # check if current model has pipe defined
                 if (
                     hasattr(current_model["model"], "PicleConfig") and
                     getattr(current_model["model"].PicleConfig, "pipe", None)
                 ):
-                    pipe_model = current_model["model"].PicleConfig.pipe
-                    # goto pipe model
-                    current_model = {
-                        "model": pipe_model,
-                        "fields": [],
-                        "parameter": parameter,
-                    }
+                    if current_model["model"].PicleConfig.pipe == "self":
+                        # reference pipe model to current model
+                        current_model = {
+                            "model": current_model["model"],
+                            "fields": [],
+                            "parameter": parameter,
+                        }                        
+                    else:
+                        # goto pipe model
+                        current_model = {
+                            "model": current_model["model"].PicleConfig.pipe,
+                            "fields": [],
+                            "parameter": parameter,
+                        }
+                    models = [current_model]
+                    ret.append(models)
                 else:
                     raise SyntaxError(
                         f"'{current_model['model']}' does not support pipe handling"
@@ -282,25 +293,31 @@ class App(cmd.Cmd):
         if validate:
             self._validate_values(models)
 
-        return models
+        return ret
 
     def print_model_help(
-        self, model: dict, verbose: bool = False, match: str = None
+        self, models: list, verbose: bool = False, match: str = None
     ) -> None:
         """
         Function to form and print help message for model fields.
 
         :param match: only collect help for fields that start with ``match`` string
         """
+        model = models[-1][-1]
         last_field = model["fields"][-1] if model["fields"] else None
         lines = {}  # dict of {cmd: cmd_help}
         width = 0  # record longest command width for padding
         # print help message only for last collected field
         if last_field and last_field["values"] == ...:
             field = model["model"].model_fields[last_field["name"]]
-            name = f"<{last_field['name']} value>"
+            name = f"<'{last_field['name']}' value>"
+            # check if field is callable
+            if field.annotation is Callable:
+                name = "<ENTER>"
+                lines[name] = "Execute command"
+                width = max(width, len(name))
             # add options for enumerations
-            if isinstance(field.annotation, enum.EnumMeta):
+            elif isinstance(field.annotation, enum.EnumMeta):
                 options = [i.value for i in field.annotation]
                 lines[name] = ", ".join(options)
             # check if model has method to source field choices
@@ -314,7 +331,6 @@ class App(cmd.Cmd):
                         f"; default '{field.get_default()}', type '{str(field.annotation)}', "
                         f"is required - {field.is_required()}"
                     )
-            width = max(width, len(name))
         # collect help message for all fields of this model
         else:
             # check if model supports subshell
@@ -342,6 +358,15 @@ class App(cmd.Cmd):
                         f"is required - {field.is_required()}"
                     )
                 width = max(width, len(name))
+        # check if model has pipe defined
+        if (
+            hasattr(model["model"], "PicleConfig") and
+            getattr(model["model"].PicleConfig, "pipe", None)
+        ):
+            name = "|"
+            lines[name] = "Execute pipe command"
+            width = max(width, len(name))
+        width = max(width, len(name))
         # form help lines
         help_msg = []
         for k in sorted(lines.keys()):
@@ -358,12 +383,12 @@ class App(cmd.Cmd):
         fieldnames = []
         try:
             command_models = self.parse_command(line)
-            last_model = command_models[-1]["model"]
+            last_model = command_models[-1][-1]["model"]
             # check if last model has fields collected
-            if command_models[-1]["fields"]:
-                last_field_name = command_models[-1]["fields"][-1]["name"]
+            if command_models[-1][-1]["fields"]:
+                last_field_name = command_models[-1][-1]["fields"][-1]["name"]
                 last_field = last_model.model_fields[last_field_name]
-                last_field_value = command_models[-1]["fields"][-1]["values"]
+                last_field_value = command_models[-1][-1]["fields"][-1]["values"]
                 if isinstance(last_field_value, list):
                     last_field_value = last_field_value[-1]
                 elif last_field_value == ...:
@@ -421,7 +446,7 @@ class App(cmd.Cmd):
         # collect model arguments
         try:
             command_models = self.parse_command(line)
-            fieldnames.extend(command_models[-1]["model"].model_fields)
+            fieldnames.extend(command_models[-1][-1]["model"].model_fields)
         # collect arguments that startswith last parameter
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
@@ -437,7 +462,7 @@ class App(cmd.Cmd):
         """Print help message"""
         command_models = self.parse_command(arg.strip("?"))
         self.print_model_help(
-            command_models[-1], verbose=True if arg.strip().endswith("?") else False
+            command_models, verbose=True if arg.strip().endswith("?") else False
         )
         # print help for global top commands
         if len(arg.strip().split(" ")) == 1:
@@ -496,7 +521,7 @@ class App(cmd.Cmd):
             except FieldLooseMatchOnly as e:
                 model, parameter = e.args
                 self.print_model_help(
-                    model,
+                    [[model]],
                     verbose=True if line.strip().endswith("??") else False,
                     match=parameter,
                 )
@@ -512,7 +537,7 @@ class App(cmd.Cmd):
                 )
             else:
                 self.print_model_help(
-                    command_models[-1],
+                    command_models,
                     verbose=True if line.strip().endswith("??") else False,
                 )
         else:
@@ -544,54 +569,82 @@ class App(cmd.Cmd):
             except ValidationError as e:
                 self.write(e)
             else:
-                # collect arguments
-                run_kwargs = {
-                    f["name"]: f["values"]
-                    for model in command_models
-                    for f in model["fields"]
-                    if f["values"] is not ...
-                }
-                # run model "run" function if it exits
-                model = command_models[-1]["model"]
-                if run_kwargs and hasattr(model, "run"):
-                    ret = model.run(**run_kwargs)
-                # check if model has subshell
-                elif (
-                    hasattr(model, "PicleConfig")
-                    and getattr(model.PicleConfig, "subshell", None) is True
-                ):
-                    # collect parent shells
-                    for item in command_models[:-1]:
-                        m = item["model"]
-                        if (
-                            hasattr(m, "PicleConfig")
-                            and getattr(m.PicleConfig, "subshell", None) is True
-                        ):
-                            if m not in self.shells:
-                                self.shells.append(m)
-                    # update prompt value
-                    self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
-                    self.shell = model
-                    self.shells.append(self.shell)
-                elif command_models[-1]["fields"]:
-                    # check if last field refers to callable e.g. function
-                    last_field_name = command_models[-1]["fields"][-1]["name"]
-                    last_field = model.model_fields[last_field_name]
-                    if last_field.annotation is Callable:
-                        method_name = last_field.get_default()
-                        if method_name and hasattr(model, method_name):
-                            ret = getattr(model, method_name)(**run_kwargs)
+                # go over collected commands separated by pipe
+                for index, command in enumerate(command_models):
+                    # collect arguments
+                    run_kwargs = {
+                        f["name"]: f["values"]
+                        for model in command
+                        for f in model["fields"]
+                        if f["values"] is not ...
+                    }
+                    # run model "run" function if it exits
+                    model = command[-1]["model"]
+                    if run_kwargs and hasattr(model, "run"):
+                        # call first command using collected arguments only
+                        if index == 0:
+                            ret = model.run(**run_kwargs)
+                        # pipe results through subsequent commands
+                        else:
+                            ret = model.run(ret, **run_kwargs)
+                    # check if model has subshell
+                    elif (
+                        hasattr(model, "PicleConfig")
+                        and getattr(model.PicleConfig, "subshell", None) is True
+                    ):
+                        # collect parent shells
+                        for item in command[:-1]:
+                            m = item["model"]
+                            if (
+                                hasattr(m, "PicleConfig")
+                                and getattr(m.PicleConfig, "subshell", None) is True
+                            ):
+                                if m not in self.shells:
+                                    self.shells.append(m)
+                        # update prompt value
+                        self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
+                        self.shell = model
+                        self.shells.append(self.shell)
+                    elif command[-1]["fields"]:
+                        last_field_name = command[-1]["fields"][-1]["name"]
+                        last_field = model.model_fields[last_field_name]
+                        json_schema_extra = getattr(last_field, "json_schema_extra") or {}
+                        # check if last field refers to callable e.g. function
+                        if last_field.annotation is Callable:
+                            method_name = last_field.get_default()
+                            if method_name and hasattr(model, method_name):
+                                # call first command using collected arguments only
+                                if index == 0:
+                                    ret = getattr(model, method_name)(**run_kwargs)
+                                # pipe results through subsequent commands
+                                else:
+                                    ret = getattr(model, method_name)(ret, **run_kwargs)
+                            else:
+                                self.write(
+                                    f"Model '{model.__name__}' has no '{method_name}' "
+                                    f"method defined for '{last_field_name}' Callable field"
+                                )
+                        # check if last field has `function` parameter defined
+                        elif json_schema_extra.get("function"):
+                            method_name = json_schema_extra["function"]
+                            if hasattr(model, method_name):
+                                # call first command using collected arguments only
+                                if index == 0:
+                                    ret = getattr(model, method_name)(**run_kwargs)
+                                # pipe results through subsequent commands
+                                else:
+                                    ret = getattr(model, method_name)(ret, **run_kwargs)
+                            else:
+                                self.write(
+                                    f"Model '{model.__name__}' has no '{method_name}' "
+                                    f"method defined for '{last_field_name}' function"
+                                )                                    
                         else:
                             self.write(
-                                f"Model '{model.__name__}' has no '{method_name}' "
-                                f"method defined for '{last_field_name}' Callable field"
+                                f"Model '{model.__name__}' has no 'run' method defined"
                             )
                     else:
-                        self.write(
-                            f"Model '{model.__name__}' has no 'run' method defined"
-                        )
-                else:
-                    self.write(f"Incorrect command")
+                        self.write(f"Incorrect command")
         # returning True will close the shell
         if ret is True:
             return True

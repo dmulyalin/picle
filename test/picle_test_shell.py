@@ -3,24 +3,11 @@ This file contains Pydantic models to test PICLE
 by building sample App.
 """
 from picle import App
+from picle.models import PipeFunctionsModel
 from enum import Enum
 from typing import List, Union, Optional, Callable
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
 
-   
-   
-class PipeModel(BaseModel):
-    include: Union[str, int] = Field(None, description="Filter output by pattern", function="call_include")
-
-    @staticmethod
-    def call_include(data, include):
-        return "\n",join(
-            [
-                iline 
-                for line in str(data).splitlines()
-                if include in line
-            ]
-        )
         
 class NrCliPlugins(str, Enum):
     netmiko = "netmiko"
@@ -103,10 +90,10 @@ class model_salt(BaseModel):
 class model_show(BaseModel):
     version: Callable = Field("show_version", description="Show software version")
     clock: Callable = Field("show_clock", description="Show current clock")
-    this: Callable = Field("show_this", description="Show this")
+    joke: Callable = Field("show_joke", description="Show joke")
     
     class PicleConfig:
-        pipe = PipeModel
+        pipe = PipeFunctionsModel
     
     @staticmethod
     def show_version():
@@ -119,11 +106,13 @@ class model_show(BaseModel):
         return time.ctime()
 
     @staticmethod
-    def show_this():
+    def show_joke():
         return """
 Why did the network engineer always carry a ladder?
 
 Because he wanted to reach the highest levels of connectivity... and occasionally fix the "cloud" when it crashed!
+
+The End.
         """
         
         
