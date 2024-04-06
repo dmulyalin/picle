@@ -50,6 +50,10 @@ class model_nr_cli(filters):
     def run(**kwargs):
         return f"Called salt nr cli, kwargs: {kwargs}"
 
+    class PicleConfig:
+        subshell = True
+        prompt = "salt[nr-cli]#"
+        
 
 class model_nr_cfg(filters):
     commands: Optional[Union[StrictStr, List[StrictStr]]] = Field(

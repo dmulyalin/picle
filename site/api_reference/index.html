@@ -325,6 +325,14 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#picle-app" class="md-nav__link">
+    PICLE App
+  </a>
+  
+    <nav class="md-nav" aria-label="PICLE App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#picle.App" class="md-nav__link">
     App
   </a>
@@ -434,25 +442,30 @@
     </nav>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#picleconfig-reference" class="md-nav__link">
-    PicleConfig Reference
+  <a href="#picleconfig" class="md-nav__link">
+    PicleConfig
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-json_schema_extra-reference" class="md-nav__link">
-    Field json_schema_extra reference
+  <a href="#field-json_schema_extra" class="md-nav__link">
+    Field json_schema_extra
   </a>
   
-    <nav class="md-nav" aria-label="Field json_schema_extra reference">
+    <nav class="md-nav" aria-label="Field json_schema_extra">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#json_schema_extra-processors-example" class="md-nav__link">
-    json_schema_extra processors example
+  <a href="#field-processors" class="md-nav__link">
+    Field processors
   </a>
   
 </li>
@@ -604,6 +617,14 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#picle-app" class="md-nav__link">
+    PICLE App
+  </a>
+  
+    <nav class="md-nav" aria-label="PICLE App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#picle.App" class="md-nav__link">
     App
   </a>
@@ -713,25 +734,30 @@
     </nav>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#picleconfig-reference" class="md-nav__link">
-    PicleConfig Reference
+  <a href="#picleconfig" class="md-nav__link">
+    PicleConfig
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#field-json_schema_extra-reference" class="md-nav__link">
-    Field json_schema_extra reference
+  <a href="#field-json_schema_extra" class="md-nav__link">
+    Field json_schema_extra
   </a>
   
-    <nav class="md-nav" aria-label="Field json_schema_extra reference">
+    <nav class="md-nav" aria-label="Field json_schema_extra">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#json_schema_extra-processors-example" class="md-nav__link">
-    json_schema_extra processors example
+  <a href="#field-processors" class="md-nav__link">
+    Field processors
   </a>
   
 </li>
@@ -867,6 +893,7 @@
                 
                 
                 <h1 id="picle-apis-reference">PICLE APIs Reference</h1>
+<h2 id="picle-app">PICLE App</h2>
 
 
   <div class="doc doc-object doc-class">
@@ -2599,7 +2626,7 @@ references and fields values.</p>
 
   </div>
 
-<h2 id="picleconfig-reference">PicleConfig Reference</h2>
+<h2 id="picleconfig">PicleConfig</h2>
 <p>Each Pydantic model can have <code>PicleConfig</code> subclass defined
 with model configuration parameters:</p>
 <ul>
@@ -2631,9 +2658,10 @@ class ShellModel(BaseModel):
         processors = [Formatters.formatter_json]
         outputter = Outputters.outputter_rich_print 
 </code></pre></div>
-<h2 id="field-json_schema_extra-reference">Field json_schema_extra reference</h2>
-<p>PICLE supports reading additional parameters for model <code>json_schema_extra</code> definition
-to control its behavior. These <code>json_schema_extra</code> parameters supported:</p>
+<h2 id="field-json_schema_extra">Field json_schema_extra</h2>
+<p>PICLE supports reading additional parameters from model Field's <code>json_schema_extra</code> 
+definition to control PICLE behavior. </p>
+<p><code>json_schema_extra</code> PICLE parameters:</p>
 <ul>
 <li><code>function</code> - refers to <code>@staticmethod</code> of the model to call with command arguments</li>
 <li><code>presence</code> - command argument set to <code>presence</code> value if command given</li>
@@ -2641,10 +2669,12 @@ to control its behavior. These <code>json_schema_extra</code> parameters support
 <li><code>outputter</code> - function to output results, by default results written to 
     stdout, Field's <code>outputter</code> overrides PicleConfig's <code>outputter</code></li>
 </ul>
-<h3 id="json_schema_extra-processors-example">json_schema_extra processors example</h3>
-<p>Processors allow to pass command execution results through a list of arbitrary functions.</p>
-<p>In example below results returned by <code>produce_structured_data</code> passed through
-pprint formatter function to produce pretty formatted string.</p>
+<h3 id="field-processors">Field processors</h3>
+<p>Processors allow to pass command execution results through a list of arbitrary functions.
+Results returned by processor function passed on as input to next processor function in the 
+list and so on.</p>
+<p>In example below results returned by <code>produce_structured_data</code> function passed through
+pprint formatter <code>Formatters.formatter_pprint</code> function to produce pretty formatted string.</p>
 <div class="highlight"><pre><span></span><code>from picle.models import Formatters
 
 class model_show(BaseModel):

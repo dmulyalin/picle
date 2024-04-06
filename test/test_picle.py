@@ -26,9 +26,11 @@ def test_callable():
 
 def test_default_values():
     shell.onecmd("salt nr cli commands abc")
-
+    
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
-
+    
+    print(f" shell output: '{shell_output}'")
+    
     assert (
         shell_output
         == "Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'commands': 'abc', 'plugin': 'netmiko'}\r\n"
@@ -240,7 +242,7 @@ def test_PicleConfig_processor_with_run_method():
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
 
-    print(f" shell output: '{shell_output}'")
+    print(f"shell output: '{shell_output}'")
 
     assert (
         """{
@@ -260,3 +262,28 @@ def test_PicleConfig_outputter_with_run_method():
     shell.onecmd("test_PicleConfig_outputter_with_run_method string_argument bla")
 
     assert True
+
+def test_subshell_handling():
+    # 1 go to subshell
+    shell.onecmd("salt nr cli")
+    
+    print(f"Current shell prompt: '{shell.prompt}'")
+    
+    assert shell.prompt == "salt[nr-cli]#"
+    
+    # 2 run command in subshell
+    shell.onecmd("commands bla add_details")
+    
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    
+    print(f" shell output: '{shell_output}'")
+    
+    assert "Called salt nr cli, kwargs: {'commands': 'bla', 'add_details': True}" in shell_output
+    
+    # 3 go back to the top
+    shell.onecmd("top")
+    
+    print(f"Current shell prompt: '{shell.prompt}'")
+    
+    assert shell.prompt == "picle#"
+    
