@@ -4,6 +4,7 @@ import sys
 import time
 import picle_test_shell
 import pprint
+import pytest
 
 from picle import App
 from enum import Enum
@@ -219,3 +220,43 @@ some:
     data: null"""
         in shell_output
     )
+
+
+def test_outputter_rich_json():
+    # outputter prints to terminal bypassing stdout, hence no output to test
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("show data_rich_json")
+
+    assert True
+
+
+def test_PicleConfig_processor_with_run_method():
+    """
+    model_nr_cfg has processor attribute defined within PicleConfig class,
+    this test tests its execution
+    """
+    shell.onecmd("salt nr cfg commands bla")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert (
+        """{
+    "commands": "bla",
+    "plugin": "netmiko",
+    "target": "proxy:proxytype:nornir",
+    "tgt_type": "pillar"
+}"""
+        in shell_output
+    )
+
+
+def test_PicleConfig_outputter_with_run_method():
+    # outputter prints to terminal bypassing stdout, hence no output to test
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("test_PicleConfig_outputter_with_run_method string_argument bla")
+
+    assert True

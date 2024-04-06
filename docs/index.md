@@ -1,4 +1,4 @@
-# PICLE - Python Interactive Command Line Shells
+## PICLE - Python Interactive Command Line Shells
 
 PICLE is a module to construct interactive command line shell
 applications.
@@ -16,10 +16,29 @@ to the next one, Control-F moves the cursor to the right
 non-destructively, Control-B moves the cursor to the left 
 non-destructively, etc.).
 
-# Installation
+## Installation
 
 Install [PICLE from PyPI](https://pypi.org/project/picle/) using pip
 
 ```
 pip install picle
 ```
+
+## Comparison With Other Projects
+
+[python-nubia](https://github.com/facebookarchive/python-nubia) by 
+Facebook - unfortunately this project no longer maintained, it also 
+provides no integration with Pydantic.
+
+[python-fire](https://github.com/google/python-fire), 
+[click](https://github.com/pallets/click) or 
+[argparse](https://docs.python.org/3/library/argparse.html) - 
+all these libraries are great for building command line tools, 
+but they provide no support for interactive shell or input 
+validation supported by Pydantic.
+
+[prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit) 
+or [textual](https://github.com/Textualize/textual) - those are extremely 
+good libraries for building Terminal User Interface (TUI) applications but 
+they provide no support for interactive shell and Pydantic validation of 
+input.

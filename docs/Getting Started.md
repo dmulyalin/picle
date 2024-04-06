@@ -1,4 +1,4 @@
-# Introducing PICLE
+## Introducing PICLE
 
 Command-line interface (CLI) is the software interface used to
 interact with the system. From CLI you can run commands and receive

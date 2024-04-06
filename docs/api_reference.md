@@ -1,6 +1,10 @@
 # PICLE APIs Reference
 
-## PicleConfig Class Reference
+## PICLE App
+
+::: picle.App
+
+## PicleConfig
 
 Each Pydantic model can have ``PicleConfig`` subclass defined
 with model configuration parameters:
@@ -13,15 +17,17 @@ with model configuration parameters:
 - ``pipe`` - reference to Pydantic model class to use with ``|`` (pipe) to process the 
 	results with various functions, special value ``pipe = "self"`` instruct to use 
 	current model for piping results through.
+- ``processors`` - list of functions to run results of `first command` through one by one
+- ``outputter`` - function to output results, by default results written to stdout
 
 Sample ``PicleConfig`` definition:
 
 ```
-class PipeFunctionsModel(BaseModel):
-    """ define pip commands here """
-	
+from picle.models import PipeFunctionsModel, Formatters, Outputters
+
 class ShellModel(BaseModel):
     """ define command attributes here """
+	<...>
 	
     class PicleConfig:
         prompt = "picle#"
@@ -30,23 +36,31 @@ class ShellModel(BaseModel):
         newline = "\r\n"
         completekey = "tab"
 		pipe = PipeFunctionsModel
+		processors = [Formatters.formatter_json]
+		outputter = Outputters.outputter_rich_print 
 ```
 
-## Model json_schema_extra reference
+## Field json_schema_extra
 
-PICLE supports reading additional parameters for model ``json_schema_extra`` definition
-to control its behavior. These ``json_schema_extra`` parameters supported:
+PICLE supports reading additional parameters from model Field's ``json_schema_extra`` 
+definition to control PICLE behavior. 
+
+``json_schema_extra`` PICLE parameters:
 
 - ``function`` - refers to ``@staticmethod`` of the model to call with command arguments
 - ``presence`` - command argument set to ``presence`` value if command given
-- ``processors`` - refers to a list of functions to use to process command execution results
-
-### How to use processors
+- ``processors`` - list of functions to run results of each command through one by one
+- ``outputter`` - function to output results, by default results written to 
+	stdout, Field's ``outputter`` overrides PicleConfig's ``outputter``
+	
+### Field processors
 
 Processors allow to pass command execution results through a list of arbitrary functions.
+Results returned by processor function passed on as input to next processor function in the 
+list and so on.
 
-In example below results returned by ``produce_structured_data`` passed through
-pprint formatter function to produce pretty formatted string.
+In example below results returned by ``produce_structured_data`` function passed through
+pprint formatter ``Formatters.formatter_pprint`` function to produce pretty formatted string.
 
 ```
 from picle.models import Formatters
@@ -67,14 +81,9 @@ class model_show(BaseModel):
         return {"some": {"dictionary": {"data": None}}, "more": {"dictionary": ["data"]}, "even": {"more": {"dictionary": "data"}}}
 ```
 
-## PICLE APP API
-
-::: picle.App
-
 ## PICLE Build In Models
 
-### PipeFunctionsModel
-
-::: picle.models.PipeFunctionsModel
 ::: picle.models.Filters
 ::: picle.models.Formatters
+::: picle.models.Outputters
+::: picle.models.PipeFunctionsModel

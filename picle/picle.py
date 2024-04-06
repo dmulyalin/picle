@@ -525,6 +525,7 @@ class App(cmd.Cmd):
     def default(self, line: str):
         """Method called if no do_xyz methods found"""
         ret = False
+        outputter = None
 
         # print help for given command or commands
         if line.strip().endswith("?"):
@@ -599,6 +600,20 @@ class App(cmd.Cmd):
                         # pipe results through subsequent commands
                         else:
                             ret = model.run(ret, **run_kwargs)
+                        # run processors from PicleConfig if any for first command only
+                        if index == 0:
+                            if hasattr(model, "PicleConfig") and hasattr(
+                                model.PicleConfig, "processors"
+                            ):
+                                for processor in model.PicleConfig.processors:
+                                    if callable(processor):
+                                        ret = processor(ret)
+                        # extract outputter from PicleConfig
+                        if index == 0:
+                            if hasattr(model, "PicleConfig") and hasattr(
+                                model.PicleConfig, "outputter"
+                            ):
+                                outputter = model.PicleConfig.outputter
                     # check if model has subshell
                     elif (
                         hasattr(model, "PicleConfig")
@@ -617,6 +632,7 @@ class App(cmd.Cmd):
                         self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
                         self.shell = model
                         self.shells.append(self.shell)
+                    # run command via reference function
                     elif command[-1]["fields"]:
                         last_field_name = command[-1]["fields"][-1]["name"]
                         last_field = model.model_fields[last_field_name]
@@ -657,16 +673,40 @@ class App(cmd.Cmd):
                             self.write(
                                 f"Model '{model.__name__}' has no 'run' method defined"
                             )
-                        # run result through processors if any
-                        for processor in json_schema_extra.get("processors", []):
-                            ret = processor(ret)
+                        # use processors from Field definition if any
+                        if json_schema_extra.get("processors"):
+                            for processor in json_schema_extra["processors"]:
+                                if callable(processor):
+                                    ret = processor(ret)
+                        # run processors from PicleConfig if any for first command only
+                        if index == 0:
+                            if hasattr(model, "PicleConfig") and hasattr(
+                                model.PicleConfig, "processors"
+                            ):
+                                for processor in model.PicleConfig.processors:
+                                    if callable(processor):
+                                        ret = processor(ret)
+                        # extract outputter from first command
+                        if index == 0:
+                            # use outputter from Field definition
+                            if json_schema_extra.get("outputter"):
+                                outputter = json_schema_extra["outputter"]
+                            # use PicleConfig outputter
+                            elif hasattr(model, "PicleConfig") and hasattr(
+                                model.PicleConfig, "outputter"
+                            ):
+                                outputter = model.PicleConfig.outputter
                     else:
                         self.write(f"Incorrect command")
-                        continue
+                        return
 
-        # returning True will close the shell
+        # returning True will close the shell exit
         if ret is True:
             return True
         elif ret:
-            self.write(ret)
-        return None
+            # use specified outputter to output results
+            if callable(outputter):
+                outputter(ret)
+            # write to stdout by default
+            else:
+                self.write(ret)
