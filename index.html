@@ -268,12 +268,52 @@
       <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
       
       
-        
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Overview
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="." class="md-nav__link md-nav__link--active">
         Overview
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#picle-python-interactive-command-line-shells" class="md-nav__link">
+    PICLE - Python Interactive Command Line Shells
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-with-other-projects" class="md-nav__link">
+    Comparison With Other Projects
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -325,8 +365,35 @@
   
   
   
-    
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#picle-python-interactive-command-line-shells" class="md-nav__link">
+    PICLE - Python Interactive Command Line Shells
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-with-other-projects" class="md-nav__link">
+    Comparison With Other Projects
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -343,7 +410,9 @@
                   </a>
                 
                 
-                <h1 id="picle-python-interactive-command-line-shells">PICLE - Python Interactive Command Line Shells</h1>
+                  <h1>Overview</h1>
+                
+                <h2 id="picle-python-interactive-command-line-shells">PICLE - Python Interactive Command Line Shells</h2>
 <p>PICLE is a module to construct interactive command line shell
 applications.</p>
 <p>PICLE build on top of Python standard library 
@@ -357,10 +426,25 @@ Control-P scrolls back to the last command, Control-N forward
 to the next one, Control-F moves the cursor to the right 
 non-destructively, Control-B moves the cursor to the left 
 non-destructively, etc.).</p>
-<h1 id="installation">Installation</h1>
+<h2 id="installation">Installation</h2>
 <p>Install <a href="https://pypi.org/project/picle/">PICLE from PyPI</a> using pip</p>
 <div class="highlight"><pre><span></span><code>pip install picle
 </code></pre></div>
+<h2 id="comparison-with-other-projects">Comparison With Other Projects</h2>
+<p><a href="https://github.com/facebookarchive/python-nubia">python-nubia</a> by 
+Facebook - unfortunately this project no longer maintained, it also 
+provides no integration with Pydantic.</p>
+<p><a href="https://github.com/google/python-fire">python-fire</a>, 
+<a href="https://github.com/pallets/click">click</a> or 
+<a href="https://docs.python.org/3/library/argparse.html">argparse</a> - 
+all these libraries are great for building command line tools, 
+but they provide no support for interactive shell or input 
+validation supported by Pydantic.</p>
+<p><a href="https://github.com/prompt-toolkit/python-prompt-toolkit">prompt-toolkit</a> 
+or <a href="https://github.com/Textualize/textual">textual</a> - those are extremely 
+good libraries for building Terminal User Interface (TUI) applications but 
+they provide no support for interactive shell and Pydantic validation of 
+input.</p>
                 
               
               
