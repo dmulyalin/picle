@@ -58,6 +58,7 @@ class App(cmd.Cmd):
     def __init__(self, root, stdin=None, stdout=None):
         self.root = root
         self.shell = self.root.model_construct()
+        self.shell_defaults = {}
         self.shells = [self.shell]
 
         # extract configuration from shell model
@@ -138,13 +139,15 @@ class App(cmd.Cmd):
         Method to validate current model field values
         """
         data = {}
-        for model in reversed(models[1:]):
+        for model in reversed(models):
             kwargs = {
                 f["name"]: f["values"]
                 for f in model["fields"]
                 if f["values"] is not ...
             }
-            data = {model["parameter"]: {**data, **kwargs}}
+            data = {**data, **kwargs}
+            if model["parameter"] is not ...:
+                data = {model["parameter"]: data}
         log.debug(f"Validating collected data against root model, data: {data}")
         # validate against root model
         if len(self.shells) == 1:
@@ -153,9 +156,38 @@ class App(cmd.Cmd):
         else:
             self.shell(**data)
 
-    def parse_command(
-        self, command: str, validate: bool = False, add_default_values: bool = False
-    ) -> list:
+    def extract_model_defaults(self, model) -> dict:
+        ret = {}
+        # extract default values from model fields
+        for name, field in model.model_fields.items():
+            # skip non Field references e.g. to other models
+            if not isinstance(field, FieldInfo):
+                continue
+            # skip references to Callables
+            if field.annotation is Callable:
+                continue
+            # skip required Fields
+            if field.is_required():
+                continue
+            # ignore None default values
+            if field.get_default() is None:
+                continue
+            ret[name] = field.get_default()
+
+        return ret
+
+    def defaults_update(self, model) -> None:
+        self.shell_defaults.update(self.extract_model_defaults(model))
+
+    def defaults_pop(self, model) -> None:
+        for name in model.model_fields.keys():
+            self.shell_defaults.pop(name, None)
+
+    def defaults_set(self, model) -> None:
+        self.shell_defaults.clear()
+        self.defaults_update(model)
+
+    def parse_command(self, command: str) -> list:
         """
         Function to parse command string and construct list of model
         references and fields values.
@@ -166,11 +198,15 @@ class App(cmd.Cmd):
         each dictionary containing ``model``, ``fields`` and ``parameter``
         keys.
         """
-        current_model = {"model": self.shell, "fields": [], "parameter": ...}
+        current_model = {
+            "model": self.shell,
+            "fields": [],
+            "parameter": ...,
+            "defaults": self.extract_model_defaults(self.shell),
+        }
         current_field = {}
         models = [current_model]
         parameters = [i for i in command.split(" ") if i.strip()]
-        pipe_models = None
         ret = [models]
 
         # iterate over command parameters and decide if its a reference
@@ -201,7 +237,7 @@ class App(cmd.Cmd):
                     ret.append(models)
                 else:
                     raise SyntaxError(
-                        f"'{current_model['model']}' does not support pipe handling"
+                        f"'{current_model['model'].__name__}' does not support pipe handling"
                     )
             # collect single quoted field value
             elif '"' in parameter and current_field:
@@ -239,22 +275,11 @@ class App(cmd.Cmd):
                     }
                     models.append(current_model)
                     current_field = {}  # empty current field
-                    # extract default values from the current model
-                    if add_default_values:
-                        for f_name, f_value in current_model[
-                            "model"
-                        ].model_fields.items():
-                            # skip references to other models
-                            if not isinstance(f_value, FieldInfo):
-                                continue
-                            # skip references to callables
-                            if f_value.annotation is Callable:
-                                continue
-                            # add field default value
-                            if f_value.get_default() is not None:
-                                current_model["fields"].append(
-                                    {"name": f_name, "values": f_value.get_default()}
-                                )
+                    # extract first command default values from current model
+                    if len(ret) == 1:
+                        current_model["defaults"] = self.extract_model_defaults(
+                            field.annotation
+                        )
                 # handle actual field reference
                 elif isinstance(field, FieldInfo):
                     # check need to record field presence before going to next field
@@ -299,9 +324,6 @@ class App(cmd.Cmd):
         ):
             value = current_field["field"].json_schema_extra["presence"]
             self._save_collected_value(current_field, value)
-        # validated collected values
-        if validate:
-            self._validate_values(models)
 
         return ret
 
@@ -496,10 +518,14 @@ class App(cmd.Cmd):
 
     def do_exit(self, arg):
         """Exit current shell"""
+        # delete defaults for closing shell
+        self.defaults_pop(self.shells[-1])
         _ = self.shells.pop(-1)
         if self.shells:
             self.shell = self.shells[-1]
             self.prompt = self.shell.PicleConfig.prompt
+            if len(self.shells) == 1:  # check if reached top shell
+                self.defaults_set(self.shell)
         else:
             return True
 
@@ -510,6 +536,8 @@ class App(cmd.Cmd):
         while self.shells:
             _ = self.shells.pop()
         self.shells.append(self.shell)
+        # set shell defaults
+        self.defaults_set(self.shell)
 
     def do_end(self, arg):
         """Exit application"""
@@ -555,9 +583,7 @@ class App(cmd.Cmd):
                 )
         else:
             try:
-                command_models = self.parse_command(
-                    line, validate=True, add_default_values=True
-                )
+                command_models = self.parse_command(line)
             except FieldLooseMatchOnly as e:
                 model, parameter = e.args
                 # filter fields to return message for
@@ -585,21 +611,33 @@ class App(cmd.Cmd):
                 # go over collected commands separated by pipe
                 for index, command in enumerate(command_models):
                     # collect arguments
-                    run_kwargs = {
+                    command_arguments = {
                         f["name"]: f["values"]
                         for model in command
                         for f in model["fields"]
                         if f["values"] is not ...
                     }
+                    # collect command defaults
+                    command_defaults = {}
+                    for model in command:
+                        command_defaults.update(model.get("defaults", {}))
                     # run model "run" function if it exits
                     model = command[-1]["model"]
-                    if run_kwargs and hasattr(model, "run"):
+                    if command_arguments and hasattr(model, "run"):
+                        # validate command argument values
+                        self._validate_values(command)
                         # call first command using collected arguments only
                         if index == 0:
-                            ret = model.run(**run_kwargs)
+                            ret = model.run(
+                                **self.shell_defaults,
+                                **command_defaults,
+                                **command_arguments,
+                            )
                         # pipe results through subsequent commands
                         else:
-                            ret = model.run(ret, **run_kwargs)
+                            ret = model.run(
+                                ret, **command_defaults, **command_arguments
+                            )
                         # run processors from PicleConfig if any for first command only
                         if index == 0:
                             if hasattr(model, "PicleConfig") and hasattr(
@@ -619,9 +657,10 @@ class App(cmd.Cmd):
                         hasattr(model, "PicleConfig")
                         and getattr(model.PicleConfig, "subshell", None) is True
                     ):
-                        # collect parent shells
+                        # collect parent shells and defaults
                         for item in command[:-1]:
                             m = item["model"]
+                            self.defaults_update(m)  # store shell defaults
                             if (
                                 hasattr(m, "PicleConfig")
                                 and getattr(m.PicleConfig, "subshell", None) is True
@@ -632,8 +671,11 @@ class App(cmd.Cmd):
                         self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
                         self.shell = model
                         self.shells.append(self.shell)
-                    # run command via reference function
+                    # run command using Callable or json_schema_extra["function"]
                     elif command[-1]["fields"]:
+                        # validate command argument values
+                        self._validate_values(command)
+                        # extract last field
                         last_field_name = command[-1]["fields"][-1]["name"]
                         last_field = model.model_fields[last_field_name]
                         json_schema_extra = (
@@ -645,10 +687,16 @@ class App(cmd.Cmd):
                             if method_name and hasattr(model, method_name):
                                 # call first command using collected arguments only
                                 if index == 0:
-                                    ret = getattr(model, method_name)(**run_kwargs)
+                                    ret = getattr(model, method_name)(
+                                        **self.shell_defaults,
+                                        **command_defaults,
+                                        **command_arguments,
+                                    )
                                 # pipe results through subsequent commands
                                 else:
-                                    ret = getattr(model, method_name)(ret, **run_kwargs)
+                                    ret = getattr(model, method_name)(
+                                        ret, **command_defaults, **command_arguments
+                                    )
                             else:
                                 self.write(
                                     f"Model '{model.__name__}' has no '{method_name}' "
@@ -660,10 +708,16 @@ class App(cmd.Cmd):
                             if hasattr(model, method_name):
                                 # call first command using collected arguments only
                                 if index == 0:
-                                    ret = getattr(model, method_name)(**run_kwargs)
+                                    ret = getattr(model, method_name)(
+                                        **self.shell_defaults,
+                                        **command_defaults,
+                                        **command_arguments,
+                                    )
                                 # pipe results through subsequent commands
                                 else:
-                                    ret = getattr(model, method_name)(ret, **run_kwargs)
+                                    ret = getattr(model, method_name)(
+                                        ret, **command_defaults, **command_arguments
+                                    )
                             else:
                                 self.write(
                                     f"Model '{model.__name__}' has no '{method_name}' "
@@ -697,8 +751,9 @@ class App(cmd.Cmd):
                             ):
                                 outputter = model.PicleConfig.outputter
                     else:
-                        self.write(f"Incorrect command")
-                        return
+                        self.defaults_pop(model)
+                        ret = f"Incorrect command"
+                        break
 
         # returning True will close the shell exit
         if ret is True:

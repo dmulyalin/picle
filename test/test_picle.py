@@ -17,6 +17,7 @@ shell = App(picle_test_shell.Root, stdin=mock_stdin, stdout=mock_stdout)
 
 
 def test_callable():
+    shell.onecmd("top") # go to top
     shell.onecmd("show version")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -25,85 +26,89 @@ def test_callable():
 
 
 def test_default_values():
+    shell.onecmd("top") # go to top
     shell.onecmd("salt nr cli commands abc")
     
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
     
     print(f" shell output: '{shell_output}'")
     
-    assert (
-        shell_output
-        == "Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'commands': 'abc', 'plugin': 'netmiko'}\r\n"
+    assert all(
+        k in shell_output 
+        for k in [
+            "Called salt nr cli, kwargs:",
+            "'target': 'proxy:proxytype:nornir'", 
+            "'tgt_type': 'pillar'", 
+            "'commands': 'abc'", 
+            "'plugin': 'netmiko'"
+        ]
+    )
+    
+    
+def test_default_values_from_subshell():
+    shell.onecmd("top") # go to top
+    shell.onecmd("salt nr cli") # go to subshell
+    shell.onecmd("commands abc") # call command
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f" shell output: '{shell_output}'")
+    
+    assert all(
+        k in shell_output 
+        for k in [
+            "Called salt nr cli, kwargs:",
+            "'target': 'proxy:proxytype:nornir'", 
+            "'tgt_type': 'pillar'", 
+            "'commands': 'abc'", 
+            "'plugin': 'netmiko'"
+        ]
     )
 
 
 def test_presense_at_the_end():
+    shell.onecmd("top") # go to top
     shell.onecmd("salt nr cli commands abc add_details")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
 
-    assert (
-        shell_output
-        == "Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'commands': 'abc', 'plugin': 'netmiko', 'add_details': True}\r\n"
+    print(f" shell output: '{shell_output}'")
+    
+    assert all(
+        k in shell_output 
+        for k in [
+            "Called salt nr cli, kwargs:",
+            "'target': 'proxy:proxytype:nornir'", 
+            "'tgt_type': 'pillar'", 
+            "'commands': 'abc'", 
+            "'plugin': 'netmiko'",
+            "'add_details': True"
+        ]
     )
 
 
 def test_presense_in_between():
+    shell.onecmd("top") # go to top
     shell.onecmd("salt nr cli commands abc add_details hosts ceos1")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
 
-    assert (
-        shell_output
-        == "Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'commands': 'abc', 'plugin': 'netmiko', 'add_details': True, 'hosts': 'ceos1'}\r\n"
-    )
-
-
-def test_parse_default_values():
-    models = shell.parse_command(
-        "salt nr cli commands abc xyz", add_default_values=True
-    )
-
-    pprint.pprint(models)
-    # [{'fields': [], 'model': Root(salt=None, show=None), 'parameter': Ellipsis},
-    # {'fields': [{'name': 'target', 'values': 'proxy:proxytype:nornir'},
-    # {'name': 'tgt_type', 'values': 'pillar'}],
-    # 'model': <class 'picle_test_shell.model_salt'>,
-    # 'parameter': 'salt'},
-    # {'fields': [],
-    # 'model': <class 'picle_test_shell.model_nr'>,
-    # 'parameter': 'nr'},
-    # {'fields': [{'field': FieldInfo(annotation=Union[Annotated[str, Strict(strict=True)], List[Annotated[str, Strict(strict=True)]]], required=True, description='CLI commands to send to devices'),
-    #'name': 'commands',
-    #'values': ['abc', 'xyz']},
-    # {'name': 'plugin', 'values': 'netmiko'}],
-    # 'model': <class 'picle_test_shell.model_nr_cli'>,
-    # 'parameter': 'cli'}]
-
-    assert models[0][1]["parameter"] == "salt"
-    assert (
-        models[0][1]["fields"][0]["name"] == "target"
-        and models[0][1]["fields"][0]["values"] == "proxy:proxytype:nornir"
-    )
-    assert (
-        models[0][1]["fields"][1]["name"] == "tgt_type"
-        and models[0][1]["fields"][1]["values"] == "pillar"
-    )
-
-    assert models[0][2]["parameter"] == "nr"
-    assert models[0][2]["fields"] == []
-
-    assert models[0][3]["parameter"] == "cli"
-    assert models[0][3]["fields"][0]["name"] == "commands" and models[0][3]["fields"][
-        0
-    ]["values"] == ["abc", "xyz"]
-    assert (
-        models[0][3]["fields"][1]["name"] == "plugin"
-        and models[0][3]["fields"][1]["values"] == "netmiko"
+    print(f" shell output: '{shell_output}'")
+    
+    assert all(
+        k in shell_output 
+        for k in [
+            "Called salt nr cli, kwargs:",
+            "'target': 'proxy:proxytype:nornir'", 
+            "'tgt_type': 'pillar'", 
+            "'commands': 'abc'", 
+            "'plugin': 'netmiko'",
+            "'add_details': True",
+            "'hosts': 'ceos1'"
+        ]
     )
 
 
 def test_pipe_function_include():
+    shell.onecmd("top") # go to top
     shell.onecmd("show joke | include Why")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -114,6 +119,7 @@ def test_pipe_function_include():
 
 
 def test_pipe_function_exclude():
+    shell.onecmd("top") # go to top
     shell.onecmd("show joke | exclude Why")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -124,6 +130,7 @@ def test_pipe_function_exclude():
 
 
 def test_multiple_pipe_functions():
+    shell.onecmd("top") # go to top
     shell.onecmd("show joke | include d | exclude End")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -140,6 +147,7 @@ def test_multiple_pipe_functions():
 
 def test_processors_formatter_pprint():
     """data_pprint uses Formatters.formatter_pprint processor to pprint the output"""
+    shell.onecmd("top") # go to top
     shell.onecmd("show data_pprint")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -156,6 +164,7 @@ def test_processors_formatter_pprint():
 
 def test_pipe_formatter_pprint():
     """pprint pipe function uses Formatters.formatter_pprint function to pprint the output"""
+    shell.onecmd("top") # go to top
     shell.onecmd("show data | pprint")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -173,6 +182,7 @@ def test_pipe_formatter_pprint():
 def test_pipe_formatter_json_and_alias():
     """json pipe function uses Formatters.formatter_json function to print
     json output, also model uses json_ and field has alias="json" defines"""
+    shell.onecmd("top") # go to top
     shell.onecmd("show data | json")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -204,6 +214,7 @@ def test_pipe_formatter_json_and_alias():
 def test_pipe_formatter_yaml():
     """yaml pipe function uses Formatters.formatter_yaml function to print
     yaml output"""
+    shell.onecmd("top") # go to top
     shell.onecmd("show data | yaml")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -228,6 +239,7 @@ def test_outputter_rich_json():
     # outputter prints to terminal bypassing stdout, hence no output to test
 
     # just verify command run with no exceptions raised
+    shell.onecmd("top") # go to top
     shell.onecmd("show data_rich_json")
 
     assert True
@@ -238,6 +250,7 @@ def test_PicleConfig_processor_with_run_method():
     model_nr_cfg has processor attribute defined within PicleConfig class,
     this test tests its execution
     """
+    shell.onecmd("top") # go to top
     shell.onecmd("salt nr cfg commands bla")
 
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -259,11 +272,14 @@ def test_PicleConfig_outputter_with_run_method():
     # outputter prints to terminal bypassing stdout, hence no output to test
 
     # just verify command run with no exceptions raised
+    shell.onecmd("top") # go to top
     shell.onecmd("test_PicleConfig_outputter_with_run_method string_argument bla")
 
     assert True
 
 def test_subshell_handling():
+    shell.onecmd("top") # go to top
+    
     # 1 go to subshell
     shell.onecmd("salt nr cli")
     
@@ -272,13 +288,23 @@ def test_subshell_handling():
     assert shell.prompt == "salt[nr-cli]#"
     
     # 2 run command in subshell
-    shell.onecmd("commands bla add_details")
+    shell.onecmd("commands abc add_details")
     
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
     
     print(f" shell output: '{shell_output}'")
     
-    assert "Called salt nr cli, kwargs: {'commands': 'bla', 'add_details': True}" in shell_output
+    assert all(
+        k in shell_output 
+        for k in [           
+            "Called salt nr cli, kwargs:",
+            "'target': 'proxy:proxytype:nornir'", 
+            "'tgt_type': 'pillar'", 
+            "'commands': 'abc'", 
+            "'plugin': 'netmiko'",
+            "'add_details': True"
+        ]
+    )
     
     # 3 go back to the top
     shell.onecmd("top")
@@ -287,3 +313,49 @@ def test_subshell_handling():
     
     assert shell.prompt == "picle#"
     
+    
+def test_shell_exit_defaults_handling():
+    shell.onecmd("top") # go to top
+    shell.shell_defaults.clear()
+    
+    # go to subshell
+    shell.onecmd("salt nr cli")
+    print(f"Current shell prompt: '{shell.prompt}', defaults '{shell.shell_defaults}'")
+    assert shell.shell_defaults == {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar'}
+    
+    # exit to top
+    shell.onecmd("exit")
+    shell.onecmd("exit")
+    print(f"Current shell prompt: '{shell.prompt}', defaults '{shell.shell_defaults}'")
+    assert shell.shell_defaults == {}
+    
+
+def test_shell_top_defaults_handling():
+    shell.onecmd("top") # go to top
+    shell.shell_defaults.clear()
+    
+    # go to subshell
+    shell.onecmd("salt nr cli")
+    print(f"Current shell prompt: '{shell.prompt}', defaults '{shell.shell_defaults}'")
+    assert shell.shell_defaults == {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar'}
+    
+    # exit to top
+    shell.onecmd("top")
+    print(f"Current shell prompt: '{shell.prompt}', defaults '{shell.shell_defaults}'")
+    assert shell.shell_defaults == {}
+    
+    
+def test_pipe_formatter_kv():
+    shell.onecmd("top") # go to top
+    shell.onecmd("show data | kv")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert (
+        """some: {'dictionary': {'data': None}}
+ more: {'dictionary': ['data']}
+ even: {'more': {'dictionary': 'data'}}"""
+        in shell_output
+    )

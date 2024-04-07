@@ -53,7 +53,7 @@ class model_nr_cli(filters):
     class PicleConfig:
         subshell = True
         prompt = "salt[nr-cli]#"
-        
+
 
 class model_nr_cfg(filters):
     commands: Optional[Union[StrictStr, List[StrictStr]]] = Field(
@@ -89,9 +89,10 @@ class model_salt(BaseModel):
     )
     nr: model_nr = Field(None, description="Nornir Execution Module", title="nr")
 
-    class PicleConfig:
-        subshell = True
-        prompt = "salt#"
+
+#    class PicleConfig:
+#        subshell = True
+#        prompt = "salt#"
 
 
 class model_show(BaseModel):

@@ -64,7 +64,7 @@ class Filters(BaseModel):
 class Formatters(BaseModel):
     pprint: Any = Field(
         None,
-        description="Pretty print results",
+        description="Convert results to PPRINT string",
         json_schema_extra={"function": "formatter_pprint"},
     )
     json_: Union[dict, list] = Field(
@@ -77,6 +77,11 @@ class Formatters(BaseModel):
         None,
         description="Convert results to YAML string",
         json_schema_extra={"function": "formatter_yaml"},
+    )
+    kv: dict = Field(
+        None,
+        description="Convert results to Key-Value string",
+        json_schema_extra={"function": "formatter_kv"},
     )
 
     @staticmethod
@@ -109,7 +114,20 @@ class Formatters(BaseModel):
         else:
             return data
 
+    @staticmethod
+    def formatter_kv(data: dict) -> str:
+        """
+        Function to format dictionary result as a key: value output
 
+        :param data: dictionary to format
+        """
+        return "\n".join(
+            [
+                f" {k}: {v}" for k, v in data.items()
+            ]
+        )        
+        
+        
 class Outputters(BaseModel):
     rich_json: Union[dict, list] = Field(
         None,
