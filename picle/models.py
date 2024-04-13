@@ -121,13 +121,9 @@ class Formatters(BaseModel):
 
         :param data: dictionary to format
         """
-        return "\n".join(
-            [
-                f" {k}: {v}" for k, v in data.items()
-            ]
-        )        
-        
-        
+        return "\n".join([f" {k}: {v}" for k, v in data.items()])
+
+
 class Outputters(BaseModel):
     rich_json: Union[dict, list] = Field(
         None,

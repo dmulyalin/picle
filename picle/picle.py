@@ -628,16 +628,19 @@ class App(cmd.Cmd):
                         self._validate_values(command)
                         # call first command using collected arguments only
                         if index == 0:
-                            ret = model.run(
+                            kw = {
                                 **self.shell_defaults,
                                 **command_defaults,
                                 **command_arguments,
-                            )
+                            }
+                            ret = model.run(**kw)
                         # pipe results through subsequent commands
                         else:
-                            ret = model.run(
-                                ret, **command_defaults, **command_arguments
-                            )
+                            kw = {
+                                **command_defaults,
+                                **command_arguments,
+                            }
+                            ret = model.run(ret, **kw)
                         # run processors from PicleConfig if any for first command only
                         if index == 0:
                             if hasattr(model, "PicleConfig") and hasattr(
@@ -687,16 +690,19 @@ class App(cmd.Cmd):
                             if method_name and hasattr(model, method_name):
                                 # call first command using collected arguments only
                                 if index == 0:
-                                    ret = getattr(model, method_name)(
+                                    kw = {
                                         **self.shell_defaults,
                                         **command_defaults,
                                         **command_arguments,
-                                    )
+                                    }
+                                    ret = getattr(model, method_name)(**kw)
                                 # pipe results through subsequent commands
                                 else:
-                                    ret = getattr(model, method_name)(
-                                        ret, **command_defaults, **command_arguments
-                                    )
+                                    kw = {
+                                        **command_defaults,
+                                        **command_arguments,
+                                    }
+                                    ret = getattr(model, method_name)(ret, **kw)
                             else:
                                 self.write(
                                     f"Model '{model.__name__}' has no '{method_name}' "
@@ -708,16 +714,19 @@ class App(cmd.Cmd):
                             if hasattr(model, method_name):
                                 # call first command using collected arguments only
                                 if index == 0:
-                                    ret = getattr(model, method_name)(
+                                    kw = {
                                         **self.shell_defaults,
                                         **command_defaults,
                                         **command_arguments,
-                                    )
+                                    }
+                                    ret = getattr(model, method_name)(**kw)
                                 # pipe results through subsequent commands
                                 else:
-                                    ret = getattr(model, method_name)(
-                                        ret, **command_defaults, **command_arguments
-                                    )
+                                    kw = {
+                                        **command_defaults,
+                                        **command_arguments,
+                                    }
+                                    ret = getattr(model, method_name)(ret, **kw)
                             else:
                                 self.write(
                                     f"Model '{model.__name__}' has no '{method_name}' "
