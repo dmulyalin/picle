@@ -236,9 +236,10 @@ class App(cmd.Cmd):
                     models = [current_model]
                     ret.append(models)
                 else:
-                    raise SyntaxError(
+                    log.error(
                         f"'{current_model['model'].__name__}' does not support pipe handling"
                     )
+                    break
             # collect single quoted field value
             elif '"' in parameter and current_field:
                 value_items = [parameter.replace('"', "")]
@@ -621,9 +622,29 @@ class App(cmd.Cmd):
                     command_defaults = {}
                     for model in command:
                         command_defaults.update(model.get("defaults", {}))
-                    # run model "run" function if it exits
                     model = command[-1]["model"]
-                    if command_arguments and hasattr(model, "run"):
+                    # check if model has subshell
+                    if (
+                        not command_arguments
+                        and hasattr(model, "PicleConfig")
+                        and getattr(model.PicleConfig, "subshell", None) is True
+                    ):
+                        # collect parent shells and defaults
+                        for item in command[:-1]:
+                            m = item["model"]
+                            self.defaults_update(m)  # store shell defaults
+                            if (
+                                hasattr(m, "PicleConfig")
+                                and getattr(m.PicleConfig, "subshell", None) is True
+                            ):
+                                if m not in self.shells:
+                                    self.shells.append(m)
+                        # update prompt value
+                        self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
+                        self.shell = model
+                        self.shells.append(self.shell)
+                    # run model "run" function if it exits
+                    elif hasattr(model, "run"):
                         # validate command argument values
                         self._validate_values(command)
                         # call first command using collected arguments only
@@ -655,25 +676,9 @@ class App(cmd.Cmd):
                                 model.PicleConfig, "outputter"
                             ):
                                 outputter = model.PicleConfig.outputter
-                    # check if model has subshell
-                    elif (
-                        hasattr(model, "PicleConfig")
-                        and getattr(model.PicleConfig, "subshell", None) is True
-                    ):
-                        # collect parent shells and defaults
-                        for item in command[:-1]:
-                            m = item["model"]
-                            self.defaults_update(m)  # store shell defaults
-                            if (
-                                hasattr(m, "PicleConfig")
-                                and getattr(m.PicleConfig, "subshell", None) is True
-                            ):
-                                if m not in self.shells:
-                                    self.shells.append(m)
-                        # update prompt value
-                        self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
-                        self.shell = model
-                        self.shells.append(self.shell)
+                                outputter_kwargs = getattr(
+                                    model.PicleConfig, "outputter_kwargs", {}
+                                )
                     # run command using Callable or json_schema_extra["function"]
                     elif command[-1]["fields"]:
                         # validate command argument values
@@ -754,12 +759,20 @@ class App(cmd.Cmd):
                             # use outputter from Field definition
                             if json_schema_extra.get("outputter"):
                                 outputter = json_schema_extra["outputter"]
+                                outputter_kwargs = json_schema_extra.get(
+                                    "outputter_kwargs", {}
+                                )
                             # use PicleConfig outputter
                             elif hasattr(model, "PicleConfig") and hasattr(
                                 model.PicleConfig, "outputter"
                             ):
                                 outputter = model.PicleConfig.outputter
+                                outputter_kwargs = getattr(
+                                    model.PicleConfig, "outputter_kwargs", {}
+                                )
                     else:
+                        print(line)
+                        print(model)
                         self.defaults_pop(model)
                         ret = f"Incorrect command"
                         break
@@ -770,7 +783,7 @@ class App(cmd.Cmd):
         elif ret:
             # use specified outputter to output results
             if callable(outputter):
-                outputter(ret)
+                outputter(ret, **outputter_kwargs)
             # write to stdout by default
             else:
                 self.write(ret)

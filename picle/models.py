@@ -13,8 +13,7 @@ except ImportError:
 
 try:
     from rich.console import Console as rich_console
-    from rich.table import Table as rich_table
-    from rich.pretty import pprint as rich_pprint
+    from rich.table import Table as RICHTABLE
 
     RICHCONSOLE = rich_console()
     HAS_RICH = True
@@ -135,6 +134,11 @@ class Outputters(BaseModel):
         description="Pretty print output using Rich",
         json_schema_extra={"function": "outputter_rich_print"},
     )
+    rich_table: Any = Field(
+        None,
+        description="Pretty print table output using Rich",
+        json_schema_extra={"function": "outputter_rich_table"},
+    )
 
     @staticmethod
     def outputter_rich_json(data: Union[dict, list]) -> None:
@@ -169,6 +173,44 @@ class Outputters(BaseModel):
             RICHCONSOLE.print(data)
         else:
             print(data)
+
+    @staticmethod
+    def outputter_rich_table(
+        data: list[dict], headers: list = None, title: str = None, sortby: str = None
+    ):
+        """
+        Function to pretty print output in table format using Rich library
+
+        :param data: list of dictionaries to print
+        """
+        if not HAS_RICH or not isinstance(data, list):
+            print(data)
+            return
+
+        headers = headers or list(data[0].keys())
+        table = RICHTABLE(title=title, box=False)
+
+        # add table columns
+        for h in headers:
+            table.add_column(h, justify="left", no_wrap=True)
+
+        # sort the table
+        if sortby:
+            # form dictionary keyed by sortby value and index
+            items_to_sortby = {i[sortby]: index for index, i in enumerate(data)}
+            # form a list of sorted sortby values
+            sorted_keys = sorted(items_to_sortby.keys())
+            # for sorted data list
+            sorted_data = [data[items_to_sortby[key]] for key in sorted_keys]
+        else:
+            sorted_data = data
+
+        # add table rows
+        for item in sorted_data:
+            cells = [item.get(h, "") for h in headers]
+            table.add_row(*cells)
+
+        RICHCONSOLE.print(table)
 
 
 class PipeFunctionsModel(Filters, Formatters, Outputters):

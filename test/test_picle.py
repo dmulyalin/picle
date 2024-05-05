@@ -389,3 +389,51 @@ def test_model_run_kwargs_unpacking():
             "'plugin': 'netmiko'",
         ]
     )
+
+
+def test_outputter_rich_table():
+    # outputter prints to terminal bypassing stdout, hence no output to test
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show data_rich_table")
+
+    assert True
+
+
+def test_outputter_rich_table_with_kwargs():
+    # outputter prints to terminal bypassing stdout, hence no output to test
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show data_rich_table")
+
+    assert True
+
+
+def test_outputter_rich_table_with_kwargs():
+    # outputter prints to terminal bypassing stdout, hence no output to test
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd(
+        "test_outputter_rich_table_with_PicleConfig_kwargs string_argument bla"
+    )
+
+    assert True
+
+
+def test_nested_model_run_with_no_kwargs():
+    shell.onecmd("top")  # go to top
+    # give command with no keywords to verify handling of
+    # model that has run method but no command arguments provided
+    shell.onecmd("show XYZ")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert (
+        "[{'name': 'name3', 'status': 'dead', 'keepalive': '123'}, {'name': 'name1', 'status': 'alive', 'keepalive': '123'}, {'name': 'name2', 'status': 'any', 'keepalive': '123'}]"
+        in shell_output
+    )

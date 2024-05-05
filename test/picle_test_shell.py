@@ -90,9 +90,19 @@ class model_salt(BaseModel):
     nr: model_nr = Field(None, description="Nornir Execution Module", title="nr")
 
 
-#    class PicleConfig:
-#        subshell = True
-#        prompt = "salt#"
+class ShowXYZModel(BaseModel):
+    status: StrictStr = Field("anystatus", description="XYZ status")
+
+    @staticmethod
+    def run(*args, **kwargs):
+        if kwargs.get("status") == "anystatus":
+            return [
+                {"name": "name3", "status": "dead", "keepalive": "123"},
+                {"name": "name1", "status": "alive", "keepalive": "123"},
+                {"name": "name2", "status": "any", "keepalive": "123"},
+            ]
+        else:
+            return None
 
 
 class model_show(BaseModel):
@@ -112,6 +122,12 @@ class model_show(BaseModel):
         description="Show data using rich_json outputter",
         json_schema_extra={"outputter": Outputters.outputter_rich_json},
     )
+    data_rich_table: Callable = Field(
+        "produce_structured_data_table",
+        description="Show data using rich_table outputter",
+        json_schema_extra={"outputter": Outputters.outputter_rich_table},
+    )
+    XYZ: ShowXYZModel = Field(None, description="Show XYZ status")
 
     class PicleConfig:
         pipe = PipeFunctionsModel
@@ -144,6 +160,14 @@ The End.
             "even": {"more": {"dictionary": "data"}},
         }
 
+    @staticmethod
+    def produce_structured_data_table():
+        return [
+            {"name": "name3", "key1": "key1_value3", "key2": "key2_value3"},
+            {"name": "name1", "key1": "key1_value1", "key2": "key2_value1"},
+            {"name": "name2", "key1": "key1_value2", "key2": "key2_value2"},
+        ]
+
 
 class model_PicleConfig_outputter_with_run_method(BaseModel):
     string_argument: StrictStr = Field(None, description="Input some string value")
@@ -154,6 +178,22 @@ class model_PicleConfig_outputter_with_run_method(BaseModel):
 
     class PicleConfig:
         outputter = Outputters.outputter_rich_json
+
+
+class model_outputter_rich_table_with_PicleConfig_kwargs(BaseModel):
+    string_argument: StrictStr = Field(None, description="Input some string value")
+
+    @staticmethod
+    def run(**kwargs):
+        return [
+            {"name": "name3", "key1": "key1_value3", "key2": "key2_value3"},
+            {"name": "name1", "key1": "key1_value1", "key2": "key2_value1"},
+            {"name": "name2", "key1": "key1_value2", "key2": "key2_value2"},
+        ]
+
+    class PicleConfig:
+        outputter = Outputters.outputter_rich_table
+        outputter_kwargs = {"sortby": "name"}
 
 
 class model_PicleConfig_outputter_with_callable(BaseModel):
@@ -175,6 +215,9 @@ class Root(BaseModel):
         None, description="Command to test PicleConfig outputter with run method"
     )
     test_PicleConfig_outputter_with_callable: model_PicleConfig_outputter_with_callable = Field(
+        None, description="Command to test PicleConfig outputter with callable"
+    )
+    test_outputter_rich_table_with_PicleConfig_kwargs: model_outputter_rich_table_with_PicleConfig_kwargs = Field(
         None, description="Command to test PicleConfig outputter with callable"
     )
 

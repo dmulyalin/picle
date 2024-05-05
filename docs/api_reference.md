@@ -19,6 +19,7 @@ with model configuration parameters:
 	current model for piping results through.
 - ``processors`` - list of functions to run results of `first command` through one by one
 - ``outputter`` - function to output results, by default results written to stdout
+- ``outputter_kwargs`` - dictionary containing any additional argument to use with outputter
 
 Sample ``PicleConfig`` definition:
 
@@ -38,6 +39,7 @@ class ShellModel(BaseModel):
 		pipe = PipeFunctionsModel
 		processors = [Formatters.formatter_json]
 		outputter = Outputters.outputter_rich_print 
+		outputter_kwargs = {"any": "extra_argument"}
 ```
 
 ## Field json_schema_extra
@@ -52,7 +54,8 @@ definition to control PICLE behavior.
 - ``processors`` - list of functions to run results of each command through one by one
 - ``outputter`` - function to output results, by default results written to 
 	stdout, Field's ``outputter`` overrides PicleConfig's ``outputter``
-	
+- ``outputter_kwargs`` - dictionary containing any additional argument to use with outputter
+
 ### Field processors
 
 Processors allow to pass command execution results through a list of arbitrary functions.
