@@ -1,9 +1,5 @@
 # PICLE APIs Reference
 
-## PICLE App
-
-::: picle.App
-
 ## PicleConfig
 
 Each Pydantic model can have ``PicleConfig`` subclass defined
@@ -55,6 +51,7 @@ definition to control PICLE behavior.
 - ``outputter`` - function to output results, by default results written to 
 	stdout, Field's ``outputter`` overrides PicleConfig's ``outputter``
 - ``outputter_kwargs`` - dictionary containing any additional argument to use with outputter
+- ``multline`` - True/False, indicates if multi line input mode is enabled for this field
 
 ### Field processors
 
@@ -83,6 +80,50 @@ class model_show(BaseModel):
     def produce_structured_data():
         return {"some": {"dictionary": {"data": None}}, "more": {"dictionary": ["data"]}, "even": {"more": {"dictionary": "data"}}}
 ```
+
+### Multi Line Input
+
+Mutli line input allows to read multiple lines of text into field value if 
+json_schema_exatra ``multiline`` argument is set to ``True``. To use it need
+to specify ``input`` as a field value on the command line, that will trigger
+multi line input collection when hit return:
+
+Sample model that has multi line input enabled:
+
+```
+class model_TestMultilineInput(BaseModel):
+    data: StrictStr = Field(None, description="Multi line string", json_schema_extra={"multiline": True})
+    arg: Any = Field(None, description="Some field")
+    
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+```
+
+This is how help will look like for ``data`` field:
+
+```
+picle#test_multiline_input data ?
+ <'data' value>    Multi line string
+ input             Collect value using multi line input mode
+picle#
+```
+
+Tab completion for ``input`` value also works. On hitting ``enter``, 
+mutli line input mode will be invoked:
+
+```
+picle#test_multiline_input data input arg foo
+Enter lines and hit Ctrl+D to finish multi line input
+I'am
+Multi Line
+Input
+<ctrl+D hit>
+```
+
+## PICLE App
+
+::: picle.App
 
 ## PICLE Build In Models
 

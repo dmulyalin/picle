@@ -5,8 +5,16 @@ by building sample App.
 from picle import App
 from picle.models import PipeFunctionsModel, Formatters, Outputters
 from enum import Enum
-from typing import List, Union, Optional, Callable
-from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
+from typing import List, Union, Optional, Callable, Any
+from pydantic import (
+    ValidationError,
+    BaseModel,
+    StrictStr,
+    Field,
+    StrictBool,
+    Json,
+    ConfigDict,
+)
 
 
 class NrCliPlugins(str, Enum):
@@ -208,6 +216,27 @@ class model_PicleConfig_outputter_with_callable(BaseModel):
         outputter = Outputters.outputter_rich_print
 
 
+class model_TestJsonInput(BaseModel):
+    data: Json[Any] = Field(None, description="JSON Data string")
+    arg: Any = Field(None, description="some field")
+    arg1: Any = Field(None, description="some field")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class model_TestMultilineInput(BaseModel):
+    data: StrictStr = Field(
+        None, description="Multi line string", json_schema_extra={"multiline": True}
+    )
+    arg: Any = Field(None, description="some field")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -220,6 +249,12 @@ class Root(BaseModel):
     test_outputter_rich_table_with_PicleConfig_kwargs: model_outputter_rich_table_with_PicleConfig_kwargs = Field(
         None, description="Command to test PicleConfig outputter with callable"
     )
+    test_json_input: model_TestJsonInput = Field(None, description="Test JSON input")
+    test_multiline_input: model_TestMultilineInput = Field(
+        None, description="Test Multiline input"
+    )
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     class PicleConfig:
         prompt = "picle#"

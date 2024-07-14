@@ -437,3 +437,61 @@ def test_nested_model_run_with_no_kwargs():
         "[{'name': 'name3', 'status': 'dead', 'keepalive': '123'}, {'name': 'name1', 'status': 'alive', 'keepalive': '123'}, {'name': 'name2', 'status': 'any', 'keepalive': '123'}]"
         in shell_output
     )
+
+
+def test_json_field():
+    shell.onecmd("top")  # go to top
+    shell.onecmd(
+        """test_json_input data {"person":{"name":"John","age":30,"contacts":[ {"arg":"email","value":"john@example.com"} ] } }  arg foo"""
+    )
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+    assert (
+        """{'data': '{"person":{"name":"John","age":30,"contacts":[ {"arg":"email","value":"john@example.com"}]}}', 'arg': 'foo'}"""
+        in shell_output
+    )
+
+
+def test_json_field_boolean_true():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""test_json_input data true arg foo""")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+
+    assert """{'data': 'true', 'arg': 'foo'}""" in shell_output
+
+
+def test_json_field_boolean_false():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""test_json_input data false arg foo""")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+
+    assert """{'data': 'false', 'arg': 'foo'}""" in shell_output
+
+
+def test_json_field_boolean_null():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""test_json_input data null arg foo""")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+
+    assert """{'data': 'null', 'arg': 'foo'}""" in shell_output
+
+
+def test_multline_input_with_inline_value():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""test_multiline_input data foo arg bar""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+
+    assert "{'data': 'foo', 'arg': 'bar'}" in shell_output

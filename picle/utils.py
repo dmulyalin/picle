@@ -2,7 +2,7 @@ import traceback
 
 
 def run_print_exception(func):
-    """Decorator to run function and print exception if error occured"""
+    """Decorator to run function and print exception if error occurred"""
 
     def wrapper(*args, **kwargs):
         try:

@@ -14,10 +14,9 @@ import enum
 import traceback
 
 from typing import Callable
-from pydantic import ValidationError
+from pydantic import ValidationError, Json
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.fields import FieldInfo
-
 
 log = logging.getLogger(__name__)
 
@@ -98,13 +97,26 @@ class App(cmd.Cmd):
         else:
             self.stdout.write(text)
 
-    def _save_collected_value(self, field: dict, value: str) -> None:
+    def _save_collected_value(
+        self, field: dict, value: str, replace: bool = False
+    ) -> None:
         """
         Helper function to save collected value into field values
 
         :param field: field dictionary
         :param value: value to save string
+        :pram replace: replaces current field value with new value
         """
+        # leave it as a string as it is Json field
+        if field["field"].metadata and isinstance(field["field"].metadata[0], Json):
+            # save single value
+            if field["values"] == ...:
+                field["values"] = value
+            # append new value to the previous string
+            else:
+                field["values"] += value
+            return
+
         # attempt to mutate value
         if isinstance(value, str):
             # convert value to boolean
@@ -127,12 +139,37 @@ class App(cmd.Cmd):
         # save single value
         if field["values"] == ...:
             field["values"] = value
+        # replace current value
+        elif replace:
+            field["values"] = value
         # add further values
         elif isinstance(field["values"], list):
             field["values"].append(value)
         # transform values to a list if one value already collected
         else:
             field["values"] = [field.pop("values"), value]
+
+    def _get_field_params(self, field: FieldInfo) -> dict:
+        if isinstance(field, FieldInfo):
+            if getattr(field, "json_schema_extra"):
+                return field.json_schema_extra
+        elif isinstance(field, dict):
+            return self._get_field_params(field.get("field"))
+        return {}
+
+    def _collect_multiline(self, field: dict) -> None:
+        fparam = self._get_field_params(field["field"])
+        multiline_buffer = []
+        if fparam.get("multiline") is True and field["values"] == "input":
+            self.write("Enter lines and hit Ctrl+D to finish multi line input")
+            while True:
+                try:
+                    line = input()
+                except EOFError:
+                    break
+                else:
+                    multiline_buffer.append(line)
+            self._save_collected_value(field, "\n".join(multiline_buffer), replace=True)
 
     def _validate_values(self, models: list) -> None:
         """
@@ -187,7 +224,7 @@ class App(cmd.Cmd):
         self.shell_defaults.clear()
         self.defaults_update(model)
 
-    def parse_command(self, command: str) -> list:
+    def parse_command(self, command: str, collect_multiline: bool = False) -> list:
         """
         Function to parse command string and construct list of model
         references and fields values.
@@ -240,6 +277,28 @@ class App(cmd.Cmd):
                         f"'{current_model['model'].__name__}' does not support pipe handling"
                     )
                     break
+            # collect json dictionary string
+            elif parameter.strip().startswith("{") and current_field:
+                value_items = [parameter]
+                # collect further values
+                while parameters:
+                    parameter = parameters.pop(0)
+                    value_items.append(parameter)
+                    if parameter.strip().endswith("}"):
+                        break
+                value = " ".join(value_items)  # form value string
+                self._save_collected_value(current_field, value)
+            # collect json list string
+            elif parameter.strip().startswith("[") and current_field:
+                value_items = [parameter]
+                # collect further values
+                while parameters:
+                    parameter = parameters.pop(0)
+                    value_items.append(parameter)
+                    if parameter.strip().endswith("]"):
+                        break
+                value = " ".join(value_items)  # form value string
+                self._save_collected_value(current_field, value)
             # collect single quoted field value
             elif '"' in parameter and current_field:
                 value_items = [parameter.replace('"', "")]
@@ -326,6 +385,14 @@ class App(cmd.Cmd):
             value = current_field["field"].json_schema_extra["presence"]
             self._save_collected_value(current_field, value)
 
+        # iterate over collected models and fields to see
+        # if need to collect multiline input
+        if collect_multiline:
+            for command in ret:
+                for model in command:
+                    for field in model["fields"]:
+                        self._collect_multiline(field)
+
         return ret
 
     def print_model_help(
@@ -338,6 +405,7 @@ class App(cmd.Cmd):
         """
         model = models[-1][-1]  # get last model
         last_field = model["fields"][-1] if model["fields"] else None
+        fparam = self._get_field_params(last_field)
         lines = {}  # dict of {cmd: cmd_help}
         width = 0  # record longest command width for padding
         # print help message only for last collected field
@@ -359,6 +427,9 @@ class App(cmd.Cmd):
                 lines[name] = ", ".join(options)
             else:
                 lines[name] = f"{field.description}"
+                # check if field supports multiline input
+                if fparam.get("multiline") is True:
+                    lines["input"] = "Collect value using multi line input mode"
                 if verbose:
                     lines[name] += (
                         f"; default '{field.get_default()}', type '{str(field.annotation)}', "
@@ -406,7 +477,7 @@ class App(cmd.Cmd):
         help_msg = []
         for k in sorted(lines.keys()):
             padding = " " * (width - len(k)) + (" " * 4)
-            help_msg.append(f"{k}{padding}{lines[k]}")
+            help_msg.append(f" {k}{padding}{lines[k]}")
         # print help message
         self.write(self.newline.join(help_msg))
 
@@ -424,6 +495,7 @@ class App(cmd.Cmd):
                 last_field_name = command_models[-1][-1]["fields"][-1]["name"]
                 last_field = last_model.model_fields[last_field_name]
                 last_field_value = command_models[-1][-1]["fields"][-1]["values"]
+                fparam = self._get_field_params(last_field)
                 if isinstance(last_field_value, list):
                     last_field_value = last_field_value[-1]
                 elif last_field_value == ...:
@@ -441,6 +513,13 @@ class App(cmd.Cmd):
                     fieldnames = [
                         i for i in fieldnames if i.startswith(last_field_value)
                     ]
+                # autocomplete 'input' for multiline input mode
+                elif fparam.get("multiline") is True:
+                    if (
+                        "input".startswith(last_field_value)
+                        and last_field_value != "input"
+                    ):
+                        fieldnames = ["input"]
             # return a list of all model fields
             else:
                 fieldnames = list(last_model.model_fields)
@@ -513,7 +592,7 @@ class App(cmd.Cmd):
                 help_msg = []
                 for k, v in lines.items():
                     padding = " " * (width - len(k)) + (" " * 4)
-                    help_msg.append(f"{k}{padding}{v}")
+                    help_msg.append(f" {k}{padding}{v}")
                 # print help message
                 self.write(self.newline.join(help_msg))
 
@@ -556,7 +635,6 @@ class App(cmd.Cmd):
         ret = False
         outputter = None
 
-        # print help for given command or commands
         if line.strip().endswith("?"):
             try:
                 command_models = self.parse_command(line.strip().rstrip("?"))
@@ -584,7 +662,7 @@ class App(cmd.Cmd):
                 )
         else:
             try:
-                command_models = self.parse_command(line)
+                command_models = self.parse_command(line, collect_multiline=True)
             except FieldLooseMatchOnly as e:
                 model, parameter = e.args
                 # filter fields to return message for
