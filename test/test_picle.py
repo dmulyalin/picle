@@ -505,7 +505,8 @@ def test_outputter_result_specific():
     shell.onecmd("test_result_specific_outputter data faffd arg dsfsdf")
 
     assert True
-    
+
+
 def test_outputter_result_specific_no_kwargs():
     # outputter prints to terminal bypassing stdout, hence no output to test, just test that runs with no error
 

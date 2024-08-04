@@ -12,8 +12,8 @@ import cmd
 import logging
 import enum
 import traceback
-import os 
-import platform 
+import os
+import platform
 
 from typing import Callable
 from pydantic import ValidationError, Json
@@ -398,13 +398,17 @@ class App(cmd.Cmd):
         return ret
 
     def print_model_help(
-        self, models: list, verbose: bool = False, match: str = None, print_help: bool=True
+        self,
+        models: list,
+        verbose: bool = False,
+        match: str = None,
+        print_help: bool = True,
     ) -> None:
         """
         Function to form and print help message for model fields.
 
         :param match: only collect help for fields that start with ``match`` string
-        :param print_help: if true prints help, return tuple of help lines 
+        :param print_help: if true prints help, return tuple of help lines
             list and width of longest line
         """
         model = models[-1][-1]  # get last model
@@ -482,8 +486,8 @@ class App(cmd.Cmd):
         for k in sorted(lines.keys()):
             padding = " " * (width - len(k)) + (" " * 4)
             help_msg.append(f" {k}{padding}{lines[k]}")
-            
-        if print_help: # print help message
+
+        if print_help:  # print help message
             self.write(self.newline.join(help_msg))
         else:
             return help_msg, width
@@ -583,9 +587,9 @@ class App(cmd.Cmd):
         """Print help message"""
         command_models = self.parse_command(arg.strip("?"))
         help_msg, width = self.print_model_help(
-            command_models, 
+            command_models,
             verbose=True if arg.strip().endswith("?") else False,
-            print_help=False
+            print_help=False,
         )
         # print help for global top commands
         if len(arg.strip().split(" ")) == 1:
@@ -648,16 +652,16 @@ class App(cmd.Cmd):
             for shell in self.shells[1:]:
                 path.append(shell.__name__)
             self.write("->".join(path))
-        
+
     def do_cls(self, arg):
         """Clear shell Screen"""
         if "?" in arg:
             self.write(f" cls    Clear shell Screen")
         else:
-            if 'LINUX' in platform.system().upper():
-                os.system('clear')
-            elif 'WINDOWS' in platform.system().upper():
-                os.system('cls')
+            if "LINUX" in platform.system().upper():
+                os.system("clear")
+            elif "WINDOWS" in platform.system().upper():
+                os.system("cls")
 
     def default(self, line: str):
         """Method called if no do_xyz methods found"""
@@ -887,7 +891,7 @@ class App(cmd.Cmd):
         # returning True will end the shell - exit
         if ret is True:
             return True
-            
+
         # check if outputter returned together with results
         if isinstance(ret, tuple):
             if len(ret) == 2:
@@ -895,7 +899,7 @@ class App(cmd.Cmd):
                 outputter_kwargs = {}
             elif len(ret) == 3:
                 ret, outputter, outputter_kwargs = ret
-                
+
         if ret:
             # use specified outputter to output results
             if callable(outputter):
