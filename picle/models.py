@@ -160,7 +160,7 @@ class Outputters(BaseModel):
             else:
                 print(data)
         except Exception as e:
-            print(f"ERROR: Data is not a valid JSON string: '{data}', error: '{e}'")
+            print(f"ERROR: Data is not a valid JSON string:\n{data}\n\nError: '{e}'")
 
     @staticmethod
     def outputter_rich_print(data: Any) -> None:

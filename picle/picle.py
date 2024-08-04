@@ -783,7 +783,14 @@ class App(cmd.Cmd):
                                         ret = processor(ret)
                         # extract outputter from PicleConfig
                         if index == 0:
-                            if hasattr(model, "PicleConfig") and hasattr(
+                            # check if outputter returned together with results
+                            if isinstance(ret, tuple):
+                                if len(ret) == 2:
+                                    ret, outputter = ret
+                                    outputter_kwargs = {}
+                                elif len(ret) == 3:
+                                    ret, outputter, outputter_kwargs = ret
+                            elif hasattr(model, "PicleConfig") and hasattr(
                                 model.PicleConfig, "outputter"
                             ):
                                 outputter = model.PicleConfig.outputter
@@ -867,8 +874,15 @@ class App(cmd.Cmd):
                                         ret = processor(ret)
                         # extract outputter from first command
                         if index == 0:
+                            # check if outputter returned together with results
+                            if isinstance(ret, tuple):
+                                if len(ret) == 2:
+                                    ret, outputter = ret
+                                    outputter_kwargs = {}
+                                elif len(ret) == 3:
+                                    ret, outputter, outputter_kwargs = ret
                             # use outputter from Field definition
-                            if json_schema_extra.get("outputter"):
+                            elif json_schema_extra.get("outputter"):
                                 outputter = json_schema_extra["outputter"]
                                 outputter_kwargs = json_schema_extra.get(
                                     "outputter_kwargs", {}
@@ -891,14 +905,6 @@ class App(cmd.Cmd):
         # returning True will end the shell - exit
         if ret is True:
             return True
-
-        # check if outputter returned together with results
-        if isinstance(ret, tuple):
-            if len(ret) == 2:
-                ret, outputter = ret
-                outputter_kwargs = {}
-            elif len(ret) == 3:
-                ret, outputter, outputter_kwargs = ret
 
         if ret:
             # use specified outputter to output results
