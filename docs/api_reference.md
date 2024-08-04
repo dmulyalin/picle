@@ -92,7 +92,11 @@ Sample model that has multi line input enabled:
 
 ```
 class model_TestMultilineInput(BaseModel):
-    data: StrictStr = Field(None, description="Multi line string", json_schema_extra={"multiline": True})
+    data: StrictStr = Field(
+		None, 
+		description="Multi line string", 
+		json_schema_extra={"multiline": True}
+	)
     arg: Any = Field(None, description="Some field")
     
     @staticmethod
@@ -120,6 +124,47 @@ Multi Line
 Input
 <ctrl+D hit>
 ```
+
+## Result Specific Outputters
+
+Sometimes having outputter defined per model is not enough and depending on produced 
+result different outputter need to be used, in that case result specific outputter can 
+be provided in return to ``run`` function call by returning a tuple of 
+``(result, outputter function, outputter kwargs,)``, where ``outputter kwargs`` is 
+optional.
+
+Example:
+
+```
+from picle.models import Outputters
+
+class model_ResultSpeciifcOutputter(BaseModel):
+    data: StrictStr = Field(None, description="Multi line string")
+    arg: Any = Field(None, description="Some field")
+    
+    class PicleConfig:
+		outputter = Outputters.outputter_rich_print 
+		outputter_kwargs = {"any": "extra_argument"}
+		
+    @staticmethod
+    def run(**kwargs):
+		if kwargs.get("args") == "json":
+			return kwargs["data"], Outputters.outputter_rich_json, {}
+		elif kwargs.get("args") == "table":
+			return kwargs["data"], Outputters.outputter_rich_table
+		else:
+			return kwargs
+```
+
+In addition to ``PicleConfig`` outputter, depending on arguments provided  ``run`` 
+function returns outputter function to use to output the result with optional
+``outputter_kwargs`` as a third argument. By default, if return result is not a tuple,
+outputter specified in ``PicleConfig`` is used.
+
+!!! note
+
+	Result specific outputters supported starting with PICLE version 0.7.0
+
 
 ## PICLE App
 

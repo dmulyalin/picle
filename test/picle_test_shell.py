@@ -236,7 +236,28 @@ class model_TestMultilineInput(BaseModel):
     def run(**kwargs):
         return kwargs
 
+class model_TestResultSpecificOutputter(BaseModel):
+    data: StrictStr = Field(
+        None, description="string"
+    )
+    arg: Any = Field(None, description="some field")
 
+    @staticmethod
+    def run(**kwargs):
+        return kwargs, Outputters.outputter_rich_print, {}
+    
+
+class model_TestResultSpecificOutputterNoKwargs(BaseModel):
+    data: StrictStr = Field(
+        None, description="string"
+    )
+    arg: Any = Field(None, description="some field")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs, Outputters.outputter_rich_print
+        
+        
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -253,7 +274,13 @@ class Root(BaseModel):
     test_multiline_input: model_TestMultilineInput = Field(
         None, description="Test Multiline input"
     )
-
+    test_result_specific_outputter: model_TestResultSpecificOutputter = Field(
+        None, description="Command to test result specific outputter with outputter kwargs"
+    )
+    test_result_specific_outputter_no_kwargs: model_TestResultSpecificOutputterNoKwargs = Field(
+        None, description="Command to test result specific outputter with outputter without kwargs"
+    )
+    
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     class PicleConfig:

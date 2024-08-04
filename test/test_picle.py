@@ -495,3 +495,22 @@ def test_multline_input_with_inline_value():
     print(f"shell output: '{shell_output}'")
 
     assert "{'data': 'foo', 'arg': 'bar'}" in shell_output
+
+
+def test_outputter_result_specific():
+    # outputter prints to terminal bypassing stdout, hence no output to test, just test that runs with no error
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd("test_result_specific_outputter data faffd arg dsfsdf")
+
+    assert True
+    
+def test_outputter_result_specific_no_kwargs():
+    # outputter prints to terminal bypassing stdout, hence no output to test, just test that runs with no error
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd("test_result_specific_outputter_no_kwargs data asds arg dsd")
+
+    assert True
