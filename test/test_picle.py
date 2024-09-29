@@ -515,3 +515,31 @@ def test_outputter_result_specific_no_kwargs():
     shell.onecmd("test_result_specific_outputter_no_kwargs data asds arg dsd")
 
     assert True
+
+
+def test_single_quote_command_collection():
+    # outputter prints to terminal bypassing stdout, hence no output to test, just test that runs with no error
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""test_command_values command 'show version | match "Juniper: "' """)
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+
+    assert """{'command': 'show version | match "Juniper: "'}""" == shell_output.strip()
+
+
+def test_presence_handling_for_next_model():
+    # outputter prints to terminal bypassing stdout, hence no output to test, just test that runs with no error
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""salt nr cli commands "show clock" table next_model some bla""")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+
+    assert """Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'plugin': 'netmiko', 'commands': 'show clock', 'table': 'brief', 'some': 'bla'}""" == shell_output.strip()

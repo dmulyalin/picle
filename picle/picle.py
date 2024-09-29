@@ -226,12 +226,17 @@ class App(cmd.Cmd):
         self.shell_defaults.clear()
         self.defaults_update(model)
 
-    def parse_command(self, command: str, collect_multiline: bool = False) -> list:
+    def parse_command(
+        self, command: str, collect_multiline: bool = False, is_help: bool = False
+    ) -> list:
         """
         Function to parse command string and construct list of model
         references and fields values.
 
-        :param command: command string
+        :param command: command string to parse through
+        :param is_help: indicates that parsing help command or tab completion command,
+            if set to True disables ``presence`` argument handling for last field
+        :param collect_multiline: enables multiple input collection for fields
 
         Returns a list of lists of dictionaries with collected models details
         each dictionary containing ``model``, ``fields`` and ``parameter``
@@ -301,7 +306,7 @@ class App(cmd.Cmd):
                         break
                 value = " ".join(value_items)  # form value string
                 self._save_collected_value(current_field, value)
-            # collect single quoted field value
+            # collect double quoted field value
             elif '"' in parameter and current_field:
                 value_items = [parameter.replace('"', "")]
                 # collect further values if first parameter not double quoted value e.g. "nrp1"
@@ -310,6 +315,18 @@ class App(cmd.Cmd):
                         parameter = parameters.pop(0)
                         value_items.append(parameter.replace('"', ""))
                         if '"' in parameter:
+                            break
+                value = " ".join(value_items)  # form value string
+                self._save_collected_value(current_field, value)
+            # collect single quoted field value
+            elif "'" in parameter and current_field:
+                value_items = [parameter.replace("'", "")]
+                # collect further values if first parameter not double quoted value e.g. 'nrp1'
+                if parameter.count("'") != 2:
+                    while parameters:
+                        parameter = parameters.pop(0)
+                        value_items.append(parameter.replace("'", ""))
+                        if "'" in parameter:
                             break
                 value = " ".join(value_items)  # form value string
                 self._save_collected_value(current_field, value)
@@ -329,6 +346,14 @@ class App(cmd.Cmd):
                             break
                 # handle next level model reference
                 if isinstance(field.annotation, ModelMetaclass):
+                    # check need to record field presence before going to next model
+                    if (
+                        current_field.get("values") is ...
+                        and current_field["field"].json_schema_extra is not None
+                        and "presence" in current_field["field"].json_schema_extra
+                    ):
+                        value = current_field["field"].json_schema_extra["presence"]
+                        self._save_collected_value(current_field, value)
                     # goto next model
                     current_model = {
                         "model": field.annotation,
@@ -378,9 +403,10 @@ class App(cmd.Cmd):
                 self._save_collected_value(current_field, parameter)
             else:
                 raise FieldKeyError(current_model, parameter)
-        # check presence for last parameter
+        # check presence for last parameter is not is_help
         if (
-            current_field.get("values") is ...
+            is_help is False
+            and current_field.get("values") is ...
             and current_field["field"].json_schema_extra is not None
             and "presence" in current_field["field"].json_schema_extra
         ):
@@ -388,7 +414,7 @@ class App(cmd.Cmd):
             self._save_collected_value(current_field, value)
 
         # iterate over collected models and fields to see
-        # if need to collect multiline input
+        # if need to collect multi-line input
         if collect_multiline:
             for command in ret:
                 for model in command:
@@ -499,7 +525,7 @@ class App(cmd.Cmd):
         """
         fieldnames = []
         try:
-            command_models = self.parse_command(line)
+            command_models = self.parse_command(line, is_help=True)
             last_model = command_models[-1][-1]["model"]
             # check if last model has fields collected
             if command_models[-1][-1]["fields"]:
@@ -570,7 +596,7 @@ class App(cmd.Cmd):
                     fieldnames.append(name)
         # collect model arguments
         try:
-            command_models = self.parse_command(line)
+            command_models = self.parse_command(line, is_help=True)
             fieldnames.extend(command_models[-1][-1]["model"].model_fields)
         # collect arguments that startswith last parameter
         except FieldLooseMatchOnly as e:
@@ -585,7 +611,7 @@ class App(cmd.Cmd):
 
     def do_help(self, arg):
         """Print help message"""
-        command_models = self.parse_command(arg.strip("?"))
+        command_models = self.parse_command(arg.strip("?"), is_help=True)
         help_msg, width = self.print_model_help(
             command_models,
             verbose=True if arg.strip().endswith("?") else False,
@@ -670,7 +696,9 @@ class App(cmd.Cmd):
 
         if line.strip().endswith("?"):
             try:
-                command_models = self.parse_command(line.strip().rstrip("?"))
+                command_models = self.parse_command(
+                    line.strip().rstrip("?"), is_help=True
+                )
             except FieldLooseMatchOnly as e:
                 model, parameter = e.args
                 self.print_model_help(

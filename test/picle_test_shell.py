@@ -44,16 +44,33 @@ class filters(BaseModel):
     def source_hosts():
         return ["ceos1", "ceos2", "ceos3"]
 
-
+class NextModel(BaseModel):
+    some: StrictStr = Field(None, decription="some field")
+    
+    @staticmethod
+    def run(**kwargs):
+        return f"Called salt nr cli, kwargs: {kwargs}"
+        
+class EnumTableTypes(str, Enum):
+    table_brief = "brief"
+    table_terse = "terse"
+    table_extend = "extend"
+    
 class model_nr_cli(filters):
     commands: Union[StrictStr, List[StrictStr]] = Field(
         description="CLI commands to send to devices"
     )
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
+    next_model: NextModel = Field(None, decription="Next model handling test")
     add_details: StrictBool = Field(
         None, description="Show detailed output", json_schema_extra={"presence": True}
     )
-
+    table: EnumTableTypes = Field(
+        None,
+        description="Table format (brief, terse, extend) or parameters or True",
+        presence="brief",
+    )
+        
     @staticmethod
     def run(**kwargs):
         return f"Called salt nr cli, kwargs: {kwargs}"
@@ -255,6 +272,14 @@ class model_TestResultSpecificOutputterNoKwargs(BaseModel):
         return kwargs, Outputters.outputter_rich_print
 
 
+class model_TestCommandValues(BaseModel):
+    command: StrictStr = Field(None, description="string")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -278,6 +303,10 @@ class Root(BaseModel):
     test_result_specific_outputter_no_kwargs: model_TestResultSpecificOutputterNoKwargs = Field(
         None,
         description="Command to test result specific outputter with outputter without kwargs",
+    )
+    test_command_values: model_TestCommandValues = Field(
+        None,
+        description="Enter command",
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
