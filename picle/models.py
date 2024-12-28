@@ -242,7 +242,8 @@ class MAN(BaseModel):
                 continue
             # form tree element label
             label = [
-                f"[bold]{field.alias or field_name}:[/bold]    {field.description}"
+                f"[bold]{'*' if field.is_required() else ''}"
+                f"{field.alias or field_name}:[/bold]    {field.description}"
             ]
             if field.get_default():
                 label.append(f"default '{field.get_default()}'")

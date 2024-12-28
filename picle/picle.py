@@ -122,7 +122,10 @@ class App(cmd.Cmd):
                 parent_model = getattr(parent_model, mount_name)
             else:
                 parent_model.model_fields[mount_name] = FieldInfo(
-                    annotation=model, required=False, description=description
+                    annotation=model,
+                    required=False,
+                    description=description,
+                    default=None,
                 )
                 break
 

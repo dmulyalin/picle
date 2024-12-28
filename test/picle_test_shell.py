@@ -66,7 +66,7 @@ class EnumTableTypes(str, Enum):
 
 class model_nr_cli(filters):
     commands: Union[StrictStr, List[StrictStr]] = Field(
-        description="CLI commands to send to devices"
+        description="CLI commands to send to devices", required=True
     )
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
     next_model: NextModel = Field(None, description="Next model handling test")
