@@ -2,6 +2,7 @@
 This file contains Pydantic models to test PICLE 
 by building sample App.
 """
+import json
 from picle import App
 from picle.models import PipeFunctionsModel, Formatters, Outputters
 from enum import Enum
@@ -32,9 +33,13 @@ class NrCfgPlugins(str, Enum):
 
 
 class filters(BaseModel):
-    FB: StrictStr = Field(None, description="Filter hosts using Glob Pattern")
+    FB: StrictStr = Field(
+        None,
+        description="Filter hosts using Glob Pattern",
+        examples=["router*", "sw[123]"],
+    )
     FL: Union[StrictStr, List[StrictStr]] = Field(
-        None, description="Filter hosts using list of hosts' names"
+        None, description="Filter hosts using list of hosts' names", examples="sw1"
     )
     hosts: Union[StrictStr, List[StrictStr]] = Field(
         None, description="Select hostnames to run this task for"
@@ -44,33 +49,36 @@ class filters(BaseModel):
     def source_hosts():
         return ["ceos1", "ceos2", "ceos3"]
 
+
 class NextModel(BaseModel):
-    some: StrictStr = Field(None, decription="some field")
-    
+    some: StrictStr = Field(None, description="some field")
+
     @staticmethod
     def run(**kwargs):
         return f"Called salt nr cli, kwargs: {kwargs}"
-        
+
+
 class EnumTableTypes(str, Enum):
     table_brief = "brief"
     table_terse = "terse"
     table_extend = "extend"
-    
+
+
 class model_nr_cli(filters):
     commands: Union[StrictStr, List[StrictStr]] = Field(
         description="CLI commands to send to devices"
     )
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
-    next_model: NextModel = Field(None, decription="Next model handling test")
+    next_model: NextModel = Field(None, description="Next model handling test")
     add_details: StrictBool = Field(
         None, description="Show detailed output", json_schema_extra={"presence": True}
     )
     table: EnumTableTypes = Field(
         None,
         description="Table format (brief, terse, extend) or parameters or True",
-        presence="brief",
+        json_schema_extra={"presence": "brief"},
     )
-        
+
     @staticmethod
     def run(**kwargs):
         return f"Called salt nr cli, kwargs: {kwargs}"
@@ -280,6 +288,31 @@ class model_TestCommandValues(BaseModel):
         return kwargs
 
 
+class model_model_TestAliasHandlingNestedModel(BaseModel):
+    command_no_alias: StrictStr = Field(None, description="string")
+    command_with_alias: StrictStr = Field(
+        None, description="string", alias="enter-command"
+    )
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class model_TestAliasHandling(BaseModel):
+    foo_bar_command: StrictStr = Field(
+        None, description="string", alias="foo-bar-command"
+    )
+    nested_command: model_model_TestAliasHandlingNestedModel = Field(
+        None,
+        description="Enter command",
+    )
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -308,8 +341,19 @@ class Root(BaseModel):
         None,
         description="Enter command",
     )
+    test_alias_handling: model_TestAliasHandling = Field(
+        None,
+        description="Enter command",
+    )
+    test_alias_handling_top: StrictStr = Field(
+        None, description="Should se dashes", alias="test-alias-handling-top"
+    )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
 
     class PicleConfig:
         prompt = "picle#"

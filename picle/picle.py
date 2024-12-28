@@ -5,7 +5,7 @@ PICLE - Python Interactive Command Line Shells
 PICLE is a module to construct interactive command line shell
 applications.
 
-PICLE build on top of Python standart library CMD module and 
+PICLE build on top of Python standard library CMD module and 
 uses Pydantic models to construct shell environments.
 """
 import cmd
@@ -16,9 +16,11 @@ import os
 import platform
 
 from typing import Callable
-from pydantic import ValidationError, Json
+from pydantic import ValidationError, Json, create_model
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.fields import FieldInfo
+from .utils import run_print_exception
+from .models import MAN
 
 log = logging.getLogger(__name__)
 
@@ -74,8 +76,14 @@ class App(cmd.Cmd):
 
         # mount override methods
         if hasattr(self.shell.PicleConfig, "methods_override"):
-            for mount, override in self.shell.PicleConfig.methods_override.items():
-                setattr(self, mount, getattr(self.shell, override))
+            for (
+                method_name,
+                override,
+            ) in self.shell.PicleConfig.methods_override.items():
+                setattr(self, method_name, getattr(self.shell, override))
+
+        # mount models
+        self.mount_model(MAN, ["man"], "Manual/documentation functions")
 
         super(App, self).__init__(stdin=stdin, stdout=stdout)
 
@@ -98,6 +106,25 @@ class App(cmd.Cmd):
             self.stdout.write(text + self.newline)
         else:
             self.stdout.write(text)
+
+    def mount_model(self, model: ModelMetaclass, path: list, description: str) -> None:
+        """
+        Method to mount pydantic model at provided path to the root model
+
+        :param model: Pydantic model to mount
+        :param path: list of path to mount model
+        :param description: description of the model
+        """
+        parent_model = self.root
+        while path:
+            mount_name = path.pop(0)
+            if hasattr(parent_model, mount_name):
+                parent_model = getattr(parent_model, mount_name)
+            else:
+                parent_model.model_fields[mount_name] = FieldInfo(
+                    annotation=model, required=False, description=description
+                )
+                break
 
     def _save_collected_value(
         self, field: dict, value: str, replace: bool = False
@@ -237,10 +264,8 @@ class App(cmd.Cmd):
         :param is_help: indicates that parsing help command or tab completion command,
             if set to True disables ``presence`` argument handling for last field
         :param collect_multiline: enables multiple input collection for fields
-
-        Returns a list of lists of dictionaries with collected models details
-        each dictionary containing ``model``, ``fields`` and ``parameter``
-        keys.
+        :return: returns a list of lists of dictionaries with collected models details
+            each dictionary containing ``model``, ``fields`` and ``parameter`` keys.
         """
         current_model = {
             "model": self.shell,
@@ -394,8 +419,15 @@ class App(cmd.Cmd):
                     )
             # check if parameter value partially matches any of the model fields
             elif any(
-                field.startswith(parameter)
-                for field in current_model["model"].model_fields
+                field_name.startswith(parameter)
+                for field_name in current_model["model"].model_fields
+            ):
+                raise FieldLooseMatchOnly(current_model, parameter)
+            # check if parameter value partially matches any of the model fields' aliases
+            elif any(
+                field.alias.startswith(parameter)
+                for field in current_model["model"].model_fields.values()
+                if field.alias is not None
             ):
                 raise FieldLooseMatchOnly(current_model, parameter)
             # parameter is a value, save it to current model
@@ -445,9 +477,16 @@ class App(cmd.Cmd):
         # print help message only for last collected field
         if last_field and last_field["values"] == ...:
             field = model["model"].model_fields[last_field["name"]]
+            json_schema_extra = getattr(field, "json_schema_extra") or {}
             name = f"<'{last_field['name']}' value>"
             # check if field is callable
             if field.annotation is Callable:
+                name = "<ENTER>"
+                lines[name] = "Execute command"
+                width = max(width, len(name))
+            # check if field referencing function
+            elif json_schema_extra.get("function"):
+                lines[name] = f"{field.description}"
                 name = "<ENTER>"
                 lines[name] = "Execute command"
                 width = max(width, len(name))
@@ -483,12 +522,12 @@ class App(cmd.Cmd):
                 width = max(width, len(name))
             # iterate over model fields
             for name, field in model["model"].model_fields.items():
-                # check if field has alias
-                if field.alias:
-                    name = field.alias
                 # skip fields that already have values
                 if any(f["name"] == name for f in model["fields"]):
                     continue
+                # check if field has alias
+                if field.alias:
+                    name = field.alias
                 # filter fields
                 if match and not name.startswith(match):
                     continue
@@ -550,7 +589,7 @@ class App(cmd.Cmd):
                     fieldnames = [
                         i for i in fieldnames if i.startswith(last_field_value)
                     ]
-                # autocomplete 'input' for multiline input mode
+                # auto complete 'input' for multi-line input mode
                 elif fparam.get("multiline") is True:
                     if (
                         "input".startswith(last_field_value)
@@ -559,21 +598,25 @@ class App(cmd.Cmd):
                         fieldnames = ["input"]
             # return a list of all model fields
             else:
-                fieldnames = list(last_model.model_fields)
+                for name, f in last_model.model_fields.items():
+                    if f.alias:
+                        fieldnames.append(f.alias)
+                    else:
+                        fieldnames.append(name)
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
-            fieldnames = [
-                f.alias or name
-                for name, f in model["model"].model_fields.items()
+            for name, f in model["model"].model_fields.items():
                 # skip fields with already collected values from complete prompt
-                if name.startswith(parameter)
-                and not any(
-                    True
+                if any(
+                    collected_field["name"] == name
                     for collected_field in model["fields"]
-                    if collected_field["name"] == name
-                    and collected_field["values"] is not ...
-                )
-            ]
+                    if collected_field["values"] is not ...
+                ):
+                    continue
+                elif f.alias and f.alias.startswith(parameter):
+                    fieldnames.append(f.alias)
+                elif name.startswith(parameter):
+                    fieldnames.append(name)
         except FieldKeyError:
             pass
         except:
@@ -602,7 +645,9 @@ class App(cmd.Cmd):
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
             for name, f in model["model"].model_fields.items():
-                if name.startswith(parameter):
+                if f.alias and f.alias.startswith(parameter):
+                    fieldnames.append(f.alias)
+                elif name.startswith(parameter):
                     fieldnames.append(name)
         # raised if no model fields matched last parameter
         except FieldKeyError as e:
@@ -689,6 +734,7 @@ class App(cmd.Cmd):
             elif "WINDOWS" in platform.system().upper():
                 os.system("cls")
 
+    @run_print_exception
     def default(self, line: str):
         """Method called if no do_xyz methods found"""
         ret = False
@@ -870,6 +916,9 @@ class App(cmd.Cmd):
                                         **command_defaults,
                                         **command_arguments,
                                     }
+                                    # check if need to give root model as an argument
+                                    if json_schema_extra.get("root_model"):
+                                        kw["root_model"] = self.root
                                     ret = getattr(model, method_name)(**kw)
                                 # pipe results through subsequent commands
                                 else:

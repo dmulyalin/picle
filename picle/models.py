@@ -3,6 +3,7 @@ import pprint
 
 from typing import List, Union, Optional, Callable, Any
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool, StrictInt
+from pydantic._internal._model_construction import ModelMetaclass
 
 try:
     from yaml import dump as yaml_dump
@@ -14,6 +15,7 @@ except ImportError:
 try:
     from rich.console import Console as rich_console
     from rich.table import Table as RICHTABLE
+    from rich.tree import Tree as RICHTREE
 
     RICHCONSOLE = rich_console()
     HAS_RICH = True
@@ -220,3 +222,50 @@ class PipeFunctionsModel(Filters, Formatters, Outputters):
 
     class PicleConfig:
         pipe = "self"
+
+
+class MAN(BaseModel):
+    """
+    Model with manual/documentation related functions
+    """
+
+    tree: Optional[StrictStr] = Field(
+        None,
+        description="Print commands tree for shell model specified by dot separated path e.g. model.shell.command",
+        json_schema_extra={"function": "print_model_tree", "root_model": True},
+    )
+
+    @staticmethod
+    def construct_model_tree(model, tree, path):
+        for field_name, field in model.model_fields.items():
+            if path and field_name != path[0] and field.alias != path[0]:
+                continue
+            # form tree element label
+            label = [
+                f"[bold]{field.alias or field_name}:[/bold]    {field.description}"
+            ]
+            if field.get_default():
+                label.append(f"default '{field.get_default()}'")
+            if field.examples:
+                examples = (
+                    field.examples
+                    if isinstance(field.examples, list)
+                    else [field.examples]
+                )
+                label.append(f"examples: {', '.join(examples)}")
+            next_tree = tree.add(", ".join(label))
+            # recurse to next level model
+            if isinstance(field.annotation, ModelMetaclass):
+                MAN.construct_model_tree(field.annotation, next_tree, path[1:])
+
+        return tree
+
+    @staticmethod
+    def print_model_tree(root_model, **kwargs):
+        path = kwargs["tree"].split(".") if kwargs.get("tree") else []
+        rich_tree = RICHTREE("[bold]root[/bold]")
+        RICHCONSOLE.print(
+            MAN.construct_model_tree(
+                model=root_model.model_construct(), tree=rich_tree, path=path
+            )
+        )

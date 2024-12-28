@@ -211,6 +211,52 @@ def test_pipe_formatter_json_and_alias():
     )
 
 
+def test_alias_handling():
+    """model field has alias with dashes, while field uses underscores"""
+    shell.onecmd("top")  # go to top
+    shell.onecmd("test_alias_handling foo-bar-command bla")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert "{'foo_bar_command': 'bla'}" in shell_output
+
+
+def test_alias_handling_nested_model():
+    shell.onecmd("top")  # go to top
+    shell.onecmd(
+        "test_alias_handling nested_command enter-command foo command_no_alias bar"
+    )
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert "{'command_with_alias': 'foo', 'command_no_alias': 'bar'}" in shell_output
+
+    """model field has alias with dashes, while field uses underscores"""
+    shell.onecmd("top")  # go to top
+    shell.onecmd("test_alias_handling foo-bar-command bla")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert "{'foo_bar_command': 'bla'}" in shell_output
+
+
+def test_alias_handling_at_the_top():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("test-alias-handling-top foo")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert "{'test_alias_handling_top': 'foo'}" in shell_output
+
+
 def test_pipe_formatter_yaml():
     """yaml pipe function uses Formatters.formatter_yaml function to print
     yaml output"""
@@ -542,4 +588,7 @@ def test_presence_handling_for_next_model():
 
     print(f"shell output: '{shell_output}'")
 
-    assert """Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'plugin': 'netmiko', 'commands': 'show clock', 'table': 'brief', 'some': 'bla'}""" == shell_output.strip()
+    assert (
+        """Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'plugin': 'netmiko', 'commands': 'show clock', 'table': 'brief', 'some': 'bla'}"""
+        == shell_output.strip()
+    )

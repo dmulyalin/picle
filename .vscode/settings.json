@@ -1,0 +1,31 @@
+{
+    "cSpell.words": [
+        "anystatus",
+        "begidx",
+        "ceos",
+        "completekey",
+        "elif",
+        "endidx",
+        "fparam",
+        "hostnames",
+        "keepalive",
+        "netmiko",
+        "nornir",
+        "outputter",
+        "Outputters",
+        "picle",
+        "pprint",
+        "proxytype",
+        "pyats",
+        "Pydantic",
+        "RICHCONSOLE",
+        "RICHTABLE",
+        "scrapli",
+        "subshell"
+    ],
+    "python.testing.pytestArgs": [
+        "test"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

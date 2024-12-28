@@ -49,9 +49,9 @@ definition to control PICLE behavior.
 - ``presence`` - command argument set to ``presence`` value if command given
 - ``processors`` - list of functions to run results of each command through one by one
 - ``outputter`` - function to output results, by default results written to 
-	stdout, Field's ``outputter`` overrides PicleConfig's ``outputter``
+	stdout. Field's ``outputter`` overrides PicleConfig's ``outputter``
 - ``outputter_kwargs`` - dictionary containing any additional argument to use with outputter
-- ``multline`` - True/False, indicates if multi line input mode is enabled for this field
+- ``multiline`` - True/False, indicates if multi line input mode is enabled for this field
 
 ### Field processors
 
@@ -83,8 +83,8 @@ class model_show(BaseModel):
 
 ### Multi Line Input
 
-Mutli line input allows to read multiple lines of text into field value if 
-json_schema_exatra ``multiline`` argument is set to ``True``. To use it need
+Multi line input allows to read multiple lines of text into field value if 
+json_schema_extra ``multiline`` argument is set to ``True``. To use it need
 to specify ``input`` as a field value on the command line, that will trigger
 multi line input collection when hit return:
 
@@ -114,7 +114,7 @@ picle#
 ```
 
 Tab completion for ``input`` value also works. On hitting ``enter``, 
-mutli line input mode will be invoked:
+multi line input mode will be invoked:
 
 ```
 picle#test_multiline_input data input arg foo
@@ -138,7 +138,7 @@ Example:
 ```
 from picle.models import Outputters
 
-class model_ResultSpeciifcOutputter(BaseModel):
+class model_ResultSpecificOutputter(BaseModel):
     data: StrictStr = Field(None, description="Multi line string")
     arg: Any = Field(None, description="Some field")
     
