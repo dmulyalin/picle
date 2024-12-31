@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "picle"
-version = "0.7.3"
+version = "0.8.0"
 description = "Python Interactive Command Line Shells"
 authors = ["Denis Mulyalin <d.mulyalin@gmail.com>"]
 license = "MIT"
@@ -18,7 +18,7 @@ pyreadline3 = { version = "3.4.1", markers = "sys_platform == 'win32'" }
 mkdocs = { version = "1.2.4", optional = true, markers = "python_version >= '3.7'" }
 mkdocs-material = { version = "7.2.2", optional = true, markers = "python_version >= '3.7'" }
 mkdocs-material-extensions = { version = "1.0.1", optional = true, markers = "python_version >= '3.7'" }
-mkdocstrings = { version = "0.18.*", optional = true, markers = "python_version >= '3.7'", extras = ["python"] } 
+mkdocstrings = { version = "0.18.*", optional = true, markers = "python_version >= '3.7'", extras = ["python"] }
 pygments = { version = "2.11", optional = true, markers = "python_version >= '3.7'" }
 pymdown-extensions = { version = "9.3", optional = true, markers = "python_version >= '3.7'" }
 
@@ -26,7 +26,12 @@ pymdown-extensions = { version = "9.3", optional = true, markers = "python_versi
 rich = { version = ">=13.0.0,<=14.0.0", optional = true }
 
 [tool.poetry.dev-dependencies]
-black = "22.3.*"
+black = "24.10.0"
+bandit = "1.8.0"
+flake8 = "7.1.1"
+pylint = "3.3.3"
+coverage = { version = "7.6.10", markers = "python_version >= '3.9'" }
+pre-commit = "2.15.*"
 pytest = { version = "7.1.*", markers = "python_version >= '3.7'" }
 ipdb = ">=0.0.0, <=1.0.0"
 

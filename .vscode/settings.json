@@ -20,12 +20,11 @@
         "Pydantic",
         "RICHCONSOLE",
         "RICHTABLE",
+        "RICHTREE",
         "scrapli",
-        "subshell"
+        "subshell",
     ],
-    "python.testing.pytestArgs": [
-        "test"
-    ],
+    "python.testing.pytestArgs": ["test"],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
 }

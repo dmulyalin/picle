@@ -2,7 +2,6 @@ import unittest
 import unittest.mock
 import sys
 import time
-import picle_test_shell
 import pprint
 import pytest
 
@@ -10,10 +9,11 @@ from picle import App
 from enum import Enum
 from typing import List, Union, Optional, Callable
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
+from .picle_test_shell import Root
 
 mock_stdin = unittest.mock.create_autospec(sys.stdin)
 mock_stdout = unittest.mock.create_autospec(sys.stdout)
-shell = App(picle_test_shell.Root, stdin=mock_stdin, stdout=mock_stdout)
+shell = App(Root, stdin=mock_stdin, stdout=mock_stdout)
 
 
 def test_callable():
@@ -64,7 +64,7 @@ def test_default_values_from_subshell():
     )
 
 
-def test_presense_at_the_end():
+def test_presence_at_the_end():
     shell.onecmd("top")  # go to top
     shell.onecmd("salt nr cli commands abc add_details")
 
@@ -85,7 +85,7 @@ def test_presense_at_the_end():
     )
 
 
-def test_presense_in_between():
+def test_presence_in_between():
     shell.onecmd("top")  # go to top
     shell.onecmd("salt nr cli commands abc add_details hosts ceos1")
 
@@ -533,7 +533,7 @@ def test_json_field_boolean_null():
     assert """{'data': 'null', 'arg': 'foo'}""" in shell_output
 
 
-def test_multline_input_with_inline_value():
+def test_multiline_input_with_inline_value():
     shell.onecmd("top")  # go to top
     shell.onecmd("""test_multiline_input data foo arg bar""")
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
@@ -548,7 +548,7 @@ def test_outputter_result_specific():
 
     # just verify command run with no exceptions raised
     shell.onecmd("top")  # go to top
-    shell.onecmd("test_result_specific_outputter data faffd arg dsfsdf")
+    shell.onecmd("test_result_specific_outputter data foo arg bar")
 
     assert True
 
@@ -558,7 +558,7 @@ def test_outputter_result_specific_no_kwargs():
 
     # just verify command run with no exceptions raised
     shell.onecmd("top")  # go to top
-    shell.onecmd("test_result_specific_outputter_no_kwargs data asds arg dsd")
+    shell.onecmd("test_result_specific_outputter_no_kwargs data foo arg bar")
 
     assert True
 
@@ -592,3 +592,125 @@ def test_presence_handling_for_next_model():
         """Called salt nr cli, kwargs: {'target': 'proxy:proxytype:nornir', 'tgt_type': 'pillar', 'plugin': 'netmiko', 'commands': 'show clock', 'table': 'brief', 'some': 'bla'}"""
         == shell_output.strip()
     )
+
+
+def test_model_mount():
+    class test_mount_model(BaseModel):
+        param: StrictStr = Field(None, description="string")
+
+        @staticmethod
+        def run(**kwargs):
+            return kwargs
+
+    # mount model and test it runs
+    shell.model_mount(test_mount_model, "mount_model_top")
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""mount_model_top param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert shell_output == "{'param': 'bla'}"
+
+    # remove model
+    shell.model_remove("mount_model_top")
+    shell.onecmd("""mount_model_top param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "Incorrect command" in shell_output
+
+
+def test_model_mount_with_alias():
+    class test_mount_model(BaseModel):
+        param: StrictStr = Field(None, description="string")
+
+        @staticmethod
+        def run(**kwargs):
+            return kwargs
+
+    # mount model and test it runs
+    shell.model_mount(test_mount_model, "mount_model_top", alias="mount-model-top")
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""mount-model-top param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert shell_output == "{'param': 'bla'}"
+
+    # remove model
+    shell.model_remove("mount_model_top")
+    shell.onecmd("""mount-model-top param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "Incorrect command" in shell_output
+
+
+def test_model_mount_nested():
+    class test_mount_model(BaseModel):
+        param: StrictStr = Field(None, description="string")
+
+        @staticmethod
+        def run(**kwargs):
+            return kwargs
+
+    # mount model and test it runs
+    shell.model_mount(test_mount_model, ["salt", "mount_model_nested"])
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""salt mount_model_nested param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "'param': 'bla'" in shell_output
+
+    # remove model
+    shell.model_remove(["salt", "mount_model_nested"])
+    shell.onecmd("""salt mount_model_nested param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "'param': 'bla'" not in shell_output
+
+
+def test_model_remove_wong_path():
+    class test_mount_model(BaseModel):
+        param: StrictStr = Field(None, description="string")
+
+        @staticmethod
+        def run(**kwargs):
+            return kwargs
+
+    # mount model and test it runs
+    shell.model_mount(test_mount_model, ["salt", "mount_model_nested"])
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""salt mount_model_nested param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "'param': 'bla'" in shell_output
+
+    # try to remove model at wrong path
+    with pytest.raises(KeyError):
+        shell.model_remove(["salt", "wrong_name"])
+
+
+def test_model_mount_nested_wrong_path():
+    class test_mount_model(BaseModel):
+        param: StrictStr = Field(None, description="string")
+
+        @staticmethod
+        def run(**kwargs):
+            return kwargs
+
+    with pytest.raises(KeyError):
+        shell.model_mount(test_mount_model, ["salt", "foo", "bar"])
+
+
+def test_model_mount_commands():
+    # mount model and test it runs
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""test_mount_model mount_add foo""")
+    shell.onecmd("""foo param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "'param': 'bla'" in shell_output
+
+    # remove model
+    shell.onecmd("""test_mount_model mount_remove foo""")
+    shell.onecmd("""foo param bla""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "'param': 'bla'" not in shell_output

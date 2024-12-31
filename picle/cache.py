@@ -2,18 +2,19 @@
 Picle Cache Object
 ==================
 
-Picle Cache is a dictionary like object, but capable 
+Picle Cache is a dictionary like object, but capable
 to sync in-memory content with a file for persistent storage.
 
 Implements keys expiration capability using provided ttl value.
 
 File sync is multiprocessing and thread safe.
 
-Trying to retrieve key value that has TTL expired will raise 
+Trying to retrieve key value that has TTL expired will raise
 a ``KeyError``.
 
 Only JSON serializable values supported.
 """
+
 import os
 import json
 import time

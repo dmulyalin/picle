@@ -1,0 +1,55 @@
+# to run pre-commit on demand using below configuration:
+# pre-commit run --all-files
+
+default_language_version:
+    python: python3.9
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-ast
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+  # black
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        exclude: ^docs/|gitignore|LICENSE|pre-commit-config|pylintrc|.*\.png$|.*\.md$|.*\.toml$|poetry.lock|\.github/.|^site/|^.vscode/|.*\.yml$|.*\.yaml$
+        entry: black picle
+        language: system
+        args:
+          - "--line-length=88"
+  # flake8
+  - repo: local
+    hooks:
+      - id: flake8
+        name: flake8
+        language: system
+        entry: flake8
+        exclude: ^test/|^docs/|gitignore|LICENSE|pre-commit-config|pylintrc|.*\.png$|.*\.md$|.*\.toml$|poetry.lock|\.github/.|^site/|^.vscode/|.*\.yml$|.*\.yaml$
+        args:
+          - "--max-line-length=88"
+          - "--max-complexity=19"
+          - "--select=B,C,E,F,W,T4,B9"
+          - "--ignore=F403,E402,E722,E203,W503,C901,E501"
+  # bandit security checks
+  - repo: local
+    hooks:
+      - id: bandit
+        name: bandit
+        language: system
+        entry: bandit
+        exclude: ^test/|^docs/|gitignore|LICENSE|pre-commit-config|pylintrc|.*\.png$|.*\.md$|.*\.toml$|poetry.lock|\.github/.|^site/|^.vscode/|.*\.yml$|.*\.yaml$
+  # pylint, to run it directly use: python -m pylint . 
+  # enabled only spelling checks for docstrings
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        language: system
+        entry: pylint .
+        exclude: ^test/|^docs/|gitignore|LICENSE|pre-commit-config|pylintrc|.*\.png$|.*\.md$|.*\.toml$|poetry.lock|\.github/.|^site/|^.vscode/|.*\.yml$|.*\.yaml$

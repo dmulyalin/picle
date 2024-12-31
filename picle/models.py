@@ -236,7 +236,7 @@ class MAN(BaseModel):
     )
 
     @staticmethod
-    def construct_model_tree(model, tree, path):
+    def _construct_model_tree(model, tree: RICHTREE, path: list) -> RICHTREE:
         for field_name, field in model.model_fields.items():
             if path and field_name != path[0] and field.alias != path[0]:
                 continue
@@ -257,16 +257,21 @@ class MAN(BaseModel):
             next_tree = tree.add(", ".join(label))
             # recurse to next level model
             if isinstance(field.annotation, ModelMetaclass):
-                MAN.construct_model_tree(field.annotation, next_tree, path[1:])
+                MAN._construct_model_tree(field.annotation, next_tree, path[1:])
 
         return tree
 
     @staticmethod
-    def print_model_tree(root_model, **kwargs):
+    def print_model_tree(root_model, **kwargs) -> None:
+        """
+        Method to print model tree for shell model specified by dot separated path e.g. model.shell.command
+
+        :param root_model: PICLE App root model to print tree for
+        """
         path = kwargs["tree"].split(".") if kwargs.get("tree") else []
         rich_tree = RICHTREE("[bold]root[/bold]")
         RICHCONSOLE.print(
-            MAN.construct_model_tree(
+            MAN._construct_model_tree(
                 model=root_model.model_construct(), tree=rich_tree, path=path
             )
         )

@@ -5,9 +5,10 @@ PICLE - Python Interactive Command Line Shells
 PICLE is a module to construct interactive command line shell
 applications.
 
-PICLE build on top of Python standard library CMD module and 
+PICLE build on top of Python standard library CMD module and
 uses Pydantic models to construct shell environments.
 """
+
 import cmd
 import logging
 import enum
@@ -15,8 +16,8 @@ import traceback
 import os
 import platform
 
-from typing import Callable
-from pydantic import ValidationError, Json, create_model
+from typing import Callable, Union
+from pydantic import ValidationError, Json
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.fields import FieldInfo
 from .utils import run_print_exception
@@ -36,12 +37,6 @@ class FieldKeyError(Exception):
     """
     Raised if parameter not in model's fields and none of the
     fields names starts with parameter.
-    """
-
-
-class SyntaxError(Exception):
-    """
-    Command syntax error
     """
 
 
@@ -83,7 +78,7 @@ class App(cmd.Cmd):
                 setattr(self, method_name, getattr(self.shell, override))
 
         # mount models
-        self.mount_model(MAN, ["man"], "Manual/documentation functions")
+        self.model_mount(MAN, ["man"], "Manual/documentation functions")
 
         super(App, self).__init__(stdin=stdin, stdout=stdout)
 
@@ -107,27 +102,65 @@ class App(cmd.Cmd):
         else:
             self.stdout.write(text)
 
-    def mount_model(self, model: ModelMetaclass, path: list, description: str) -> None:
+    def model_mount(
+        self,
+        model: ModelMetaclass,
+        path: Union[str, list[str]],
+        description: str = None,
+        default=None,
+        **kwargs: dict,
+    ) -> None:
         """
-        Method to mount pydantic model at provided path to the root model
+        Method to mount pydantic model at provided path in relation to the root model.
 
-        :param model: Pydantic model to mount
-        :param path: list of path to mount model
-        :param description: description of the model
+        :param model: Pydantic model to mount.
+        :param path: List of path segments to mount the model.
+        :param description: Description of the model.
+        :param default: Default value for the model.
+        :param kwargs: Additional keyword arguments for the FieldInfo.
         """
+        if isinstance(path, str):
+            path = [path.strip()]
         parent_model = self.root
         while path:
             mount_name = path.pop(0)
-            if hasattr(parent_model, mount_name):
-                parent_model = getattr(parent_model, mount_name)
+            if mount_name in parent_model.model_fields:
+                parent_model = parent_model.model_fields[mount_name].annotation
             else:
+                # handle when not all path items before last one are in models tree
+                if len(path) > 0:
+                    raise KeyError(
+                        f"'{mount_name}' not part of '{parent_model}' model fields, but remaining path still not empty - {path}"
+                    )
                 parent_model.model_fields[mount_name] = FieldInfo(
                     annotation=model,
                     required=False,
                     description=description,
-                    default=None,
+                    default=default,
+                    **kwargs,
                 )
                 break
+
+    def model_remove(self, path: list[str]) -> None:
+        """
+        Method to remove pydantic model at provided path in relation to the root model.
+
+        :param path: List of path segments to remove the model.
+        """
+        if isinstance(path, str):
+            path = [path.strip()]
+        parent_model = self.root
+        while path:
+            mount_name = path.pop(0)
+            if mount_name in parent_model.model_fields:
+                if len(path) == 0:
+                    parent_model = parent_model.model_fields.pop(mount_name)
+                else:
+                    parent_model = parent_model.model_fields[mount_name].annotation
+            else:
+                raise KeyError(
+                    f"Failed to remove model at path '{mount_name}', parent model: '{parent_model}'"
+                )
 
     def _save_collected_value(
         self, field: dict, value: str, replace: bool = False
@@ -451,8 +484,8 @@ class App(cmd.Cmd):
         # iterate over collected models and fields to see
         # if need to collect multi-line input
         if collect_multiline:
-            for command in ret:
-                for model in command:
+            for command_models in ret:
+                for model in command_models:
                     for field in model["fields"]:
                         self._collect_multiline(field)
 
@@ -654,6 +687,7 @@ class App(cmd.Cmd):
                     fieldnames.append(name)
         # raised if no model fields matched last parameter
         except FieldKeyError as e:
+            log.debug(f"No model fields matched last parameter - {e}")
             pass
         return sorted(fieldnames)
 
@@ -684,7 +718,7 @@ class App(cmd.Cmd):
     def do_exit(self, arg):
         """Exit current shell"""
         if "?" in arg:
-            self.write(f" cls    Exit current shell")
+            self.write(" exit    Exit current shell")
         else:
             # delete defaults for closing shell
             self.defaults_pop(self.shells[-1])
@@ -700,7 +734,7 @@ class App(cmd.Cmd):
     def do_top(self, arg):
         """Exit to top shell"""
         if "?" in arg:
-            self.write(f" cls    Exit to top shell")
+            self.write(" top    Exit to top shell")
         else:
             self.shell = self.shells[0]
             self.prompt = self.shell.PicleConfig.prompt
@@ -713,14 +747,14 @@ class App(cmd.Cmd):
     def do_end(self, arg):
         """Exit application"""
         if "?" in arg:
-            self.write(f" cls    Exit application")
+            self.write(" end    Exit application")
         else:
             return True
 
     def do_pwd(self, arg):
         """Print current shell path"""
         if "?" in arg:
-            self.write(f" pwd    Print current shell path")
+            self.write(" pwd    Print current shell path")
         else:
             path = ["Root"]
             for shell in self.shells[1:]:
@@ -730,7 +764,7 @@ class App(cmd.Cmd):
     def do_cls(self, arg):
         """Clear shell Screen"""
         if "?" in arg:
-            self.write(f" cls    Clear shell Screen")
+            self.write(" cls    Clear shell Screen")
         else:
             if "LINUX" in platform.system().upper():
                 os.system("clear")
@@ -895,6 +929,12 @@ class App(cmd.Cmd):
                                         **command_defaults,
                                         **command_arguments,
                                     }
+                                    # check if need to give root model as an argument
+                                    if json_schema_extra.get("root_model"):
+                                        kw["root_model"] = self.root
+                                    # check if need to give PICLE App as an argument
+                                    if json_schema_extra.get("picle_app"):
+                                        kw["picle_app"] = self
                                     ret = getattr(model, method_name)(**kw)
                                 # pipe results through subsequent commands
                                 else:
@@ -922,6 +962,9 @@ class App(cmd.Cmd):
                                     # check if need to give root model as an argument
                                     if json_schema_extra.get("root_model"):
                                         kw["root_model"] = self.root
+                                    # check if need to give PICLE App as an argument
+                                    if json_schema_extra.get("picle_app"):
+                                        kw["picle_app"] = self
                                     ret = getattr(model, method_name)(**kw)
                                 # pipe results through subsequent commands
                                 else:
@@ -976,10 +1019,8 @@ class App(cmd.Cmd):
                                     model.PicleConfig, "outputter_kwargs", {}
                                 )
                     else:
-                        print(line)
-                        print(model)
                         self.defaults_pop(model)
-                        ret = f"Incorrect command"
+                        ret = f"Incorrect command, provide more arguments for '{model}' model"
                         break
 
         # returning True will end the shell - exit

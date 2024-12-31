@@ -1,7 +1,8 @@
 """
-This file contains Pydantic models to test PICLE 
+This file contains Pydantic models to test PICLE
 by building sample App.
 """
+
 import json
 from picle import App
 from picle.models import PipeFunctionsModel, Formatters, Outputters
@@ -313,18 +314,51 @@ class model_TestAliasHandling(BaseModel):
         return kwargs
 
 
+class test_mount_model(BaseModel):
+    param: StrictStr = Field(None, description="string")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class model_MountTesting(BaseModel):
+    """
+    Test handling models mounting at a runtime from within model calls
+    """
+
+    mount_add: StrictStr = Field(
+        None,
+        description="Mount point name to add",
+        json_schema_extra={"picle_app": True, "function": "mount_add_method"},
+    )
+    mount_remove: StrictStr = Field(
+        None,
+        description="Mount point name to remove",
+        json_schema_extra={"picle_app": True, "function": "mount_remove_method"},
+    )
+
+    @staticmethod
+    def mount_add_method(picle_app, mount_add):
+        picle_app.model_mount(test_mount_model, mount_add)
+
+    @staticmethod
+    def mount_remove_method(picle_app, mount_remove):
+        picle_app.model_remove(mount_remove)
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
-    test_PicleConfig_outputter_with_run_method: model_PicleConfig_outputter_with_run_method = Field(
-        None, description="Command to test PicleConfig outputter with run method"
-    )
-    test_PicleConfig_outputter_with_callable: model_PicleConfig_outputter_with_callable = Field(
-        None, description="Command to test PicleConfig outputter with callable"
-    )
-    test_outputter_rich_table_with_PicleConfig_kwargs: model_outputter_rich_table_with_PicleConfig_kwargs = Field(
-        None, description="Command to test PicleConfig outputter with callable"
-    )
+    test_PicleConfig_outputter_with_run_method: (
+        model_PicleConfig_outputter_with_run_method
+    ) = Field(None, description="Command to test PicleConfig outputter with run method")
+    test_PicleConfig_outputter_with_callable: (
+        model_PicleConfig_outputter_with_callable
+    ) = Field(None, description="Command to test PicleConfig outputter with callable")
+    test_outputter_rich_table_with_PicleConfig_kwargs: (
+        model_outputter_rich_table_with_PicleConfig_kwargs
+    ) = Field(None, description="Command to test PicleConfig outputter with callable")
     test_json_input: model_TestJsonInput = Field(None, description="Test JSON input")
     test_multiline_input: model_TestMultilineInput = Field(
         None, description="Test Multiline input"
@@ -333,7 +367,9 @@ class Root(BaseModel):
         None,
         description="Command to test result specific outputter with outputter kwargs",
     )
-    test_result_specific_outputter_no_kwargs: model_TestResultSpecificOutputterNoKwargs = Field(
+    test_result_specific_outputter_no_kwargs: (
+        model_TestResultSpecificOutputterNoKwargs
+    ) = Field(
         None,
         description="Command to test result specific outputter with outputter without kwargs",
     )
@@ -348,6 +384,7 @@ class Root(BaseModel):
     test_alias_handling_top: StrictStr = Field(
         None, description="Should se dashes", alias="test-alias-handling-top"
     )
+    test_mount_model: model_MountTesting = Field(None, description="Mount testing")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
