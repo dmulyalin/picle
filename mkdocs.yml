@@ -19,7 +19,7 @@ plugins:
 - mkdocstrings:
     handlers:
       python:
-        rendering:
+        options:
           docstring_section_style: list
           heading_level: 3
           merge_init_into_class: true
@@ -27,7 +27,6 @@ plugins:
           show_root_heading: true
           show_root_toc_entry: true
           show_signature_annotations: true
-        selection:
           docstring_style: sphinx
 repo_name: dmulyalin/picle
 repo_url: https://github.com/dmulyalin/picle
