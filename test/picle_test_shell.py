@@ -67,7 +67,7 @@ class EnumTableTypes(str, Enum):
 
 class model_nr_cli(filters):
     commands: Union[StrictStr, List[StrictStr]] = Field(
-        description="CLI commands to send to devices", required=True
+        ..., description="CLI commands to send to devices", required=True
     )
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
     next_model: NextModel = Field(None, description="Next model handling test")
@@ -300,6 +300,19 @@ class model_model_TestAliasHandlingNestedModel(BaseModel):
         return kwargs
 
 
+class model_model_TestAliasHandlingMandatoryField(BaseModel):
+    mandatory_field_with_alias: StrictStr = Field(
+        ...,
+        description="string",
+        required=True,
+        serialization_alias="mandatory-field-with-alias",
+    )
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
 class model_TestAliasHandling(BaseModel):
     foo_bar_command: StrictStr = Field(
         None, description="string", alias="foo-bar-command"
@@ -307,6 +320,9 @@ class model_TestAliasHandling(BaseModel):
     nested_command: model_model_TestAliasHandlingNestedModel = Field(
         None,
         description="Enter command",
+    )
+    mandatory_field_test: model_model_TestAliasHandlingMandatoryField = Field(
+        None, description="Mandatry field"
     )
 
     @staticmethod
@@ -347,6 +363,20 @@ class model_MountTesting(BaseModel):
         picle_app.model_remove(mount_remove)
 
 
+class EnumTaskTypes(str, Enum):
+    cli = "cli"
+    cfg = "cfg"
+
+
+class model_EnumFieldWithSameName(BaseModel):
+    task: EnumTaskTypes = Field(None, description="Enum field")
+    client: StrictStr = Field(None, description="String field")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -385,6 +415,9 @@ class Root(BaseModel):
         None, description="Should se dashes", alias="test-alias-handling-top"
     )
     test_mount_model: model_MountTesting = Field(None, description="Mount testing")
+    test_enum_and_field_with_same_name: model_EnumFieldWithSameName = Field(
+        None, description="Enum and field with same name"
+    )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

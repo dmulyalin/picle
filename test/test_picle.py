@@ -257,6 +257,19 @@ def test_alias_handling_at_the_top():
     assert "{'test_alias_handling_top': 'foo'}" in shell_output
 
 
+def test_alias_handling_mandatory_field():
+    shell.onecmd("top")  # go to top
+    shell.onecmd(
+        "test_alias_handling mandatory_field_test mandatory-field-with-alias bla"
+    )
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert "{'mandatory_field_with_alias': 'bla'}" in shell_output
+
+
 def test_pipe_formatter_yaml():
     """yaml pipe function uses Formatters.formatter_yaml function to print
     yaml output"""
@@ -666,7 +679,7 @@ def test_model_mount_nested():
     assert "'param': 'bla'" not in shell_output
 
 
-def test_model_remove_wong_path():
+def test_model_remove_wrong_path():
     class test_mount_model(BaseModel):
         param: StrictStr = Field(None, description="string")
 
@@ -714,3 +727,14 @@ def test_model_mount_commands():
     shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
     print(f"shell output: '{shell_output}'")
     assert "'param': 'bla'" not in shell_output
+
+
+def test_enum_and_field_with_same_name():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("""test_enum_and_field_with_same_name task cli client bla""")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+
+    print(f"shell output: '{shell_output}'")
+
+    assert "{'task': 'cli', 'client': 'bla'}" in shell_output

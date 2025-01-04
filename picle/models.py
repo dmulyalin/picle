@@ -238,15 +238,24 @@ class MAN(BaseModel):
     @staticmethod
     def _construct_model_tree(model, tree: RICHTREE, path: list) -> RICHTREE:
         for field_name, field in model.model_fields.items():
-            if path and field_name != path[0] and field.alias != path[0]:
+            if (
+                path
+                and field_name != path[0]
+                and field.alias != path[0]
+                and field.serialization_alias != path[0]
+            ):
                 continue
             # form tree element label
             label = [
                 f"[bold]{'*' if field.is_required() else ''}"
-                f"{field.alias or field_name}:[/bold]    {field.description}"
+                f"{field.alias or field.serialization_alias or field_name}:[/bold]    {field.description}"
             ]
-            if field.get_default():
-                label.append(f"default '{field.get_default()}'")
+            if field.get_default() is not None and field.annotation != Callable:
+                default_value = field.get_default()
+                if isinstance(
+                    default_value, (str, int, float, bool, list, dict, tuple, set)
+                ):
+                    label.append(f"default '{field.get_default()}'")
             if field.examples:
                 examples = (
                     field.examples

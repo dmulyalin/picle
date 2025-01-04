@@ -393,7 +393,7 @@ class App(cmd.Cmd):
                 self._save_collected_value(current_field, value)
             # handle reference to model
             elif current_model["model"].model_fields.get(parameter) or any(
-                parameter == f.alias
+                parameter == f.alias or parameter == f.serialization_alias
                 for f in current_model["model"].model_fields.values()
             ):
                 # source field by name
@@ -403,6 +403,9 @@ class App(cmd.Cmd):
                     # source field by alias
                     for f_name, field in current_model["model"].model_fields.items():
                         if parameter == field.alias:
+                            parameter = f_name  # use actual field name
+                            break
+                        elif parameter == field.serialization_alias:
                             parameter = f_name  # use actual field name
                             break
                 # handle next level model reference
@@ -453,17 +456,37 @@ class App(cmd.Cmd):
                         f"parameter: '{parameter}', command: '{command}', current model: "
                         f"'{current_model['model']}'"
                     )
-            # check if parameter value partially matches any of the model fields
+            # check if last field is an Enumerator
+            elif current_field and isinstance(
+                current_field["field"].annotation, enum.EnumMeta
+            ):
+                # check if last field has enum values equal to parameter
+                if any(i.value == parameter for i in current_field["field"].annotation):
+                    self._save_collected_value(current_field, parameter)
+                # check if last field has enum values partially matching parameter
+                elif any(
+                    i.value.startswith(parameter)
+                    for i in current_field["field"].annotation
+                ):
+                    raise FieldLooseMatchOnly(current_model, parameter)
+            # check if parameter partially matches any of the model fields
             elif any(
                 field_name.startswith(parameter)
                 for field_name in current_model["model"].model_fields
             ):
                 raise FieldLooseMatchOnly(current_model, parameter)
-            # check if parameter value partially matches any of the model fields' aliases
+            # check if parameter partially matches any of the model fields' aliases
             elif any(
                 field.alias.startswith(parameter)
                 for field in current_model["model"].model_fields.values()
                 if field.alias is not None
+            ):
+                raise FieldLooseMatchOnly(current_model, parameter)
+            # check if parameter partially matches any of the model fields' serialization aliases
+            elif any(
+                field.serialization_alias.startswith(parameter)
+                for field in current_model["model"].model_fields.values()
+                if field.serialization_alias is not None
             ):
                 raise FieldLooseMatchOnly(current_model, parameter)
             # parameter is a value, save it to current model
@@ -564,6 +587,9 @@ class App(cmd.Cmd):
                 # check if field has alias
                 if field.alias:
                     name = field.alias
+                # check if field has serialization alias
+                if field.serialization_alias:
+                    name = field.serialization_alias
                 # filter fields
                 if match and not name.startswith(match):
                     continue
@@ -613,14 +639,19 @@ class App(cmd.Cmd):
                 elif last_field_value == ...:
                     last_field_value = ""
                 # check if need to extract enum values
-                if isinstance(last_field.annotation, enum.EnumMeta):
+                if line.endswith(" ") and isinstance(
+                    last_field.annotation, enum.EnumMeta
+                ):
                     fieldnames = [
                         i.value
                         for i in last_field.annotation
                         if i.value.startswith(last_field_value)
+                        and i.value != last_field_value
                     ]
                 # check if model has method to source field choices
-                elif hasattr(last_model, f"source_{last_field_name}"):
+                elif line.endswith(" ") and hasattr(
+                    last_model, f"source_{last_field_name}"
+                ):
                     fieldnames = getattr(last_model, f"source_{last_field_name}")()
                     fieldnames = [
                         i for i in fieldnames if i.startswith(last_field_value)
@@ -637,6 +668,8 @@ class App(cmd.Cmd):
                 for name, f in last_model.model_fields.items():
                     if f.alias:
                         fieldnames.append(f.alias)
+                    if f.serialization_alias:
+                        fieldnames.append(f.serialization_alias)
                     else:
                         fieldnames.append(name)
         except FieldLooseMatchOnly as e:
@@ -649,8 +682,21 @@ class App(cmd.Cmd):
                     if collected_field["values"] is not ...
                 ):
                     continue
+                # handle Enum fields options
+                elif any(
+                    collected_field["name"] == name
+                    for collected_field in model["fields"]
+                ) and isinstance(f.annotation, enum.EnumMeta):
+                    fieldnames = [
+                        i.value for i in f.annotation if i.value.startswith(parameter)
+                    ]
+                    break
                 elif f.alias and f.alias.startswith(parameter):
                     fieldnames.append(f.alias)
+                elif f.serialization_alias and f.serialization_alias.startswith(
+                    parameter
+                ):
+                    fieldnames.append(f.serialization_alias)
                 elif name.startswith(parameter):
                     fieldnames.append(name)
         except FieldKeyError:
@@ -683,6 +729,10 @@ class App(cmd.Cmd):
             for name, f in model["model"].model_fields.items():
                 if f.alias and f.alias.startswith(parameter):
                     fieldnames.append(f.alias)
+                elif f.serialization_alias and f.serialization_alias.startswith(
+                    parameter
+                ):
+                    fieldnames.append(f.serialization_alias)
                 elif name.startswith(parameter):
                     fieldnames.append(name)
         # raised if no model fields matched last parameter
@@ -811,7 +861,7 @@ class App(cmd.Cmd):
                 model, parameter = e.args
                 # filter fields to return message for
                 fields = [
-                    f.alias or name
+                    f.alias or f.serialization_alias or name
                     for name, f in model["model"].model_fields.items()
                     if name.startswith(parameter)
                 ]
