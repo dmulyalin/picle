@@ -639,9 +639,7 @@ class App(cmd.Cmd):
                 elif last_field_value == ...:
                     last_field_value = ""
                 # check if need to extract enum values
-                if line.endswith(" ") and isinstance(
-                    last_field.annotation, enum.EnumMeta
-                ):
+                if isinstance(last_field.annotation, enum.EnumMeta):
                     fieldnames = [
                         i.value
                         for i in last_field.annotation
@@ -649,13 +647,19 @@ class App(cmd.Cmd):
                         and i.value != last_field_value
                     ]
                 # check if model has method to source field choices
-                elif line.endswith(" ") and hasattr(
-                    last_model, f"source_{last_field_name}"
-                ):
+                elif hasattr(last_model, f"source_{last_field_name}"):
                     fieldnames = getattr(last_model, f"source_{last_field_name}")()
-                    fieldnames = [
-                        i for i in fieldnames if i.startswith(last_field_value)
-                    ]
+                    # handle partial match
+                    if last_field_value not in fieldnames:
+                        fieldnames = [
+                            i for i in fieldnames if i.startswith(last_field_value)
+                        ]
+                    # remove already collected values from choice
+                    collected_values = command_models[-1][-1]["fields"][-1]["values"]
+                    if collected_values is not ...:
+                        fieldnames = [
+                            i for i in fieldnames if i not in collected_values
+                        ]
                 # auto complete 'input' for multi-line input mode
                 elif fparam.get("multiline") is True:
                     if (
@@ -665,13 +669,17 @@ class App(cmd.Cmd):
                         fieldnames = ["input"]
             # return a list of all model fields
             else:
-                for name, f in last_model.model_fields.items():
-                    if f.alias:
-                        fieldnames.append(f.alias)
-                    if f.serialization_alias:
-                        fieldnames.append(f.serialization_alias)
-                    else:
-                        fieldnames.append(name)
+                if line.endswith(" "):
+                    for name, f in last_model.model_fields.items():
+                        if f.alias:
+                            fieldnames.append(f.alias)
+                        elif f.serialization_alias:
+                            fieldnames.append(f.serialization_alias)
+                        else:
+                            fieldnames.append(name)
+                else:
+                    last_fieldname = command_models[-1][-1]["parameter"]
+                    fieldnames.append(last_fieldname)
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
             for name, f in model["model"].model_fields.items():
@@ -705,7 +713,7 @@ class App(cmd.Cmd):
             tb = traceback.format_exc()
             self.write(tb)
 
-        return sorted(fieldnames)
+        return sorted([f"{i} " for i in fieldnames])
 
     def completenames(self, text, line, begidx, endidx):
         """
@@ -739,7 +747,7 @@ class App(cmd.Cmd):
         except FieldKeyError as e:
             log.debug(f"No model fields matched last parameter - {e}")
             pass
-        return sorted(fieldnames)
+        return sorted([f"{i} " for i in fieldnames])
 
     def do_help(self, arg):
         """Print help message"""
