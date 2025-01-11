@@ -377,6 +377,33 @@ class model_EnumFieldWithSameName(BaseModel):
         return kwargs
 
 
+class model_TestSourceBoolen(BaseModel):
+    value: Union[StrictBool, StrictStr, None] = Field(None, description="Value to test")
+
+    @staticmethod
+    def source_value():
+        return [True, False, None, "foo", "bar"]
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class TestEnumBoolen(Enum):
+    true_value = True
+    false_value = False
+    foo = "foo"
+    bar = "bar"
+
+
+class model_TestEnumBoolen(BaseModel):
+    value: TestEnumBoolen = Field(None, description="Value to test")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -417,6 +444,12 @@ class Root(BaseModel):
     test_mount_model: model_MountTesting = Field(None, description="Mount testing")
     test_enum_and_field_with_same_name: model_EnumFieldWithSameName = Field(
         None, description="Enum and field with same name"
+    )
+    test_source_has_boolean_in_a_list: model_TestSourceBoolen = Field(
+        None, description="Test sourcing boolean value"
+    )
+    test_enum_has_boolean_in_a_list: model_TestEnumBoolen = Field(
+        None, description="Test sourcing boolean valuefrom enum"
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

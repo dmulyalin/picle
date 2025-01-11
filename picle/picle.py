@@ -461,11 +461,13 @@ class App(cmd.Cmd):
                 current_field["field"].annotation, enum.EnumMeta
             ):
                 # check if last field has enum values equal to parameter
-                if any(i.value == parameter for i in current_field["field"].annotation):
+                if any(
+                    str(i.value) == parameter for i in current_field["field"].annotation
+                ):
                     self._save_collected_value(current_field, parameter)
                 # check if last field has enum values partially matching parameter
                 elif any(
-                    i.value.startswith(parameter)
+                    str(i.value).startswith(parameter)
                     for i in current_field["field"].annotation
                 ):
                     raise FieldLooseMatchOnly(current_model, parameter)
@@ -552,11 +554,11 @@ class App(cmd.Cmd):
             # add options for enumerations
             elif isinstance(field.annotation, enum.EnumMeta):
                 options = [i.value for i in field.annotation]
-                lines[name] = ", ".join(options)
+                lines[name] = ", ".join([str(i) for i in options])
             # check if model has method to source field choices
             elif hasattr(model["model"], f"source_{last_field['name']}"):
                 options = getattr(model["model"], f"source_{last_field['name']}")()
-                lines[name] = ", ".join(options)
+                lines[name] = ", ".join([str(i) for i in options])
             else:
                 lines[name] = f"{field.description}"
                 # check if field supports multiline input
@@ -641,9 +643,9 @@ class App(cmd.Cmd):
                 # check if need to extract enum values
                 if isinstance(last_field.annotation, enum.EnumMeta):
                     fieldnames = [
-                        i.value
+                        str(i.value)
                         for i in last_field.annotation
-                        if i.value.startswith(last_field_value)
+                        if str(i.value).startswith(last_field_value)
                         and i.value != last_field_value
                     ]
                 # check if model has method to source field choices
@@ -652,7 +654,9 @@ class App(cmd.Cmd):
                     # handle partial match
                     if last_field_value not in fieldnames:
                         fieldnames = [
-                            i for i in fieldnames if i.startswith(last_field_value)
+                            str(i)
+                            for i in fieldnames
+                            if str(i).startswith(last_field_value)
                         ]
                     # remove already collected values from choice
                     collected_values = command_models[-1][-1]["fields"][-1]["values"]
@@ -696,7 +700,9 @@ class App(cmd.Cmd):
                     for collected_field in model["fields"]
                 ) and isinstance(f.annotation, enum.EnumMeta):
                     fieldnames = [
-                        i.value for i in f.annotation if i.value.startswith(parameter)
+                        str(i.value)
+                        for i in f.annotation
+                        if str(i.value).startswith(parameter)
                     ]
                     break
                 elif f.alias and f.alias.startswith(parameter):

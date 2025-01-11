@@ -738,3 +738,51 @@ def test_enum_and_field_with_same_name():
     print(f"shell output: '{shell_output}'")
 
     assert "{'task': 'cli', 'client': 'bla'}" in shell_output
+
+
+def test_source_has_boolean_in_a_list():
+    shell.onecmd("top")  # go to top
+
+    shell.onecmd("""test_source_has_boolean_in_a_list value False""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': False}" in shell_output
+
+    shell.onecmd("""test_source_has_boolean_in_a_list value True""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': True}" in shell_output
+
+    shell.onecmd("""test_source_has_boolean_in_a_list value None""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': None}" in shell_output
+
+    shell.onecmd("""test_source_has_boolean_in_a_list value foo""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': 'foo'}" in shell_output
+
+    shell.onecmd("""test_source_has_boolean_in_a_list value bar""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': 'bar'}" in shell_output
+
+
+def test_enum_has_boolean_in_a_list():
+    shell.onecmd("top")  # go to top
+
+    shell.onecmd("""test_enum_has_boolean_in_a_list value False""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': False}" in shell_output
+
+    shell.onecmd("""test_enum_has_boolean_in_a_list value True""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': True}" in shell_output
+
+    shell.onecmd("""test_enum_has_boolean_in_a_list value foo""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value': 'foo'}" in shell_output
