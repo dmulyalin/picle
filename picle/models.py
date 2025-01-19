@@ -16,6 +16,7 @@ try:
     from rich.console import Console as rich_console
     from rich.table import Table as RICHTABLE
     from rich.tree import Tree as RICHTREE
+    from rich.markdown import Markdown
 
     RICHCONSOLE = rich_console()
     HAS_RICH = True
@@ -141,6 +142,11 @@ class Outputters(BaseModel):
         description="Pretty print table output using Rich",
         json_schema_extra={"function": "outputter_rich_table"},
     )
+    rich_markdown: Any = Field(
+        None,
+        description="Print markdown text to terminal",
+        json_schema_extra={"function": "outputter_rich_markdown"},
+    )
 
     @staticmethod
     def outputter_rich_json(data: Union[dict, list]) -> None:
@@ -214,6 +220,20 @@ class Outputters(BaseModel):
 
         RICHCONSOLE.print(table)
 
+    @staticmethod
+    def outputter_rich_markdown(data: Any) -> None:
+        """
+        Function to print markdown output using Rich library
+
+        :param data: any data to print
+        """
+        if not isinstance(data, str):
+            data = str(data)
+
+        if HAS_RICH:
+            RICHCONSOLE.print(Markdown(data))
+        else:
+            print(data)
 
 class PipeFunctionsModel(Filters, Formatters, Outputters):
     """
