@@ -204,12 +204,7 @@ class Outputters(BaseModel):
 
         # sort the table
         if sortby:
-            # form dictionary keyed by sortby value and index
-            items_to_sortby = {i[sortby]: index for index, i in enumerate(data)}
-            # form a list of sorted sortby values
-            sorted_keys = sorted(items_to_sortby.keys())
-            # for sorted data list
-            sorted_data = [data[items_to_sortby[key]] for key in sorted_keys]
+            sorted_data = sorted(data, key=lambda d: d[sortby])
         else:
             sorted_data = data
 
