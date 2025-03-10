@@ -162,6 +162,11 @@ class model_show(BaseModel):
         json_schema_extra={"outputter": Outputters.outputter_rich_table},
     )
     XYZ: ShowXYZModel = Field(None, description="Show XYZ status")
+    data_output_nested: Callable = Field(
+        "produce_structured_data",
+        description="Show data using nested outputter",
+        json_schema_extra={"outputter": Outputters.outputter_nested},
+    )
 
     class PicleConfig:
         pipe = PipeFunctionsModel
@@ -192,6 +197,7 @@ The End.
             "some": {"dictionary": {"data": None}},
             "more": {"dictionary": ["data"]},
             "even": {"more": {"dictionary": "data"}},
+            "list": [{"more": {"dictionary": "data"}}, {"more": {"dictionary": "data"}}],
         }
 
     @staticmethod

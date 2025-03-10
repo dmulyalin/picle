@@ -303,6 +303,14 @@ def test_outputter_rich_json():
 
     assert True
 
+def test_outputter_nested():
+    # outputter prints to terminal bypassing stdout, hence no output to test
+
+    # just verify command run with no exceptions raised
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show data_output_nested")
+
+    assert True
 
 def test_PicleConfig_processor_with_run_method():
     """

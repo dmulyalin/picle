@@ -4,6 +4,8 @@ import pprint
 from typing import List, Union, Optional, Callable, Any
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool, StrictInt
 from pydantic._internal._model_construction import ModelMetaclass
+from collections.abc import Mapping
+from numbers import Number
 
 try:
     from yaml import dump as yaml_dump
@@ -152,15 +154,16 @@ class Outputters(BaseModel):
         description="Print data in nested format",
         json_schema_extra={"function": "outputter_nested"},
     )
-    
+
     @staticmethod
     def outputter_nested(data: Union[dict, list]) -> None:
         """
-        Recursively formats and prints nested data structures (dictionaries and lists) 
+        Recursively formats and prints nested data structures (dictionaries and lists)
         in a human-readable format.
 
         :param data: The nested data structure to be formatted and printed.
         """
+
         def ustring(indent, msg, prefix="", suffix=""):
             indent *= " "
             fmt = "{0}{1}{2}{3}"
@@ -176,9 +179,7 @@ class Outputters(BaseModel):
             if ret is None or ret is True or ret is False:
                 out.append(ustring(indent, ret, prefix=prefix))
             elif isinstance(ret, Number):
-                out.append(
-                    ustring(indent, repr(ret), prefix=prefix)
-                )
+                out.append(ustring(indent, repr(ret), prefix=prefix))
             elif isinstance(ret, str):
                 first_line = True
                 for line in ret.splitlines():
@@ -202,10 +203,10 @@ class Outputters(BaseModel):
                     out.append(ustring(indent, key, suffix=":", prefix=prefix))
                     nest(val, indent + 4, "", out)
             return out
-            
+
         lines = nest(data, 0, "", [])
         lines = "\n".join(lines)
-        
+
         if HAS_RICH:
             RICHCONSOLE.print(lines)
         else:
@@ -292,6 +293,7 @@ class Outputters(BaseModel):
             RICHCONSOLE.print(Markdown(data))
         else:
             print(data)
+
 
 class PipeFunctionsModel(Filters, Formatters, Outputters):
     """
