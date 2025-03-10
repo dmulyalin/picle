@@ -147,6 +147,69 @@ class Outputters(BaseModel):
         description="Print markdown text to terminal",
         json_schema_extra={"function": "outputter_rich_markdown"},
     )
+    nested: Any = Field(
+        None,
+        description="Print data in nested format",
+        json_schema_extra={"function": "outputter_nested"},
+    )
+    
+    @staticmethod
+    def outputter_nested(data: Union[dict, list]) -> None:
+        """
+        Recursively formats and prints nested data structures (dictionaries and lists) 
+        in a human-readable format.
+
+        :param data: The nested data structure to be formatted and printed.
+        """
+        def ustring(indent, msg, prefix="", suffix=""):
+            indent *= " "
+            fmt = "{0}{1}{2}{3}"
+            return fmt.format(indent, prefix, msg, suffix)
+
+        def nest(ret, indent, prefix, out):
+            if isinstance(ret, bytes):
+                try:
+                    ret = ret.decode("utf-8")
+                except UnicodeDecodeError:
+                    ret = str(ret)
+
+            if ret is None or ret is True or ret is False:
+                out.append(ustring(indent, ret, prefix=prefix))
+            elif isinstance(ret, Number):
+                out.append(
+                    ustring(indent, repr(ret), prefix=prefix)
+                )
+            elif isinstance(ret, str):
+                first_line = True
+                for line in ret.splitlines():
+                    line_prefix = " " * len(prefix) if not first_line else prefix
+                    out.append(ustring(indent, line, prefix=line_prefix))
+                    first_line = False
+            elif isinstance(ret, (list, tuple)):
+                for ind in ret:
+                    if isinstance(ind, (list, tuple, Mapping)):
+                        out.append(ustring(indent, "|_"))
+                        prefix = "" if isinstance(ind, Mapping) else "- "
+                        nest(ind, indent + 2, prefix, out)
+                    else:
+                        nest(ind, indent, "- ", out)
+            elif isinstance(ret, Mapping):
+                if indent:
+                    out.append(ustring(indent, "----------"))
+
+                for key in ret.keys():
+                    val = ret[key]
+                    out.append(ustring(indent, key, suffix=":", prefix=prefix))
+                    nest(val, indent + 4, "", out)
+            return out
+            
+        lines = nest(data, 0, "", [])
+        lines = "\n".join(lines)
+        
+        if HAS_RICH:
+            RICHCONSOLE.print(lines)
+        else:
+            print(lines)
 
     @staticmethod
     def outputter_rich_json(data: Union[dict, list]) -> None:
