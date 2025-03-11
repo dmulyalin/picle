@@ -197,7 +197,10 @@ The End.
             "some": {"dictionary": {"data": None}},
             "more": {"dictionary": ["data"]},
             "even": {"more": {"dictionary": "data"}},
-            "list": [{"more": {"dictionary": "data"}}, {"more": {"dictionary": "data"}}],
+            "list": [
+                {"more": {"dictionary": "data"}},
+                {"more": {"dictionary": "data"}},
+            ],
         }
 
     @staticmethod

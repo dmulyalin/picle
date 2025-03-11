@@ -956,8 +956,16 @@ class App(cmd.Cmd):
                                 for processor in model.PicleConfig.processors:
                                     if callable(processor):
                                         ret = processor(ret)
-                        # extract outputter from PicleConfig
+                        # extract outputter from PicleConfig or json_schema_extra
                         if index == 0:
+                            # extract json_schema_extra from last command
+                            json_schema_extra = {}
+                            if command[-1]["fields"]:
+                                last_field_name = command[-1]["fields"][-1]["name"]
+                                last_field = model.model_fields[last_field_name]
+                                json_schema_extra = (
+                                    getattr(last_field, "json_schema_extra") or {}
+                                )
                             # check if outputter returned together with results
                             if isinstance(ret, tuple):
                                 if len(ret) == 2:
@@ -965,6 +973,13 @@ class App(cmd.Cmd):
                                     outputter_kwargs = {}
                                 elif len(ret) == 3:
                                     ret, outputter, outputter_kwargs = ret
+                            # use outputter from Field definition
+                            elif json_schema_extra.get("outputter"):
+                                outputter = json_schema_extra["outputter"]
+                                outputter_kwargs = json_schema_extra.get(
+                                    "outputter_kwargs", {}
+                                )
+                            # use outputter from PicleConfig
                             elif hasattr(model, "PicleConfig") and hasattr(
                                 model.PicleConfig, "outputter"
                             ):

@@ -144,6 +144,11 @@ class Outputters(BaseModel):
         description="Pretty print table output using Rich",
         json_schema_extra={"function": "outputter_rich_table"},
     )
+    rich_yaml: Any = Field(
+        None,
+        description="Pretty print YAML output using Rich",
+        json_schema_extra={"function": "outputter_rich_yaml"},
+    )
     rich_markdown: Any = Field(
         None,
         description="Print markdown text to terminal",
@@ -156,12 +161,13 @@ class Outputters(BaseModel):
     )
 
     @staticmethod
-    def outputter_nested(data: Union[dict, list]) -> None:
+    def outputter_nested(data: Union[dict, list], initial_indent: int = 0) -> None:
         """
         Recursively formats and prints nested data structures (dictionaries and lists)
         in a human-readable format.
 
-        :param data: The nested data structure to be formatted and printed.
+        :param data: nested data structure to be formatted and printed.
+        :param initial_indent: initial indentation level.
         """
 
         def ustring(indent, msg, prefix="", suffix=""):
@@ -204,13 +210,38 @@ class Outputters(BaseModel):
                     nest(val, indent + 4, "", out)
             return out
 
-        lines = nest(data, 0, "", [])
+        lines = nest(data, initial_indent, "", [])
         lines = "\n".join(lines)
 
         if HAS_RICH:
             RICHCONSOLE.print(lines)
         else:
             print(lines)
+
+    @staticmethod
+    def outputter_rich_yaml(data: Union[dict, list], initial_indent: int = 0) -> None:
+        """
+        Function to pretty print YAML string using Rich library
+
+        :param data: any data to print
+        :param initial_indent: initial indentation level.
+        """
+        if isinstance(data, bytes):
+            data = data.decode("utf-8")
+
+        # data should be a YAML string
+        try:
+            if HAS_RICH and HAS_YAML:
+                data = yaml_dump(data, default_flow_style=False, sort_keys=False)
+                # add  indent
+                data = "\n".join(
+                    [f"{' ' * initial_indent}{i}" for i in data.splitlines()]
+                )
+                RICHCONSOLE.print(data)
+            else:
+                print(data)
+        except Exception as e:
+            print(f"ERROR: Data is not a valid YAML string:\n{data}\n\nError: '{e}'")
 
     @staticmethod
     def outputter_rich_json(data: Union[dict, list]) -> None:

@@ -156,6 +156,8 @@ def test_processors_formatter_pprint():
 
     assert (
         """{   'even': {'more': {'dictionary': 'data'}},
+    'list': [   {'more': {'dictionary': 'data'}},
+                {'more': {'dictionary': 'data'}}],
     'more': {'dictionary': ['data']},
     'some': {'dictionary': {'data': None}}}"""
         in shell_output
@@ -173,6 +175,8 @@ def test_pipe_formatter_pprint():
 
     assert (
         """{   'even': {'more': {'dictionary': 'data'}},
+    'list': [   {'more': {'dictionary': 'data'}},
+                {'more': {'dictionary': 'data'}}],
     'more': {'dictionary': ['data']},
     'some': {'dictionary': {'data': None}}}"""
         in shell_output
@@ -196,6 +200,18 @@ def test_pipe_formatter_json_and_alias():
             "dictionary": "data"
         }
     },
+    "list": [
+        {
+            "more": {
+                "dictionary": "data"
+            }
+        },
+        {
+            "more": {
+                "dictionary": "data"
+            }
+        }
+    ],
     "more": {
         "dictionary": [
             "data"
@@ -284,6 +300,11 @@ def test_pipe_formatter_yaml():
         """even:
   more:
     dictionary: data
+list:
+- more:
+    dictionary: data
+- more:
+    dictionary: data
 more:
   dictionary:
   - data
@@ -303,6 +324,7 @@ def test_outputter_rich_json():
 
     assert True
 
+
 def test_outputter_nested():
     # outputter prints to terminal bypassing stdout, hence no output to test
 
@@ -311,6 +333,7 @@ def test_outputter_nested():
     shell.onecmd("show data_output_nested")
 
     assert True
+
 
 def test_PicleConfig_processor_with_run_method():
     """
