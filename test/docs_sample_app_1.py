@@ -1,11 +1,20 @@
+import time
 from picle import App
-from typing import Callable
+from typing import Any
 from pydantic import BaseModel, Field
 
 
 class model_show(BaseModel):
-    version: Callable = Field("show_version", description="Show software version")
-    clock: Callable = Field("show_clock", description="Show current clock")
+    version: Any = Field(
+        None,
+        description="Show software version",
+        json_schema_extra={"function": "show_version"},
+    )
+    clock: Any = Field(
+        None,
+        description="Show current clock",
+        json_schema_extra={"function": "show_clock"},
+    )
 
     @staticmethod
     def show_version():
@@ -13,8 +22,6 @@ class model_show(BaseModel):
 
     @staticmethod
     def show_clock():
-        import time
-
         return time.ctime()
 
 

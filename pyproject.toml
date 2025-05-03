@@ -17,7 +17,7 @@ pyreadline3 = { version = "3.4.1", markers = "sys_platform == 'win32'" }
 # optional dependencies for extras definition
 rich = { version = ">=13.0.0,<=14.0.0", optional = true }
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = { version = "24.10.0", markers = "python_version >= '3.9'" }
 bandit = { version = "1.8.0", markers = "python_version >= '3.9'" }
 flake8 = { version = "7.1.1", markers = "python_version >= '3.9'" }

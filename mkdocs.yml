@@ -11,7 +11,9 @@ markdown_extensions:
 - md_in_html
 - pymdownx.superfences
 nav:
-- Overview: index.md
+- Overview: 
+  - Overview: index.md
+  - Changelog: changelog.md
 - Getting Started: Getting Started.md
 - API Reference: api_reference.md
 plugins:

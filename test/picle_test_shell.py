@@ -5,9 +5,9 @@ by building sample App.
 
 import json
 from picle import App
-from picle.models import PipeFunctionsModel, Formatters, Outputters
+from picle.models import PipeFunctionsModel, Outputters
 from enum import Enum
-from typing import List, Union, Optional, Callable, Any
+from typing import List, Union, Optional, Any
 from pydantic import (
     ValidationError,
     BaseModel,
@@ -100,7 +100,7 @@ class model_nr_cfg(filters):
         return kwargs
 
     class PicleConfig:
-        processors = [Formatters.formatter_json]
+        processors = [Outputters.outputter_json]
 
 
 class model_nr(BaseModel):
@@ -140,32 +140,61 @@ class ShowXYZModel(BaseModel):
 
 
 class model_show(BaseModel):
-    version: Callable = Field("show_version", description="Show software version")
-    clock: Callable = Field("show_clock", description="Show current clock")
-    joke: Callable = Field("show_joke", description="Show joke")
-    data: Callable = Field(
-        "produce_structured_data", description="Produce structured data"
+    version: Any = Field(
+        None,
+        description="Show software version",
+        json_schema_extra={"function": "show_version"},
     )
-    data_pprint: Callable = Field(
-        "produce_structured_data",
-        description="Show data using pprint formatter",
-        json_schema_extra={"processors": [Formatters.formatter_pprint]},
+    clock: Any = Field(
+        None,
+        description="Show current clock",
+        json_schema_extra={"function": "show_clock"},
     )
-    data_rich_json: Callable = Field(
-        "produce_structured_data",
+    joke: Any = Field(
+        None, description="Show joke", json_schema_extra={"function": "show_joke"}
+    )
+    data: Any = Field(
+        None,
+        description="Produce structured data",
+        json_schema_extra={"function": "produce_structured_data"},
+    )
+    data_list: Any = Field(
+        None,
+        description="Produce structured data",
+        json_schema_extra={"function": "produce_structured_data_list"},
+    )
+    data_pprint: Any = Field(
+        None,
+        description="Show data using pprint outputter",
+        json_schema_extra={
+            "processors": [Outputters.outputter_pprint],
+            "function": "produce_structured_data",
+        },
+    )
+    data_rich_json: Any = Field(
+        None,
         description="Show data using rich_json outputter",
-        json_schema_extra={"outputter": Outputters.outputter_rich_json},
+        json_schema_extra={
+            "outputter": Outputters.outputter_json,
+            "function": "produce_structured_data",
+        },
     )
-    data_rich_table: Callable = Field(
-        "produce_structured_data_table",
+    data_rich_table: Any = Field(
+        None,
         description="Show data using rich_table outputter",
-        json_schema_extra={"outputter": Outputters.outputter_rich_table},
+        json_schema_extra={
+            "outputter": Outputters.outputter_rich_table,
+            "function": "produce_structured_data_table",
+        },
     )
     XYZ: ShowXYZModel = Field(None, description="Show XYZ status")
-    data_output_nested: Callable = Field(
-        "produce_structured_data",
+    data_output_nested: Any = Field(
+        None,
         description="Show data using nested outputter",
-        json_schema_extra={"outputter": Outputters.outputter_nested},
+        json_schema_extra={
+            "outputter": Outputters.outputter_nested,
+            "function": "produce_structured_data",
+        },
     )
 
     class PicleConfig:
@@ -204,6 +233,14 @@ The End.
         }
 
     @staticmethod
+    def produce_structured_data_list():
+        return [
+            {"name": "name3", "key1": "key1_value3", "key2": "key2_value3"},
+            {"name": "name1", "key1": "key1_value1", "key2": "key2_value1"},
+            {"name": "name2", "key1": "key1_value2", "key2": "key2_value2"},
+        ]
+
+    @staticmethod
     def produce_structured_data_table():
         return [
             {"name": "name3", "key1": "key1_value3", "key2": "key2_value3"},
@@ -220,7 +257,7 @@ class model_PicleConfig_outputter_with_run_method(BaseModel):
         return kwargs
 
     class PicleConfig:
-        outputter = Outputters.outputter_rich_json
+        outputter = Outputters.outputter_json
 
 
 class model_outputter_rich_table_with_PicleConfig_kwargs(BaseModel):
@@ -239,16 +276,19 @@ class model_outputter_rich_table_with_PicleConfig_kwargs(BaseModel):
         outputter_kwargs = {"sortby": "name"}
 
 
-class model_PicleConfig_outputter_with_callable(BaseModel):
-    argument: Callable = Field("some_function", description="Execute command")
+class model_PicleConfig_outputter_with_function(BaseModel):
+    argument: Any = Field(
+        None,
+        description="Execute command",
+        json_schema_extra={"function": "some_function"},
+    )
 
     @staticmethod
     def some_function():
         return {"some": "data"}
 
     class PicleConfig:
-        processors = [Formatters.formatter_json]
-        outputter = Outputters.outputter_rich_print
+        processors = [Outputters.json]
 
 
 class model_TestJsonInput(BaseModel):
@@ -278,7 +318,7 @@ class model_TestResultSpecificOutputter(BaseModel):
 
     @staticmethod
     def run(**kwargs):
-        return kwargs, Outputters.outputter_rich_print, {}
+        return kwargs, Outputters.outputter_pprint, {}
 
 
 class model_TestResultSpecificOutputterNoKwargs(BaseModel):
@@ -287,7 +327,7 @@ class model_TestResultSpecificOutputterNoKwargs(BaseModel):
 
     @staticmethod
     def run(**kwargs):
-        return kwargs, Outputters.outputter_rich_print
+        return kwargs, Outputters.outputter_pprint
 
 
 class model_TestCommandValues(BaseModel):
@@ -419,12 +459,12 @@ class Root(BaseModel):
     test_PicleConfig_outputter_with_run_method: (
         model_PicleConfig_outputter_with_run_method
     ) = Field(None, description="Command to test PicleConfig outputter with run method")
-    test_PicleConfig_outputter_with_callable: (
-        model_PicleConfig_outputter_with_callable
-    ) = Field(None, description="Command to test PicleConfig outputter with callable")
+    test_PicleConfig_outputter_with_function: (
+        model_PicleConfig_outputter_with_function
+    ) = Field(None, description="Command to test PicleConfig outputter with function")
     test_outputter_rich_table_with_PicleConfig_kwargs: (
         model_outputter_rich_table_with_PicleConfig_kwargs
-    ) = Field(None, description="Command to test PicleConfig outputter with callable")
+    ) = Field(None, description="Command to test PicleConfig outputter")
     test_json_input: model_TestJsonInput = Field(None, description="Test JSON input")
     test_multiline_input: model_TestMultilineInput = Field(
         None, description="Test Multiline input"
@@ -473,6 +513,7 @@ class Root(BaseModel):
         intro = "PICLE Sample app"
         newline = "\r\n"
         completekey = "tab"
+        use_rich = False
 
 
 if __name__ == "__main__":

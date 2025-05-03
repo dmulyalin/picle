@@ -8,11 +8,13 @@ with model configuration parameters:
 - ``ruler`` - The character used to draw separator lines under the help-message headers. If empty, no ruler line is drawn, defaults is empty
 - ``intro`` - A string to issue as an intro or banner
 - ``prompt`` - command line shell prompt
+- ``use_rich`` - Use Python Rich library to print results if set to `True`
 - ``newline`` - newline character to use while printing output, default is ``\r\n``
 - ``completekey`` - is the ``readline`` name of a completion key, defaults to ``tab``
 - ``pipe`` - reference to Pydantic model class to use with ``|`` (pipe) to process the
-	results with various functions, special value ``pipe = "self"`` instruct to use
-	current model for piping results through.
+	results with various functions, special values:
+     - ``pipe = "self"`` instruct to use current model for piping results through
+     - ``import.path.to.model`` python import string to model for piping results through
 - ``processors`` - list of functions to run results of `first command` through one by one
 - ``outputter`` - function to output results, by default results written to stdout
 - ``outputter_kwargs`` - dictionary containing any additional argument to use with outputter
@@ -20,7 +22,7 @@ with model configuration parameters:
 Sample ``PicleConfig`` definition:
 
 ```
-from picle.models import PipeFunctionsModel, Formatters, Outputters
+from picle.models import PipeFunctionsModel, Outputters
 
 class ShellModel(BaseModel):
     """ define command attributes here """
@@ -33,7 +35,7 @@ class ShellModel(BaseModel):
         newline = "\r\n"
         completekey = "tab"
 		pipe = PipeFunctionsModel
-		processors = [Formatters.formatter_json]
+		processors = [Outputters.outputter_json]
 		outputter = Outputters.outputter_rich_print
 		outputter_kwargs = {"any": "extra_argument"}
 ```
@@ -65,20 +67,21 @@ Results returned by processor function passed on as input to next processor func
 list and so on.
 
 In example below results returned by ``produce_structured_data`` function passed through
-pprint formatter ``Formatters.formatter_pprint`` function to produce pretty formatted string.
+pprint outputter ``Outputters.outputter_pprint`` function to produce pretty formatted string.
 
 ```
-from picle.models import Formatters
+from picle.models import Outputters
 
 class model_show(BaseModel):
-    data_pprint: Callable = Field(
-        "produce_structured_data",
-        description="Show data using pprint formatter",
+    data_pprint: Any = Field(
+        None,
+        description="Show data using pprint outputter",
         json_schema_extra={
             "processors": [
-                    Formatters.formatter_pprint
-                ]
-            }
+                    Outputters.outputter_pprint
+                ],
+            "function": "produce_structured_data"
+        }
     )
 
     @staticmethod
@@ -211,7 +214,6 @@ shell.close()
 ## PICLE Build In Models
 
 ::: picle.models.Filters
-::: picle.models.Formatters
 ::: picle.models.Outputters
 ::: picle.models.PipeFunctionsModel
 ::: picle.models.MAN

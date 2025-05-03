@@ -15,6 +15,7 @@ import enum
 import traceback
 import os
 import platform
+import importlib
 
 from typing import Callable, Union
 from pydantic import ValidationError, Json
@@ -22,6 +23,14 @@ from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.fields import FieldInfo
 from .utils import run_print_exception
 from .models import MAN
+
+try:
+    from rich.console import Console as rich_console
+
+    RICHCONSOLE = rich_console()
+    HAS_RICH = True
+except ImportError:
+    HAS_RICH = False
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +61,7 @@ class App(cmd.Cmd):
     prompt = "picle#"
     newline = "\r\n"
     completekey = "tab"
+    use_rich = True
 
     def __init__(self, root, stdin=None, stdout=None):
         self.root = root
@@ -65,6 +75,7 @@ class App(cmd.Cmd):
             self.intro = getattr(self.shell.PicleConfig, "intro", self.intro)
             self.prompt = getattr(self.shell.PicleConfig, "prompt", self.prompt)
             self.newline = getattr(self.shell.PicleConfig, "newline", self.newline)
+            self.use_rich = getattr(self.shell.PicleConfig, "use_rich", self.use_rich)
             self.completekey = getattr(
                 self.shell.PicleConfig, "completekey", self.completekey
             )
@@ -97,9 +108,11 @@ class App(cmd.Cmd):
         """
         if not isinstance(text, str):
             text = str(text)
-        if not text.endswith(self.newline):
-            self.stdout.write(text + self.newline)
+        if self.use_rich and HAS_RICH:
+            RICHCONSOLE.print(text)
         else:
+            if not text.endswith(self.newline):
+                text += self.newline
             self.stdout.write(text)
 
     def model_mount(
@@ -265,9 +278,6 @@ class App(cmd.Cmd):
             # skip non Field references e.g. to other models
             if not isinstance(field, FieldInfo):
                 continue
-            # skip references to Callables
-            if field.annotation is Callable:
-                continue
             # skip required Fields
             if field.is_required():
                 continue
@@ -328,6 +338,21 @@ class App(cmd.Cmd):
                         # reference pipe model to current model
                         current_model = {
                             "model": current_model["model"],
+                            "fields": [],
+                            "parameter": parameter,
+                        }
+                    elif isinstance(current_model["model"].PicleConfig.pipe, str):
+                        # if PicleConfig.pipe is "picle.models.PipeFunctionsModel" string
+                        # below is same as "from picle.models import PipeFunctionsModel"
+                        pipe_model_name = current_model["model"].PicleConfig.pipe.split(
+                            "."
+                        )[-1]
+                        module = ".".join(
+                            current_model["model"].PicleConfig.pipe.split(".")[:-1]
+                        )
+                        module = __import__(module, fromlist=[""])
+                        current_model = {
+                            "model": getattr(module, pipe_model_name),
                             "fields": [],
                             "parameter": parameter,
                         }
@@ -413,10 +438,9 @@ class App(cmd.Cmd):
                     # check need to record field presence before going to next model
                     if (
                         current_field.get("values") is ...
-                        and current_field["field"].json_schema_extra is not None
-                        and "presence" in current_field["field"].json_schema_extra
+                        and "presence" in current_field["json_schema_extra"]
                     ):
-                        value = current_field["field"].json_schema_extra["presence"]
+                        value = current_field["json_schema_extra"]["presence"]
                         self._save_collected_value(current_field, value)
                     # goto next model
                     current_model = {
@@ -436,13 +460,17 @@ class App(cmd.Cmd):
                     # check need to record field presence before going to next field
                     if (
                         current_field.get("values") is ...
-                        and current_field["field"].json_schema_extra is not None
-                        and "presence" in current_field["field"].json_schema_extra
+                        and "presence" in current_field["json_schema_extra"]
                     ):
-                        value = current_field["field"].json_schema_extra["presence"]
+                        value = current_field["json_schema_extra"]["presence"]
                         self._save_collected_value(current_field, value)
                     # goto next field
-                    current_field = {"name": parameter, "values": ..., "field": field}
+                    current_field = {
+                        "name": parameter,
+                        "values": ...,
+                        "field": field,
+                        "json_schema_extra": field.json_schema_extra or {},
+                    }
                     # find and replace default value if present
                     for index, field in enumerate(current_model["fields"]):
                         if field["name"] == current_field["name"]:
@@ -500,10 +528,9 @@ class App(cmd.Cmd):
         if (
             is_help is False
             and current_field.get("values") is ...
-            and current_field["field"].json_schema_extra is not None
-            and "presence" in current_field["field"].json_schema_extra
+            and "presence" in current_field["json_schema_extra"]
         ):
-            value = current_field["field"].json_schema_extra["presence"]
+            value = current_field["json_schema_extra"]["presence"]
             self._save_collected_value(current_field, value)
 
         # iterate over collected models and fields to see
@@ -537,16 +564,11 @@ class App(cmd.Cmd):
         width = 0  # record longest command width for padding
         # print help message only for last collected field
         if last_field and last_field["values"] == ...:
-            field = model["model"].model_fields[last_field["name"]]
-            json_schema_extra = getattr(field, "json_schema_extra") or {}
+            field = last_field["field"]
+            json_schema_extra = last_field["json_schema_extra"]
             name = f"<'{last_field['name']}' value>"
-            # check if field is callable
-            if field.annotation is Callable:
-                name = "<ENTER>"
-                lines[name] = "Execute command"
-                width = max(width, len(name))
             # check if field referencing function
-            elif json_schema_extra.get("function"):
+            if json_schema_extra.get("function"):
                 lines[name] = f"{field.description}"
                 name = "<ENTER>"
                 lines[name] = "Execute command"
@@ -835,39 +857,62 @@ class App(cmd.Cmd):
             elif "WINDOWS" in platform.system().upper():
                 os.system("cls")
 
+    def process_help_command(self, line: str) -> None:
+        """
+        Processes a help command by parsing the input line and providing relevant
+        information about the command or model fields.
+
+        Args:
+            line (str): The input command line string, which may end with "?" or "??"
+                to indicate a help request.
+
+        Exceptions:
+            FieldLooseMatchOnly: Raised when a parameter loosely matches a field in the model.
+                Provides detailed help for the matched model and parameter.
+            FieldKeyError: Raised when a parameter does not match any field in the model.
+                Displays an error message indicating the incorrect parameter.
+
+        Behavior:
+            - If the line ends with "?", provides basic help for the command or model.
+            - If the line ends with "??", provides verbose help for the command or model.
+            - Handles errors gracefully by displaying appropriate messages for incorrect
+              or loosely matched parameters.
+        """
+        try:
+            command_models = self.parse_command(line.rstrip("?"), is_help=True)
+        except FieldLooseMatchOnly as e:
+            model, parameter = e.args
+            self.print_model_help(
+                [[model]],
+                verbose=True if line.endswith("??") else False,
+                match=parameter,
+            )
+        except FieldKeyError as e:
+            model, parameter = e.args
+            model_name = (
+                model["model"].__name__
+                if hasattr(model["model"], "__name__")
+                else model["model"].__repr_name__()
+            )
+            self.write(
+                f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
+            )
+        else:
+            self.print_model_help(
+                command_models,
+                verbose=True if line.endswith("??") else False,
+            )
+
     @run_print_exception
     def default(self, line: str):
         """Method called if no do_xyz methods found"""
         ret = False
-        outputter = None
+        outputter = self.write
+        outputter_kwargs = {}
+        line = line.strip()
 
-        if line.strip().endswith("?"):
-            try:
-                command_models = self.parse_command(
-                    line.strip().rstrip("?"), is_help=True
-                )
-            except FieldLooseMatchOnly as e:
-                model, parameter = e.args
-                self.print_model_help(
-                    [[model]],
-                    verbose=True if line.strip().endswith("??") else False,
-                    match=parameter,
-                )
-            except FieldKeyError as e:
-                model, parameter = e.args
-                model_name = (
-                    model["model"].__name__
-                    if hasattr(model["model"], "__name__")
-                    else model["model"].__repr_name__()
-                )
-                self.write(
-                    f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
-                )
-            else:
-                self.print_model_help(
-                    command_models,
-                    verbose=True if line.strip().endswith("??") else False,
-                )
+        if line.endswith("?"):
+            self.process_help_command(line)
         else:
             try:
                 command_models = self.parse_command(line, collect_multiline=True)
@@ -897,6 +942,8 @@ class App(cmd.Cmd):
             else:
                 # go over collected commands separated by pipe
                 for index, command in enumerate(command_models):
+                    json_schema_extra = {}
+                    method_name = None
                     # collect arguments
                     command_arguments = {
                         f["name"]: f["values"]
@@ -906,8 +953,8 @@ class App(cmd.Cmd):
                     }
                     # collect command defaults
                     command_defaults = {}
-                    for model in command:
-                        command_defaults.update(model.get("defaults", {}))
+                    for cmd in command:
+                        command_defaults.update(cmd.get("defaults", {}))
                     model = command[-1]["model"]
                     # check if model has subshell
                     if (
@@ -929,187 +976,91 @@ class App(cmd.Cmd):
                         self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
                         self.shell = model
                         self.shells.append(self.shell)
+                        continue
+
                     # run model "run" function if it exits
-                    elif hasattr(model, "run"):
-                        # validate command argument values
-                        self._validate_values(command)
-                        # call first command using collected arguments only
-                        if index == 0:
-                            kw = {
-                                **self.shell_defaults,
-                                **command_defaults,
-                                **command_arguments,
-                            }
-                            ret = model.run(**kw)
-                        # pipe results through subsequent commands
-                        else:
-                            kw = {
-                                **command_defaults,
-                                **command_arguments,
-                            }
-                            ret = model.run(ret, **kw)
-                        # run processors from PicleConfig if any for first command only
-                        if index == 0:
-                            if hasattr(model, "PicleConfig") and hasattr(
-                                model.PicleConfig, "processors"
-                            ):
-                                for processor in model.PicleConfig.processors:
-                                    if callable(processor):
-                                        ret = processor(ret)
-                        # extract outputter from PicleConfig or json_schema_extra
-                        if index == 0:
-                            # extract json_schema_extra from last command
-                            json_schema_extra = {}
-                            if command[-1]["fields"]:
-                                last_field_name = command[-1]["fields"][-1]["name"]
-                                last_field = model.model_fields[last_field_name]
-                                json_schema_extra = (
-                                    getattr(last_field, "json_schema_extra") or {}
-                                )
-                            # check if outputter returned together with results
-                            if isinstance(ret, tuple):
-                                if len(ret) == 2:
-                                    ret, outputter = ret
-                                    outputter_kwargs = {}
-                                elif len(ret) == 3:
-                                    ret, outputter, outputter_kwargs = ret
-                            # use outputter from Field definition
-                            elif json_schema_extra.get("outputter"):
-                                outputter = json_schema_extra["outputter"]
-                                outputter_kwargs = json_schema_extra.get(
-                                    "outputter_kwargs", {}
-                                )
-                            # use outputter from PicleConfig
-                            elif hasattr(model, "PicleConfig") and hasattr(
-                                model.PicleConfig, "outputter"
-                            ):
-                                outputter = model.PicleConfig.outputter
-                                outputter_kwargs = getattr(
-                                    model.PicleConfig, "outputter_kwargs", {}
-                                )
-                    # run command using Callable or json_schema_extra["function"]
-                    elif command[-1]["fields"]:
-                        # validate command argument values
-                        self._validate_values(command)
-                        # extract last field
-                        last_field_name = command[-1]["fields"][-1]["name"]
-                        last_field = model.model_fields[last_field_name]
-                        json_schema_extra = (
-                            getattr(last_field, "json_schema_extra") or {}
-                        )
-                        # check if last field refers to callable e.g. function
-                        if last_field.annotation is Callable:
-                            method_name = last_field.get_default()
-                            if method_name and hasattr(model, method_name):
-                                # call first command using collected arguments only
-                                if index == 0:
-                                    kw = {
-                                        **self.shell_defaults,
-                                        **command_defaults,
-                                        **command_arguments,
-                                    }
-                                    # check if need to give root model as an argument
-                                    if json_schema_extra.get("root_model"):
-                                        kw["root_model"] = self.root
-                                    # check if need to give PICLE App as an argument
-                                    if json_schema_extra.get("picle_app"):
-                                        kw["picle_app"] = self
-                                    ret = getattr(model, method_name)(**kw)
-                                # pipe results through subsequent commands
-                                else:
-                                    kw = {
-                                        **command_defaults,
-                                        **command_arguments,
-                                    }
-                                    ret = getattr(model, method_name)(ret, **kw)
-                            else:
-                                self.write(
-                                    f"Model '{model.__name__}' has no '{method_name}' "
-                                    f"method defined for '{last_field_name}' Callable field"
-                                )
-                        # check if last field has `function` parameter defined
-                        elif json_schema_extra.get("function"):
-                            method_name = json_schema_extra["function"]
-                            if hasattr(model, method_name):
-                                # call first command using collected arguments only
-                                if index == 0:
-                                    kw = {
-                                        **self.shell_defaults,
-                                        **command_defaults,
-                                        **command_arguments,
-                                    }
-                                    # check if need to give root model as an argument
-                                    if json_schema_extra.get("root_model"):
-                                        kw["root_model"] = self.root
-                                    # check if need to give PICLE App as an argument
-                                    if json_schema_extra.get("picle_app"):
-                                        kw["picle_app"] = self
-                                    ret = getattr(model, method_name)(**kw)
-                                # pipe results through subsequent commands
-                                else:
-                                    kw = {
-                                        **command_defaults,
-                                        **command_arguments,
-                                    }
-                                    ret = getattr(model, method_name)(ret, **kw)
-                            else:
-                                self.write(
-                                    f"Model '{model.__name__}' has no '{method_name}' "
-                                    f"method defined for '{last_field_name}' function"
-                                )
-                        else:
-                            self.write(
-                                f"Model '{model.__name__}' has no 'run' method defined"
-                            )
-                        # use processors from Field definition if any
-                        if json_schema_extra.get("processors"):
-                            for processor in json_schema_extra["processors"]:
+                    if hasattr(model, "run"):
+                        method_name = "run"
+
+                    # extract json_schema_extra
+                    if command[-1]["fields"]:
+                        json_schema_extra = command[-1]["fields"][-1][
+                            "json_schema_extra"
+                        ]
+                        # use function from json_schema_extra definition no run method
+                        if method_name is None:
+                            method_name = json_schema_extra.get("function")
+
+                    # do checks
+                    if method_name and not hasattr(model, method_name):
+                        ret = f"Model '{model.__name__}' has no '{method_name}' method defined"
+                        break
+                    elif method_name is None:
+                        self.defaults_pop(model)
+                        ret = f"Incorrect command for '{model.__name__}' model"
+                        break
+                    self._validate_values(command)  # raises error if not valid
+
+                    # call first command using collected arguments only
+                    if index == 0:
+                        kw = {
+                            **self.shell_defaults,
+                            **command_defaults,
+                            **command_arguments,
+                        }
+                        # check if need to give root model as an argument
+                        if json_schema_extra.get("root_model"):
+                            kw["root_model"] = self.root
+                        # check if need to give PICLE App as an argument
+                        if json_schema_extra.get("picle_app"):
+                            kw["picle_app"] = self
+                        ret = getattr(model, method_name)(**kw)
+                    # pipe results through subsequent commands
+                    else:
+                        kw = {
+                            **command_defaults,
+                            **command_arguments,
+                        }
+                        ret = getattr(model, method_name)(ret, **kw)
+
+                    # use processors from Field definition if any
+                    if json_schema_extra.get("processors"):
+                        for processor in json_schema_extra["processors"]:
+                            if callable(processor):
+                                ret = processor(ret)
+
+                    # run processors from PicleConfig if any for first command only
+                    if index == 0:
+                        if hasattr(model, "PicleConfig") and hasattr(
+                            model.PicleConfig, "processors"
+                        ):
+                            for processor in model.PicleConfig.processors:
                                 if callable(processor):
                                     ret = processor(ret)
-                        # run processors from PicleConfig if any for first command only
-                        if index == 0:
-                            if hasattr(model, "PicleConfig") and hasattr(
-                                model.PicleConfig, "processors"
-                            ):
-                                for processor in model.PicleConfig.processors:
-                                    if callable(processor):
-                                        ret = processor(ret)
-                        # extract outputter from first command
-                        if index == 0:
-                            # check if outputter returned together with results
-                            if isinstance(ret, tuple):
-                                if len(ret) == 2:
-                                    ret, outputter = ret
-                                    outputter_kwargs = {}
-                                elif len(ret) == 3:
-                                    ret, outputter, outputter_kwargs = ret
-                            # use outputter from Field definition
-                            elif json_schema_extra.get("outputter"):
-                                outputter = json_schema_extra["outputter"]
-                                outputter_kwargs = json_schema_extra.get(
-                                    "outputter_kwargs", {}
-                                )
-                            # use PicleConfig outputter
-                            elif hasattr(model, "PicleConfig") and hasattr(
-                                model.PicleConfig, "outputter"
-                            ):
-                                outputter = model.PicleConfig.outputter
-                                outputter_kwargs = getattr(
-                                    model.PicleConfig, "outputter_kwargs", {}
-                                )
-                    else:
-                        self.defaults_pop(model)
-                        ret = f"Incorrect command, provide more arguments for '{model}' model"
-                        break
+
+                    # check if outputter returned together with results
+                    if isinstance(ret, tuple):
+                        if len(ret) == 2:
+                            ret, outputter = ret
+                            outputter_kwargs = {}
+                        elif len(ret) == 3:
+                            ret, outputter, outputter_kwargs = ret
+                    # use outputter from Field definition
+                    elif json_schema_extra.get("outputter"):
+                        outputter = json_schema_extra["outputter"]
+                        outputter_kwargs = json_schema_extra.get("outputter_kwargs", {})
+                    # use PicleConfig outputter
+                    elif hasattr(model, "PicleConfig") and hasattr(
+                        model.PicleConfig, "outputter"
+                    ):
+                        outputter = model.PicleConfig.outputter
+                        outputter_kwargs = getattr(
+                            model.PicleConfig, "outputter_kwargs", {}
+                        )
 
         # returning True will end the shell - exit
         if ret is True:
             return True
 
-        if ret:
-            # use specified outputter to output results
-            if callable(outputter):
-                outputter(ret, **outputter_kwargs)
-            # write to stdout by default
-            else:
-                self.write(ret)
+        if ret and callable(outputter):
+            outputter(ret, **outputter_kwargs)

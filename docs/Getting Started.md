@@ -61,13 +61,13 @@ Can use code below:
 ```
 import time
 from picle import App
-from typing import Callable
+from typing import Any
 from pydantic import BaseModel, Field
 
 
 class model_show(BaseModel):
-    version: Callable = Field("show_version", description="Show software version")
-    clock: Callable = Field("show_clock", description="Show current clock")
+    version: Any = Field(None, description="Show software version", json_schema_extra={"function": "show_version"})
+    clock: Any = Field(None, description="Show current clock", json_schema_extra={"function": "show_clock"})
 
     @staticmethod
     def show_version():
@@ -103,3 +103,20 @@ Run above code with ``python myshellfile.py`` command and interact with
 the shell:
 
 ![docs_sample_app_1](images/docs_sample_app_1.gif)
+
+```
+(norfab-py3.9) C:\picle> python docs_sample_app_1.py 
+PICLE Sample app
+picle#show version
+0.1.0
+picle#show clock
+Fri May  2 22:44:01 2025
+picle#man tree
+root
+├── show:    Show commands
+│   ├── version:    Show software version
+│   └── clock:    Show current clock
+└── man:    Manual/documentation functions
+    └── tree:    Print commands tree for shell model specified by dot separated path e.g. model.shell.command
+picle#
+```

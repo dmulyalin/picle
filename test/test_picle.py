@@ -817,3 +817,41 @@ def test_enum_has_boolean_in_a_list():
     shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
     print(f"shell output: '{shell_output}'")
     assert "{'value': 'foo'}" in shell_output
+
+
+def test_tabulate_table():
+    shell.onecmd("top")  # go to top
+
+    shell.onecmd("""show data_list | table""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+
+    assert all(
+        l in shell_output
+        for l in [
+            "+----+--------+-------------+-------------+",
+            "|    | name   | key1        | key2        |",
+            "+====+========+=============+=============+",
+            "|  1 | name3  | key1_value3 | key2_value3 |",
+            "|  2 | name1  | key1_value1 | key2_value1 |",
+            "|  3 | name2  | key1_value2 | key2_value2 |",
+        ]
+    )
+
+
+def test_tabulate_table_tablefmt_plain():
+    shell.onecmd("top")  # go to top
+
+    shell.onecmd("""show data_list | table tablefmt plain""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+
+    assert all(
+        l in shell_output
+        for l in [
+            "name    key1         key2",
+            " 1  name3   key1_value3  key2_value3",
+            " 2  name1   key1_value1  key2_value1",
+            " 3  name2   key1_value2  key2_value2",
+        ]
+    )

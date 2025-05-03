@@ -1,11 +1,19 @@
 import json
 import pprint
+import logging
+import os
+import copy
 
+from enum import Enum
 from typing import List, Union, Optional, Callable, Any
 from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool, StrictInt
+from pydantic_core import PydanticOmit, core_schema
+from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic._internal._model_construction import ModelMetaclass
 from collections.abc import Mapping
 from numbers import Number
+
+log = logging.getLogger(__name__)
 
 try:
     from yaml import dump as yaml_dump
@@ -13,6 +21,13 @@ try:
     HAS_YAML = True
 except ImportError:
     HAS_YAML = False
+
+try:
+    import tabulate as tabulate_lib
+
+    HAS_TABULATE = True
+except ImportError:
+    HAS_TABULATE = False
 
 try:
     from rich.console import Console as rich_console
@@ -24,6 +39,10 @@ try:
     HAS_RICH = True
 except ImportError:
     HAS_RICH = False
+
+# --------------------------------------------------------------------------------
+# FILTERS
+# --------------------------------------------------------------------------------
 
 
 class Filters(BaseModel):
@@ -65,61 +84,141 @@ class Filters(BaseModel):
         )
 
 
-class Formatters(BaseModel):
+# --------------------------------------------------------------------------------
+# OUTPUTTERS
+# --------------------------------------------------------------------------------
+
+
+class TabulateTableFmt(str, Enum):
+    plain = "plain"
+    simple = "simple"
+    github = "github"
+    grid = "grid"
+    simple_grid = "simple_grid"
+    rounded_grid = "rounded_grid"
+    heavy_grid = "heavy_grid"
+    mixed_grid = "mixed_grid"
+    double_grid = "double_grid"
+    fancy_grid = "fancy_grid"
+    outline = "outline"
+    simple_outline = "simple_outline"
+    rounded_outline = "rounded_outline"
+    heavy_outline = "heavy_outline"
+    mixed_outline = "mixed_outline"
+    double_outline = "double_outline"
+    fancy_outline = "fancy_outline"
+    pipe = "pipe"
+    orgtbl = "orgtbl"
+    asciidoc = "asciidoc"
+    jira = "jira"
+    presto = "presto"
+    pretty = "pretty"
+    psql = "psql"
+    rst = "rst"
+    mediawiki = "mediawiki"
+    moinmoin = "moinmoin"
+    youtrack = "youtrack"
+    html = "html"
+    unsafehtml = "unsafehtml"
+    latex = "latex"
+    latex_raw = "latex_raw"
+    latex_booktabs = "latex_booktabs"
+    latex_longtable = "latex_longtable"
+    textile = "textile"
+    tsv = "tsv"
+
+
+class TabulateTableOutputter(BaseModel):
+    tablefmt: TabulateTableFmt = Field(None, description="Table format")
+    headers: Union[StrictStr, List[str]] = Field(None, description="Table headers")
+    sortby: StrictStr = Field(None, description="Column name to sort by")
+    reverse: StrictBool = Field(
+        None,
+        description="Reverse table order when doing sortby",
+        json_schema_extra={"presence": True},
+    )
+    headers_exclude: Union[StrictStr, List[str]] = Field(
+        None, description="List of headers to exclude", alias="headers-exclude"
+    )
+    showindex: StrictBool = Field(
+        None,
+        description="Show table rows indexes",
+        json_schema_extra={"presence": True},
+    )
+    maxcolwidths: StrictInt = Field(
+        None, description="Maximum width of the column before wrapping text"
+    )
+
+    class PicleConfig:
+        pipe = "picle.models.PipeFunctionsModel"
+
+    @staticmethod
+    def run(*args, **kwargs):
+        return Outputters.outputter_tabulate_table(*args, **kwargs)
+
+
+class RichTableOutputter(BaseModel):
+    title: Optional[StrictStr] = Field(None, description="Table title")
+    headers: List[str] = Field(None, description="Table headers")
+    sortby: Optional[StrictStr] = Field(None, description="Column name to sort by")
+
+    @staticmethod
+    def run(*args, **kwargs):
+        return Outputters.outputter_rich_table(*args, **kwargs)
+
+
+class Outputters(BaseModel):
     pprint: Any = Field(
         None,
-        description="Convert results to PPRINT string",
-        json_schema_extra={"function": "formatter_pprint"},
+        description="Convert results to pretty string",
+        json_schema_extra={"function": "outputter_pprint"},
     )
     json_: Union[dict, list] = Field(
         None,
-        description="Convert results to JSON string",
-        json_schema_extra={"function": "formatter_json"},
+        description="Print JSON string using Rich",
+        json_schema_extra={"function": "outputter_json"},
         alias="json",
     )
-    yaml: Union[dict, list] = Field(
+    yaml: Any = Field(
         None,
-        description="Convert results to YAML string",
-        json_schema_extra={"function": "formatter_yaml"},
+        description="Print YAML output using Rich",
+        json_schema_extra={"function": "outputter_yaml"},
+    )
+    markdown: Any = Field(
+        None,
+        description="Print markdown text to terminal",
+        json_schema_extra={"function": "outputter_rich_markdown"},
+        alias="markdown",
+    )
+    nested: Any = Field(
+        None,
+        description="Print data in nested format",
+        json_schema_extra={"function": "outputter_nested"},
+    )
+    save: StrictStr = Field(
+        None,
+        description="Save results to a file",
+        json_schema_extra={"function": "outputter_save"},
+    )
+    table: TabulateTableOutputter = Field(
+        None,
+        description="Format results as a table",
+        json_schema_extra={"function": "outputter_tabulate_table"},
+    )
+    rich_table: RichTableOutputter = Field(
+        None,
+        description="Print table output using Rich",
+        json_schema_extra={"function": "outputter_rich_table"},
+        alias="rich-table",
     )
     kv: dict = Field(
         None,
-        description="Convert results to Key-Value string",
-        json_schema_extra={"function": "formatter_kv"},
+        description="Convert dictionary result to Key-Value string",
+        json_schema_extra={"function": "outputter_kv"},
     )
 
     @staticmethod
-    def formatter_pprint(data: Any) -> str:
-        """
-        Function to pretty print results using python ``pprint`` module
-
-        :param data: any data to pretty print
-        """
-        return pprint.pformat(data, indent=4)
-
-    @staticmethod
-    def formatter_json(data: Any) -> str:
-        """
-        Function to transform results into JSON string
-
-        :param data: any data to convert
-        """
-        return json.dumps(data, indent=4, sort_keys=True)
-
-    @staticmethod
-    def formatter_yaml(data: Any) -> str:
-        """
-        Function to transform results into YAML string
-
-        :param data: any data to convert
-        """
-        if HAS_YAML:
-            return yaml_dump(data, default_flow_style=False)
-        else:
-            return data
-
-    @staticmethod
-    def formatter_kv(data: dict) -> str:
+    def outputter_kv(data: dict) -> str:
         """
         Function to format dictionary result as a key: value output
 
@@ -127,38 +226,14 @@ class Formatters(BaseModel):
         """
         return "\n".join([f" {k}: {v}" for k, v in data.items()])
 
+    @staticmethod
+    def outputter_pprint(data: Any) -> str:
+        """
+        Function to pretty print results using python ``pprint`` module
 
-class Outputters(BaseModel):
-    rich_json: Union[dict, list] = Field(
-        None,
-        description="Pretty print JSON string using Rich",
-        json_schema_extra={"function": "outputter_rich_json"},
-    )
-    rich_print: Any = Field(
-        None,
-        description="Pretty print output using Rich",
-        json_schema_extra={"function": "outputter_rich_print"},
-    )
-    rich_table: Any = Field(
-        None,
-        description="Pretty print table output using Rich",
-        json_schema_extra={"function": "outputter_rich_table"},
-    )
-    rich_yaml: Any = Field(
-        None,
-        description="Pretty print YAML output using Rich",
-        json_schema_extra={"function": "outputter_rich_yaml"},
-    )
-    rich_markdown: Any = Field(
-        None,
-        description="Print markdown text to terminal",
-        json_schema_extra={"function": "outputter_rich_markdown"},
-    )
-    nested: Any = Field(
-        None,
-        description="Print data in nested format",
-        json_schema_extra={"function": "outputter_nested"},
-    )
+        :param data: any data to pretty print
+        """
+        return pprint.pformat(data, indent=4)
 
     @staticmethod
     def outputter_nested(data: Union[dict, list], initial_indent: int = 0) -> None:
@@ -208,84 +283,29 @@ class Outputters(BaseModel):
                     val = ret[key]
                     out.append(ustring(indent, key, suffix=":", prefix=prefix))
                     nest(val, indent + 4, "", out)
+
             return out
+
+        # make sure data is sorted
+        try:
+            if isinstance(data, dict):
+                data = dict(sorted(data.items()))
+            elif isinstance(data, list):
+                data = list(sorted(data))
+        except Exception as e:
+            log.warning(f"Nested outputter data sorting failed: '{e}'")
 
         lines = nest(data, initial_indent, "", [])
         lines = "\n".join(lines)
 
-        if HAS_RICH:
-            RICHCONSOLE.print(lines)
-        else:
-            print(lines)
-
-    @staticmethod
-    def outputter_rich_yaml(data: Union[dict, list], initial_indent: int = 0) -> None:
-        """
-        Function to pretty print YAML string using Rich library
-
-        :param data: any data to print
-        :param initial_indent: initial indentation level.
-        """
-        if isinstance(data, bytes):
-            data = data.decode("utf-8")
-
-        # data should be a YAML string
-        try:
-            if HAS_RICH and HAS_YAML:
-                data = yaml_dump(data, default_flow_style=False, sort_keys=False)
-                # add  indent
-                data = "\n".join(
-                    [f"{' ' * initial_indent}{i}" for i in data.splitlines()]
-                )
-                RICHCONSOLE.print(data)
-            else:
-                print(data)
-        except Exception as e:
-            print(f"ERROR: Data is not a valid YAML string:\n{data}\n\nError: '{e}'")
-
-    @staticmethod
-    def outputter_rich_json(data: Union[dict, list]) -> None:
-        """
-        Function to pretty print JSON string using Rich library
-
-        :param data: any data to print
-        """
-        if isinstance(data, bytes):
-            data = data.decode("utf-8")
-
-        if not isinstance(data, str):
-            data = json.dumps(data)
-
-        # data should be a json string
-        try:
-            if HAS_RICH:
-                RICHCONSOLE.print_json(data, sort_keys=True, indent=4)
-            else:
-                print(data)
-        except Exception as e:
-            print(f"ERROR: Data is not a valid JSON string:\n{data}\n\nError: '{e}'")
-
-    @staticmethod
-    def outputter_rich_print(data: Any) -> None:
-        """
-        Function to pretty print output using Rich library
-
-        :param data: any data to print
-        """
-        if HAS_RICH:
-            RICHCONSOLE.print(data)
-        else:
-            print(data)
+        return lines
 
     @staticmethod
     def outputter_rich_table(
         data: list[dict], headers: list = None, title: str = None, sortby: str = None
     ):
-        """
-        Function to pretty print output in table format using Rich library
+        original_data = copy.deepcopy(data)
 
-        :param data: list of dictionaries to print
-        """
         if not HAS_RICH or not isinstance(data, list):
             print(data)
             return
@@ -308,7 +328,48 @@ class Outputters(BaseModel):
             cells = [item.get(h, "") for h in headers]
             table.add_row(*cells)
 
-        RICHCONSOLE.print(table)
+        return table
+
+    @staticmethod
+    def outputter_yaml(data: Union[dict, list], indent: int = 0) -> None:
+        """
+        Function to pretty print YAML string using Rich library
+
+        :param data: any data to print
+        :param indent: indentation level
+        """
+        if isinstance(data, bytes):
+            data = data.decode("utf-8")
+
+        # data should be a YAML string
+        try:
+            if HAS_YAML:
+                data = yaml_dump(data, default_flow_style=False, sort_keys=True)
+                # add  indent
+                if indent:
+                    data = "\n".join([f"{' ' * indent}{i}" for i in data.splitlines()])
+        except Exception as e:
+            print(f"ERROR: Data is not a valid YAML string:\n{data}\n\nError: '{e}'")
+
+        return data
+
+    @staticmethod
+    def outputter_json(data: Union[dict, list], indent: int = 4) -> None:
+        """
+        Function to pretty print JSON string using Rich library
+
+        :param data: any data to print
+        """
+        if isinstance(data, bytes):
+            data = data.decode("utf-8")
+
+        # data should be a json string
+        try:
+            data = json.dumps(data, indent=indent, sort_keys=True)
+        except Exception as e:
+            print(f"ERROR: Data is not a valid JSON string:\n{data}\n\nError: '{e}'")
+
+        return data
 
     @staticmethod
     def outputter_rich_markdown(data: Any) -> None:
@@ -318,15 +379,133 @@ class Outputters(BaseModel):
         :param data: any data to print
         """
         if not isinstance(data, str):
-            data = str(data)
+            mk_data = str(data)
 
         if HAS_RICH:
-            RICHCONSOLE.print(Markdown(data))
-        else:
-            print(data)
+            RICHCONSOLE.print(Markdown(mk_data))
+
+        # signal to Picle that data was printed by sending None
+        # as second argument, which will be used as a default outputter
+        return data, None
+
+    @staticmethod
+    def outputter_save(data: Any, save: str) -> None:
+        """
+        Function to output data into a file
+
+        :param data: any data to print
+        """
+        # create directories
+        abspath = os.path.abspath(save)
+        dirs = os.path.split(abspath)[0]
+        os.makedirs(dirs, exist_ok=True)
+
+        # save data to file
+        with open(save, "w") as f:
+            if isinstance(data, str):
+                f.write(data)
+            else:
+                f.write(str(data))
+
+        return data
+
+    @staticmethod
+    def outputter_tabulate_table(
+        data: list,
+        headers_exclude: list = None,
+        sortby: str = None,
+        reverse: bool = False,
+        tablefmt: str = "grid",
+        headers: list = None,
+        showindex: bool = True,
+        maxcolwidths: int = None,
+    ) -> None:
+        """
+        Formats and outputs data as a text table.
+
+        This function uses the `tabulate` library to format a list of dictionaries or
+        lists of lists of dictionaries into a table with various styles and options
+        for customization.
+
+        Parameters:
+
+            data (list): A list of dictionaries or list of lists to be formatted into a table.
+                If it is list of lists, the function merges nested lists.
+            headers (list or str, optional): Specifies the table headers. Can be:
+
+                - A list of headers.
+                - A comma-separated string of headers.
+                - "keys" to use dictionary keys as headers.
+
+            showindex (bool, optional): If True, includes an index column in the table.
+            headers_exclude (list, optional): A list or comma-separated string of headers to exclude from the table.
+            sortby (str, optional): The key name to sort the table by. If None, no sorting is applied.
+            reverse (bool, optional): If True, reverses the sort order. Defaults to False.
+        """
+        if not HAS_TABULATE:
+            log.error(
+                "PICLE Table outputter tabulate library import failed, install: pip install tabulate"
+            )
+            return data
+        if not isinstance(data, list):
+            log.error("PICLE Table outputter data is not a list")
+            return data
+
+        # transform headers to exclude argument
+        headers_exclude = headers_exclude or []
+        if isinstance(headers_exclude, str) and "," in headers_exclude:
+            headers_exclude = [i.strip() for i in headers_exclude.split(",")]
+
+        # form base tabulate arguments
+        if isinstance(headers, str):
+            headers = [i.strip() for i in headers.split(",")]
+        elif headers is None:
+            headers = "keys"
+
+        tabulate_kw = {
+            "headers": headers,
+            "tablefmt": tablefmt,
+            "maxcolwidths": maxcolwidths,
+        }
+
+        # form singe table out of list of lists
+        table_ = []
+        while data:
+            item = data.pop(0)
+            if isinstance(item, list):
+                table_.extend(item)
+            else:
+                table_.append(item)
+        data = table_
+
+        # sort results
+        if sortby:
+            data = sorted(
+                data,
+                reverse=reverse,
+                key=lambda item: str(item.get(sortby, "")),
+            )
+
+        # filter table headers if requested to do so
+        if headers_exclude:
+            data = [
+                {k: v for k, v in res.items() if k not in headers_exclude}
+                for res in data
+            ]
+
+        # transform data content to match headers
+        if isinstance(tabulate_kw["headers"], list):
+            data = [[item.get(i, "") for i in tabulate_kw["headers"]] for item in data]
+
+        # start index with 1 instead of 0
+        if showindex is True:
+            showindex = range(1, len(data) + 1)
+            tabulate_kw["showindex"] = showindex
+
+        return tabulate_lib.tabulate(data, **tabulate_kw)
 
 
-class PipeFunctionsModel(Filters, Formatters, Outputters):
+class PipeFunctionsModel(Filters, Outputters):
     """
     Collection of common pipe functions to use in PICLE shell models
     """
@@ -335,15 +514,26 @@ class PipeFunctionsModel(Filters, Formatters, Outputters):
         pipe = "self"
 
 
+# --------------------------------------------------------------------------------
+# MAN / DOC
+# --------------------------------------------------------------------------------
+
+
 class MAN(BaseModel):
     """
-    Model with manual/documentation related functions
+    Manual and documentation related functions
     """
 
     tree: Optional[StrictStr] = Field(
         None,
         description="Print commands tree for shell model specified by dot separated path e.g. model.shell.command",
         json_schema_extra={"function": "print_model_tree", "root_model": True},
+    )
+    json_schema: Optional[StrictStr] = Field(
+        None,
+        description="Print json schema for shell model specified by dot separated path e.g. model.shell.command",
+        json_schema_extra={"function": "print_model_json_schema", "root_model": True},
+        alias="json-schema",
     )
 
     @staticmethod
@@ -394,4 +584,56 @@ class MAN(BaseModel):
             MAN._construct_model_tree(
                 model=root_model.model_construct(), tree=rich_tree, path=path
             )
+        )
+
+    @staticmethod
+    def _recurse_to_model(model, path: list) -> ModelMetaclass:
+        """
+        Recurse to model specified by dot separated path e.g. model.shell.command
+
+        :param model: Model to recurse through
+        :param path: path to recurse to
+        """
+        if not path:
+            return model
+
+        for field_name, field in model.model_fields.items():
+            if (
+                field_name == path[0]
+                or field.alias == path[0]
+                or field.serialization_alias == path[0]
+            ):
+                # recurse to next level model
+                if isinstance(field.annotation, ModelMetaclass):
+                    return MAN._recurse_to_model(field.annotation, path[1:])
+
+        return model
+
+    @staticmethod
+    def print_model_json_schema(root_model, **kwargs) -> None:
+        """
+        Method to print model json schema for shell model specified by dot separated path e.g. model.shell.command
+
+        :param root_model: PICLE App root model to print json schema for
+        """
+
+        class MyGenerateJsonSchema(GenerateJsonSchema):
+            def handle_invalid_for_json_schema(
+                self, schema: core_schema.CoreSchema, error_info: str
+            ) -> JsonSchemaValue:
+                raise PydanticOmit
+
+            def callable_schema(self, schema):
+                print(schema)
+                raise SystemExit
+
+            def render_warning_message(kind, detail: str) -> None:
+                print(kind, detail)
+
+        path = kwargs["json_schema"].split(".") if kwargs.get("json_schema") else []
+        model = MAN._recurse_to_model(root_model, path=path)
+        return json.dumps(
+            model.model_json_schema(schema_generator=MyGenerateJsonSchema),
+            indent=4,
+            sort_keys=True,
         )
