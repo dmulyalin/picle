@@ -331,12 +331,12 @@ class Outputters(BaseModel):
         return table
 
     @staticmethod
-    def outputter_yaml(data: Union[dict, list], indent: int = 0) -> None:
+    def outputter_yaml(data: Union[dict, list], absolute_indent: int = 0, indent: int = 4) -> None:
         """
         Function to pretty print YAML string using Rich library
 
         :param data: any data to print
-        :param indent: indentation level
+        :param absolute_indent: indentation to prepend for entire output
         """
         if isinstance(data, bytes):
             data = data.decode("utf-8")
@@ -344,10 +344,10 @@ class Outputters(BaseModel):
         # data should be a YAML string
         try:
             if HAS_YAML:
-                data = yaml_dump(data, default_flow_style=False, sort_keys=True)
+                data = yaml_dump(data, default_flow_style=False, sort_keys=True, indent=indent)
                 # add  indent
-                if indent:
-                    data = "\n".join([f"{' ' * indent}{i}" for i in data.splitlines()])
+                if absolute_indent:
+                    data = "\n".join([f"{' ' * absolute_indent}{i}" for i in data.splitlines()])
         except Exception as e:
             print(f"ERROR: Data is not a valid YAML string:\n{data}\n\nError: '{e}'")
 
