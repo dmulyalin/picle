@@ -907,7 +907,7 @@ class App(cmd.Cmd):
     def default(self, line: str):
         """Method called if no do_xyz methods found"""
         ret = False
-        outputter = self.write
+        outputter = True  # use default outputter - self.write
         outputter_kwargs = {}
         line = line.strip()
 
@@ -1062,5 +1062,8 @@ class App(cmd.Cmd):
         if ret is True:
             return True
 
-        if ret and callable(outputter):
-            outputter(ret, **outputter_kwargs)
+        if ret:
+            if callable(outputter):
+                self.write(outputter(ret, **outputter_kwargs))
+            elif outputter is True:
+                self.write(ret)
