@@ -100,20 +100,20 @@ class App(cmd.Cmd):
         """Override empty line method to not run last command"""
         return None
 
-    def write(self, text: str) -> None:
+    def write(self, output: str) -> None:
         """
         Method to write output to stdout
 
-        :param text: text output
+        :param output: output to write to stdout
         """
-        if not isinstance(text, str):
-            text = str(text)
         if self.use_rich and HAS_RICH:
-            RICHCONSOLE.print(text)
+            RICHCONSOLE.print(output)
         else:
-            if not text.endswith(self.newline):
-                text += self.newline
-            self.stdout.write(text)
+            if not isinstance(output, str):
+                output = str(output)
+            if not output.endswith(self.newline):
+                output += self.newline
+            self.stdout.write(output)
 
     def model_mount(
         self,
