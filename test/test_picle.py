@@ -335,6 +335,17 @@ def test_outputter_nested():
     assert True
 
 
+def test_outputter_nested_with_tables():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show data_output_nested_tables")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f"shell output: '{shell_output}'")
+
+    assert all(k in shell_output for k in ["key1_value3", "nested_data"])
+
+
 def test_PicleConfig_processor_with_run_method():
     """
     model_nr_cfg has processor attribute defined within PicleConfig class,

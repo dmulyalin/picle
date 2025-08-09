@@ -196,6 +196,15 @@ class model_show(BaseModel):
             "function": "produce_structured_data",
         },
     )
+    data_output_nested_tables: Any = Field(
+        None,
+        description="Show data using nested outputter with tables",
+        json_schema_extra={
+            "outputter": Outputters.outputter_nested,
+            "outputter_kwargs": {"with_tables": True},
+            "function": "produce_structured_data_nested_table",
+        },
+    )
 
     class PicleConfig:
         pipe = PipeFunctionsModel
@@ -247,6 +256,28 @@ The End.
             {"name": "name1", "key1": "key1_value1", "key2": "key2_value1"},
             {"name": "name2", "key1": "key1_value2", "key2": "key2_value2"},
         ]
+
+    @staticmethod
+    def produce_structured_data_nested_table():
+        return {
+            "some": {"dictionary": {"data": None}},
+            "more": {"dictionary": ["data"]},
+            "even": {"more": {"dictionary": "data"}},
+            "some_data": [
+                {"name": "name3", "key1": "key1_value3", "key2": "key2_value3"},
+                {"name": "name1", "key1": "key1_value1", "key2": "key2_value1"},
+                {"name": "name2", "key1": "key1_value2", "key2": "key2_value2"},
+            ],
+            "some": {
+                "more": {
+                    "nested_data": [
+                        {"name": "name3", "key1": "key1_value3", "key2": "key2_value3"},
+                        {"name": "name1", "key1": "key1_value1", "key2": "key2_value1"},
+                        {"name": "name2", "key1": "key1_value2", "key2": "key2_value2"},
+                    ]
+                }
+            },
+        }
 
 
 class model_PicleConfig_outputter_with_run_method(BaseModel):

@@ -1,3 +1,11 @@
+# 0.9.1
+
+## FEATURES
+
+1. Extending nested outputter with capability to include tables within nested output if data is a list of dictionaries
+
+---
+
 # 0.9.0
 
 ## CHANGES
@@ -6,6 +14,7 @@
 2. Removed formatters from built in models, instead need to use outputter
 3. Improved pipe functions handling logic 
 4. Rich is now a default outputter, can be disabled using ``use_rich`` config parameter in the root's model PicleConfig 
+
 ## FEATURES
 
 1. Added Tabulate table outputter

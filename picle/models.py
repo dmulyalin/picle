@@ -236,14 +236,30 @@ class Outputters(BaseModel):
         return pprint.pformat(data, indent=4)
 
     @staticmethod
-    def outputter_nested(data: Union[dict, list], initial_indent: int = 0) -> None:
+    def outputter_nested(
+        data: Union[dict, list],
+        initial_indent: int = 0,
+        with_tables: bool = False,
+        tabulate_kwargs: dict = None,
+    ) -> None:
         """
         Recursively formats and prints nested data structures (dictionaries and lists)
         in a human-readable format.
 
         :param data: nested data structure to be formatted and printed.
         :param initial_indent: initial indentation level.
+        :param with_tables: if True, will format flat lists as Tabulate tables.
         """
+        tabulate_kwargs = tabulate_kwargs or {"tablefmt": "simple"}
+
+        def is_dictionary_list(data):
+            for item in data:
+                if not isinstance(item, Mapping):
+                    return False
+                for i in item.values():
+                    if isinstance(i, (list, tuple, Mapping)):
+                        return False
+            return True
 
         def ustring(indent, msg, prefix="", suffix=""):
             indent *= " "
@@ -268,13 +284,18 @@ class Outputters(BaseModel):
                     out.append(ustring(indent, line, prefix=line_prefix))
                     first_line = False
             elif isinstance(ret, (list, tuple)):
-                for ind in ret:
-                    if isinstance(ind, (list, tuple, Mapping)):
-                        out.append(ustring(indent, "|_"))
-                        prefix = "" if isinstance(ind, Mapping) else "- "
-                        nest(ind, indent + 2, prefix, out)
-                    else:
-                        nest(ind, indent, "- ", out)
+                # make a text table if it is a flat list
+                if with_tables and is_dictionary_list(ret):
+                    table = Outputters.outputter_tabulate_table(ret, **tabulate_kwargs)
+                    nest(table, indent + 2, prefix, out)
+                else:
+                    for ind in ret:
+                        if isinstance(ind, (list, tuple, Mapping)):
+                            out.append(ustring(indent, "|_"))
+                            prefix = "" if isinstance(ind, Mapping) else "- "
+                            nest(ind, indent + 2, prefix, out)
+                        else:
+                            nest(ind, indent, "- ", out)
             elif isinstance(ret, Mapping):
                 if indent:
                     out.append(ustring(indent, "----------"))
@@ -385,10 +406,10 @@ class Outputters(BaseModel):
         :param data: any data to print
         """
         if not isinstance(data, str):
-            mk_data = str(data)
+            data = str(data)
 
         if HAS_RICH:
-            RICHCONSOLE.print(Markdown(mk_data))
+            RICHCONSOLE.print(Markdown(data))
 
         # signal to Picle that data was printed by sending None
         # as second argument, which will be used as a default outputter
