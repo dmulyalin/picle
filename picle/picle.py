@@ -15,9 +15,8 @@ import enum
 import traceback
 import os
 import platform
-import importlib
 
-from typing import Callable, Union
+from typing import Union
 from pydantic import ValidationError, Json
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.fields import FieldInfo
@@ -196,7 +195,7 @@ class App(cmd.Cmd):
             return
 
         # attempt to mutate value
-        if isinstance(value, str):
+        if field["field"].annotation is not str and isinstance(value, str):
             # convert value to boolean
             if value.title() == "False":
                 value = False

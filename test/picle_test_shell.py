@@ -16,6 +16,7 @@ from pydantic import (
     StrictBool,
     Json,
     ConfigDict,
+    StrictInt,
 )
 
 
@@ -483,6 +484,15 @@ class model_TestEnumBoolen(BaseModel):
     def run(**kwargs):
         return kwargs
 
+class model_TestIntConversion(BaseModel):
+    value_StrictStr: StrictStr = Field(None, description="Value to test")
+    value_str: StrictStr = Field(None, description="Value to test")
+    value_StrictInt: StrictInt = Field(None, description="Value to test")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
 
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
@@ -530,6 +540,9 @@ class Root(BaseModel):
     )
     test_enum_has_boolean_in_a_list: model_TestEnumBoolen = Field(
         None, description="Test sourcing boolean valuefrom enum"
+    )
+    test_integer_converstion_for_strictstr_field: model_TestIntConversion = Field(
+        None, description="Test integer conversion for StrictStr field"
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

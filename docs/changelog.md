@@ -1,3 +1,13 @@
+
+# 0.9.2
+
+## CHANGES
+
+1. Improved value conversion logic to not convert values to integers or bool etc if field annotation is `str` or `StrictStr`
+2. Updated `pyproject.toml` file with dependency version for PyYAML and Tabulate modules
+
+---
+
 # 0.9.1
 
 ## FEATURES

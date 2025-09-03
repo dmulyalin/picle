@@ -866,3 +866,22 @@ def test_tabulate_table_tablefmt_plain():
             " 3  name2   key1_value2  key2_value2",
         ]
     )
+
+
+def test_integer_converstion_for_strictstr_field():
+    shell.onecmd("top")  # go to top
+
+    shell.onecmd("""test_integer_converstion_for_strictstr_field value_StrictStr 123""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value_StrictStr': '123'}" in shell_output
+
+    shell.onecmd("""test_integer_converstion_for_strictstr_field value_str 123""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value_str': '123'}" in shell_output
+
+    shell.onecmd("""test_integer_converstion_for_strictstr_field value_StrictInt 123""")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0].strip()
+    print(f"shell output: '{shell_output}'")
+    assert "{'value_StrictInt': 123}" in shell_output
