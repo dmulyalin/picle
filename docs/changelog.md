@@ -1,3 +1,10 @@
+# 0.9.3
+
+## CHANGES
+
+1. Improving outputter models handling
+
+---
 
 # 0.9.2
 

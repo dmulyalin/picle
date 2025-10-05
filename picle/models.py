@@ -171,29 +171,29 @@ class Outputters(BaseModel):
     pprint: Any = Field(
         None,
         description="Convert results to pretty string",
-        json_schema_extra={"function": "outputter_pprint"},
+        json_schema_extra={"function": "outputter_pprint", "outputter": True},
     )
     json_: Union[dict, list] = Field(
         None,
         description="Print JSON string using Rich",
-        json_schema_extra={"function": "outputter_json"},
+        json_schema_extra={"function": "outputter_json", "outputter": True},
         alias="json",
     )
     yaml: Any = Field(
         None,
         description="Print YAML output using Rich",
-        json_schema_extra={"function": "outputter_yaml"},
+        json_schema_extra={"function": "outputter_yaml", "outputter": True},
     )
     markdown: Any = Field(
         None,
         description="Print markdown text to terminal",
-        json_schema_extra={"function": "outputter_rich_markdown"},
+        json_schema_extra={"function": "outputter_rich_markdown", "outputter": True},
         alias="markdown",
     )
     nested: Any = Field(
         None,
         description="Print data in nested format",
-        json_schema_extra={"function": "outputter_nested"},
+        json_schema_extra={"function": "outputter_nested", "outputter": True},
     )
     save: StrictStr = Field(
         None,
@@ -203,18 +203,18 @@ class Outputters(BaseModel):
     table: TabulateTableOutputter = Field(
         None,
         description="Format results as a table",
-        json_schema_extra={"function": "outputter_tabulate_table"},
+        json_schema_extra={"function": "outputter_tabulate_table", "outputter": True},
     )
     rich_table: RichTableOutputter = Field(
         None,
         description="Print table output using Rich",
-        json_schema_extra={"function": "outputter_rich_table"},
+        json_schema_extra={"function": "outputter_rich_table", "outputter": True},
         alias="rich-table",
     )
     kv: dict = Field(
         None,
         description="Convert dictionary result to Key-Value string",
-        json_schema_extra={"function": "outputter_kv"},
+        json_schema_extra={"function": "outputter_kv", "outputter": True},
     )
 
     @staticmethod
@@ -224,6 +224,8 @@ class Outputters(BaseModel):
 
         :param data: dictionary to format
         """
+        if isinstance(data, str):
+            return data
         return "\n".join([f" {k}: {v}" for k, v in data.items()])
 
     @staticmethod
@@ -233,6 +235,8 @@ class Outputters(BaseModel):
 
         :param data: any data to pretty print
         """
+        if isinstance(data, str):
+            return data
         return pprint.pformat(data, indent=4)
 
     @staticmethod
@@ -328,8 +332,7 @@ class Outputters(BaseModel):
         original_data = copy.deepcopy(data)
 
         if not HAS_RICH or not isinstance(data, list):
-            print(data)
-            return
+            return data
 
         headers = headers or list(data[0].keys())
         table = RICHTABLE(title=title, box=False)
@@ -353,16 +356,19 @@ class Outputters(BaseModel):
 
     @staticmethod
     def outputter_yaml(
-        data: Union[dict, list], absolute_indent: int = 0, indent: int = 2
+        data: Union[dict, list, bytes], absolute_indent: int = 0, indent: int = 2
     ) -> None:
         """
-        Function to pretty print YAML string using Rich library
+        Function to format structured data as YAML string
 
         :param data: any data to print
         :param absolute_indent: indentation to prepend for entire output
         """
         if isinstance(data, bytes):
             data = data.decode("utf-8")
+
+        if isinstance(data, str):
+            return data
 
         # data should be a YAML string
         try:
@@ -376,12 +382,14 @@ class Outputters(BaseModel):
                         [f"{' ' * absolute_indent}{i}" for i in data.splitlines()]
                     )
         except Exception as e:
-            print(f"ERROR: Data is not a valid YAML string:\n{data}\n\nError: '{e}'")
+            print(
+                f"ERROR: Failed to format data as YAML string:\n{data}\n\nError: '{e}'"
+            )
 
         return data
 
     @staticmethod
-    def outputter_json(data: Union[dict, list], indent: int = 4) -> None:
+    def outputter_json(data: Union[dict, list, bytes], indent: int = 4) -> None:
         """
         Function to pretty print JSON string using Rich library
 
@@ -390,11 +398,16 @@ class Outputters(BaseModel):
         if isinstance(data, bytes):
             data = data.decode("utf-8")
 
+        if isinstance(data, str):
+            return data
+
         # data should be a json string
         try:
             data = json.dumps(data, indent=indent, sort_keys=True)
         except Exception as e:
-            print(f"ERROR: Data is not a valid JSON string:\n{data}\n\nError: '{e}'")
+            print(
+                f"ERROR: Failed to format data as JSON string:\n{data}\n\nError: '{e}'"
+            )
 
         return data
 
@@ -409,11 +422,9 @@ class Outputters(BaseModel):
             data = str(data)
 
         if HAS_RICH:
-            RICHCONSOLE.print(Markdown(data))
-
-        # signal to Picle that data was printed by sending None
-        # as second argument, which will be used as a default outputter
-        return data, None
+            return Markdown(data)
+        else:
+            return data
 
     @staticmethod
     def outputter_save(data: Any, save: str) -> None:
