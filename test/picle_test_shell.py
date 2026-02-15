@@ -497,6 +497,100 @@ class model_TestIntConversion(BaseModel):
         return kwargs
 
 
+class model_TestFloatConversion(BaseModel):
+    value: Any = Field(None, description="Value to test float conversion")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class model_TestMultipleValues(BaseModel):
+    items: Union[StrictStr, List[StrictStr]] = Field(
+        None, description="Collect multiple values"
+    )
+    tag: StrictStr = Field(None, description="A tag value")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class model_TestJsonListInput(BaseModel):
+    data: StrictStr = Field(None, description="JSON list input")
+    arg: Any = Field(None, description="some field")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class model_TestDoubleQuoteValue(BaseModel):
+    command: StrictStr = Field(None, description="A quoted command string")
+    arg: StrictStr = Field(None, description="Some argument")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class model_TestSaveOutputter(BaseModel):
+    data: StrictStr = Field(None, description="Data to produce")
+
+    @staticmethod
+    def run(**kwargs):
+        return {"result": kwargs.get("data", "none")}
+
+    class PicleConfig:
+        pipe = PipeFunctionsModel
+
+
+class model_TestMarkdownOutputter(BaseModel):
+    text: StrictStr = Field(None, description="Markdown text")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs.get("text", "")
+
+
+class model_TestMethodsOverride(BaseModel):
+    param: StrictStr = Field(None, description="A parameter")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+    @staticmethod
+    def custom_emptyline():
+        return "custom emptyline called"
+
+    class PicleConfig:
+        prompt = "override#"
+        methods_override = {"emptyline": "custom_emptyline"}
+
+
+class model_TestNoRunMethod(BaseModel):
+    """Model without a run method, for testing incorrect command path"""
+
+    value: StrictStr = Field(
+        None, description="A value", json_schema_extra={"use_parent_run": False}
+    )
+
+
+class model_TestFunctionField(BaseModel):
+    """Model with a function field that returns data"""
+
+    action: Any = Field(
+        None,
+        description="Execute some function",
+        json_schema_extra={"function": "do_action"},
+    )
+
+    @staticmethod
+    def do_action(**kwargs):
+        return "action_executed"
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -546,6 +640,30 @@ class Root(BaseModel):
     )
     test_integer_converstion_for_strictstr_field: model_TestIntConversion = Field(
         None, description="Test integer conversion for StrictStr field"
+    )
+    test_float_conversion: model_TestFloatConversion = Field(
+        None, description="Test float conversion"
+    )
+    test_multiple_values: model_TestMultipleValues = Field(
+        None, description="Test collecting multiple values"
+    )
+    test_json_list_input: model_TestJsonListInput = Field(
+        None, description="Test JSON list input"
+    )
+    test_double_quote_value: model_TestDoubleQuoteValue = Field(
+        None, description="Test double quoted value handling"
+    )
+    test_save_outputter: model_TestSaveOutputter = Field(
+        None, description="Test save outputter"
+    )
+    test_markdown_outputter: model_TestMarkdownOutputter = Field(
+        None, description="Test markdown outputter"
+    )
+    test_no_run_method: model_TestNoRunMethod = Field(
+        None, description="Test model without run method"
+    )
+    test_function_field: model_TestFunctionField = Field(
+        None, description="Test function field"
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

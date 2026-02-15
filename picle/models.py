@@ -2,9 +2,12 @@ import json
 import pprint
 import logging
 import os
+import shutil
+import difflib
 
 from enum import Enum
 from typing import List, Union, Optional, Callable, Any
+from pathlib import Path
 from pydantic import BaseModel, StrictStr, Field, StrictBool, StrictInt
 from pydantic_core import PydanticOmit, core_schema
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
@@ -15,7 +18,7 @@ from numbers import Number
 log = logging.getLogger(__name__)
 
 try:
-    from yaml import dump as yaml_dump
+    import yaml
 
     HAS_YAML = True
 except ImportError:
@@ -38,6 +41,7 @@ try:
     HAS_RICH = True
 except ImportError:
     HAS_RICH = False
+
 
 # --------------------------------------------------------------------------------
 # FILTERS
@@ -388,7 +392,7 @@ class Outputters(BaseModel):
         # data should be a YAML string
         try:
             if HAS_YAML:
-                data = yaml_dump(
+                data = yaml.safe_dump(
                     data, default_flow_style=False, sort_keys=True, indent=indent
                 )
                 # add  indent
@@ -595,7 +599,8 @@ class MAN(BaseModel):
 
     @staticmethod
     def _construct_model_tree(model, tree: RICHTREE, path: list) -> RICHTREE:
-        for field_name, field in model.model_fields.items():
+        model_cls = model if isinstance(model, type) else type(model)
+        for field_name, field in model_cls.model_fields.items():
             if (
                 path
                 and field_name != path[0]
@@ -659,7 +664,9 @@ class MAN(BaseModel):
         if not path:
             return model
 
-        for field_name, field in model.model_fields.items():
+        for field_name, field in (
+            model if isinstance(model, type) else type(model)
+        ).model_fields.items():
             if (
                 field_name == path[0]
                 or field.alias == path[0]
@@ -699,3 +706,393 @@ class MAN(BaseModel):
             indent=4,
             sort_keys=True,
         )
+
+
+# --------------------------------------------------------------------------------
+# CONFIGURATION MODEL
+# --------------------------------------------------------------------------------
+
+
+class ConfigModelShowCommands(BaseModel):
+    configuration: Any = Field(
+        None,
+        description="Show running configuration content",
+        json_schema_extra={"function": "show_config"},
+    )
+    changes: Any = Field(
+        None,
+        description="Show uncommitted changes diff between temp and running config",
+        json_schema_extra={"function": "show_changes"},
+    )
+
+    @staticmethod
+    def show_config(shell_command: list) -> dict:
+        """
+        Load and return the running configuration.
+
+        :param shell_command: The shell command context
+        :return: Configuration content dictionary
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        config_file = model_config["config_file"]
+        return ConfigModel.load_config(config_file)
+
+    @staticmethod
+    def show_changes(shell_command: list) -> str:
+        """
+        Show diff between saved config and uncommitted temp config.
+
+        :param shell_command: The shell command context
+        :return: Unified diff string
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        config_file = model_config["config_file"]
+        temp_file = config_file + ".tmp"
+
+        if not Path(temp_file).exists():
+            return "No uncommitted changes"
+
+        saved_content = ConfigModel.load_config(config_file)
+        temp_content = ConfigModel.load_config(temp_file)
+
+        saved_lines = yaml.safe_dump(
+            saved_content, default_flow_style=False, sort_keys=True, indent=2
+        ).splitlines(keepends=True)
+        temp_lines = yaml.safe_dump(
+            temp_content, default_flow_style=False, sort_keys=True, indent=2
+        ).splitlines(keepends=True)
+
+        diff = difflib.unified_diff(
+            saved_lines, temp_lines, fromfile=config_file, tofile=temp_file
+        )
+        result = "".join(diff)
+
+        return result if result else "No differences found"
+
+    class PicleConfig:
+        pipe = PipeFunctionsModel
+        outputter = Outputters.outputter_nested
+
+
+class ConfigModel(BaseModel):
+    """
+    Base class for configuration management models.
+
+    This class provides functionality to:
+
+    - Load configuration from YAML files
+    - Update nested configuration values through PICLE commands
+    - Stage changes in a temp file before committing
+    - Save committed configuration with rotating backups
+    - Rollback to previous configuration versions
+
+    Usage:
+        1. Define your config structure as nested Pydantic models
+        2. Create a config manager that inherits from ConfigModel
+        3. Set config_file path via PicleConfig
+        4. Use PICLE commands to update config values (staged in temp file)
+        5. Use 'commit' to persist or 'clear-changes' to discard
+    """
+
+    show: ConfigModelShowCommands = Field(None, description="Show commands")
+    commit: StrictBool = Field(
+        None,
+        description="Commit pending config changes",
+        json_schema_extra={"function": "commit_config", "presence": True},
+    )
+    rollback: StrictInt = Field(
+        None,
+        description="Rollback to a backup version",
+        json_schema_extra={"function": "rollback_config"},
+    )
+    erase_configuration: StrictBool = Field(
+        None,
+        description="Erase running configuration",
+        json_schema_extra={"function": "erase_config", "presence": True},
+        alias="erase-configuration",
+    )
+    clear_changes: StrictBool = Field(
+        None,
+        description="Discard uncommitted changes",
+        json_schema_extra={"function": "clear_changes_config", "presence": True},
+        alias="clear-changes",
+    )
+
+    class PicleConfig:
+        config_file: str = "configuration.yaml"  # Default config file path
+        backup_on_save: int = (
+            5  # Number of backups history to keep (set to 0 to disable)
+        )
+        commit_hook: Optional[Callable] = None  # Optional function to call after commit
+
+    @staticmethod
+    def load_config(config_file: str) -> dict:
+        """
+        Load configuration from YAML file.
+
+        :param config_file: Path to the configuration file
+        :return: Loaded configuration dictionary
+        """
+        if not HAS_YAML:
+            raise RuntimeError("PyYAML is required for config file operations")
+
+        config_path = Path(config_file)
+
+        if not config_path.exists():
+            # Create directories and file if they don't exist
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            config_path.touch(exist_ok=True)
+            log.info(f"Created config file: {config_file}")
+            config_data = {}
+        else:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config_data = yaml.safe_load(f) or {}
+
+        return config_data
+
+    @staticmethod
+    def save_config(
+        config_file: str, config_data: dict, backup_on_save: int = 5
+    ) -> str:
+        """
+        Save configuration to YAML file with rotating backups.
+
+        :param config_file: Path to the configuration file
+        :param config_data: Configuration dictionary to save
+        :param backup_on_save: Number of backup files to keep (0 to disable)
+        :return: Status message
+        """
+        config_path = Path(config_file)
+
+        # Create rotating backups if requested
+        if backup_on_save and config_path.exists():
+            # Remove the oldest backup if it exists
+            oldest_backup = Path(f"{config_path}.old{backup_on_save}")
+            if oldest_backup.exists():
+                os.remove(oldest_backup)
+                log.debug(f"Removed oldest backup: {oldest_backup}")
+
+            # Rotate existing backups (old1 -> old2, old2 -> old3, etc.)
+            for i in range(backup_on_save - 1, 0, -1):
+                old_backup = Path(f"{config_path}.old{i}")
+                new_backup = Path(f"{config_path}.old{i + 1}")
+                if old_backup.exists():
+                    shutil.move(str(old_backup), str(new_backup))
+                    log.debug(f"Rotated backup: {old_backup} -> {new_backup}")
+
+            # Create new .old1 backup from current file
+            newest_backup = Path(f"{config_path}.old1")
+            shutil.copy2(config_path, newest_backup)
+            log.debug(f"Created new backup: {newest_backup}")
+
+        # Save the new configuration
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(
+                config_data, f, default_flow_style=False, sort_keys=True, indent=2
+            )
+
+        log.info(f"Saved config to {config_file}")
+
+        return f"Saved config to {config_file}"
+
+    @staticmethod
+    def update_nested_value(data: dict, path: list, value: Any) -> dict:
+        """
+        Set a value in nested dictionary using path list.
+
+        :param data: Dictionary to modify
+        :param path: List of keys representing the path
+        :param value: Value to set at the path
+        :return: Modified dictionary
+        """
+        if not path:
+            return data
+
+        current = data
+        for key in path[:-1]:
+            if key not in current:
+                current[key] = {}
+            elif not isinstance(current[key], dict):
+                log.warning(
+                    f"Cannot traverse path: {'.'.join(path)}, {key} is not a dict"
+                )
+                return data
+            current = current[key]
+
+        # If both current value and new value are dicts, merge them
+        if isinstance(value, dict) and isinstance(current.get(path[-1]), dict):
+            current[path[-1]] = {**current[path[-1]], **value}
+        # If both current value and new value are lists, extend the list
+        elif isinstance(value, list) and isinstance(current.get(path[-1]), list):
+            current[path[-1]].extend(value)
+        else:
+            current[path[-1]] = value
+        return data
+
+    @staticmethod
+    def get_command_path(command: list) -> list:
+        """
+        Extract the configuration path from parsed command segments.
+
+        :param command: List of parsed command segment dicts
+        :return: List of string path components
+        """
+        ret = []
+        for item in command:
+            if isinstance(item["parameter"], str):
+                ret.append(item["parameter"])
+
+        return ret
+
+    @staticmethod
+    def get_model_config(shell_command: list) -> dict:
+        """
+        Reconstruct model configuration by merging ConfigModel defaults
+        with the command's root model PicleConfig.
+
+        :param shell_command: The shell command context
+        :return: Merged configuration dictionary
+        """
+        command_root_model = shell_command[0]["model"]
+
+        # reconstruct model configuration
+        model_config = {
+            k: v
+            for k, v in ConfigModel.PicleConfig.__dict__.items()
+            if not k.startswith("_")
+        }
+        model_config.update(
+            {
+                k: v
+                for k, v in command_root_model.PicleConfig.__dict__.items()
+                if not k.startswith("_")
+            }
+        )
+        return model_config
+
+    @staticmethod
+    def erase_config(shell_command: list, erase_configuration: bool = True) -> str:
+        """
+        Erase configuration and save empty config to temp file.
+
+        :param shell_command: The shell command context
+        :param erase_config: Presence flag (always True when invoked)
+        :return: Status message
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        config_file = model_config["config_file"]
+        temp_file = config_file + ".tmp"
+
+        with open(temp_file, "w", encoding="utf-8") as f:
+            yaml.safe_dump({}, f, default_flow_style=False, sort_keys=True, indent=2)
+
+        return "Configuration cleared (uncommitted). Use 'commit' to save or 'show changes' to review."
+
+    @staticmethod
+    def clear_changes_config(shell_command: list, clear_changes: bool = True) -> str:
+        """
+        Discard uncommitted changes by deleting the temp config file.
+
+        :param shell_command: The shell command context
+        :return: Status message
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        config_file = model_config["config_file"]
+        temp_file = config_file + ".tmp"
+
+        if not os.path.exists(temp_file):
+            return "No uncommitted changes to discard"
+
+        os.remove(temp_file)
+        return "Uncommitted changes discarded"
+
+    @staticmethod
+    def commit_config(shell_command: list, commit: bool = True) -> str:
+        """
+        Commit pending changes - save temp config to the main config file and remove temp.
+
+        :param shell_command: The shell command context
+        :param commit: Presence flag (always True when invoked)
+        :return: Status message
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        config_file = model_config["config_file"]
+        backup_on_save = model_config.get("backup_on_save", 5)
+        temp_file = config_file + ".tmp"
+
+        if not Path(temp_file).exists():
+            return "No uncommitted changes to commit"
+
+        temp_content = ConfigModel.load_config(temp_file)
+        ConfigModel.save_config(
+            config_file, temp_content, backup_on_save=backup_on_save
+        )
+        os.remove(temp_file)
+
+        if model_config.get("commit_hook"):
+            try:
+                model_config["commit_hook"]()
+            except Exception as e:
+                log.error(f"Commit hook execution failed: {e}")
+                return f"Configuration committed with errors in commit hook: {e}"
+
+        return "Configuration committed successfully"
+
+    @staticmethod
+    def rollback_config(shell_command: list, rollback: int) -> str:
+        """
+        Rollback to a backup version by loading .oldN file into temp config.
+
+        :param shell_command: The shell command context
+        :param rollback: Backup number to rollback to (1, 2, 3, ...)
+        :return: Status message
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        config_file = model_config["config_file"]
+        temp_file = config_file + ".tmp"
+        backup_file = f"{config_file}.old{rollback}"
+
+        if not Path(backup_file).exists():
+            return f"Backup file not found: {backup_file}"
+
+        backup_content = ConfigModel.load_config(backup_file)
+
+        # save backup content to temp file for review before commit
+        with open(temp_file, "w", encoding="utf-8") as f:
+            yaml.safe_dump(
+                backup_content, f, default_flow_style=False, sort_keys=True, indent=2
+            )
+
+        return f"Loaded backup {backup_file} into temp config. Use 'commit' to apply or 'show changes' to review."
+
+    @staticmethod
+    def run(shell_command: list, **kwargs) -> str:
+        """
+        Run method for configuration operations.
+        Saves changes to a temp file. Use 'commit' to persist to config file.
+
+        :param shell_command: The shell command that triggered this run method
+        :param kwargs: Field values collected from the command line
+        :return: Status message
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        command_path = ConfigModel.get_command_path(shell_command)
+        config_file = model_config["config_file"]
+        temp_file = config_file + ".tmp"
+
+        # load from temp file if it exists (accumulate changes), else from config file
+        if Path(temp_file).exists():
+            config_content = ConfigModel.load_config(temp_file)
+        else:
+            config_content = ConfigModel.load_config(config_file)
+
+        # update configuration data
+        ConfigModel.update_nested_value(config_content, command_path, kwargs)
+
+        # save to temp file
+        with open(temp_file, "w", encoding="utf-8") as f:
+            yaml.safe_dump(
+                config_content, f, default_flow_style=False, sort_keys=True, indent=2
+            )
+
+        return "Configuration updated (uncommitted). Use 'commit' to save or 'show changes' to review."

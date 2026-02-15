@@ -1,44 +1,69 @@
-## PICLE - Python Interactive Command Line Shells
+# PICLE
 
-PICLE is a module to construct interactive command line shell
-applications.
+PICLE builds interactive command-line shells from Pydantic v2 models.
+It uses Python’s standard `cmd` loop under the hood and turns each entered line
+into a walk through a model tree:
 
-PICLE build on top of Python standard library
-[CMD module](https://docs.python.org/3/library/cmd.html) and
-uses [Pydantic](https://docs.pydantic.dev/latest/) models to
-construct shell environments.
+```
+Root model
+  ├─ field -> sub-model (becomes a command group)
+  ├─ field -> value (collects validated input)
+  └─ field -> function (execute when ENTER is pressed)
+```
 
-If the ``readline`` module is loaded
-([pyreadline3](https://pypi.org/project/pyreadline3/)), input will
-automatically inherit bash-like history-list editing (e.g.
-Control-P scrolls back to the last command, Control-N forward
-to the next one, Control-F moves the cursor to the right
-non-destructively, Control-B moves the cursor to the left
-non-destructively, etc.).
+What you get out of the box:
 
-## Installation
+- Nested commands (models inside models)
+- Validation and type conversion via Pydantic
+- Inline discovery with `?` / `??` and tab completion
+- Optional piping with `|` to post-process results
+- Optional Rich/Tabulate/YAML output helpers (extras)
 
-Install [PICLE from PyPI](https://pypi.org/project/picle/) using pip
+Install:
 
 ```
 pip install picle
 ```
 
-## Comparison With Other Projects
+A minimal example:
 
-[python-nubia](https://github.com/facebookarchive/python-nubia) by
-Facebook - unfortunately this project no longer maintained, it also
-provides no integration with Pydantic.
+```python
+import time
+from typing import Any
 
-[python-fire](https://github.com/google/python-fire),
-[click](https://github.com/pallets/click) or
-[argparse](https://docs.python.org/3/library/argparse.html) -
-all these libraries are great for building command line tools,
-but they provide no support for interactive shell or input
-validation supported by Pydantic.
+from pydantic import BaseModel, Field
+from picle import App
 
-[prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
-or [textual](https://github.com/Textualize/textual) - those are extremely
-good libraries for building Terminal User Interface (TUI) applications but
-they provide no support for interactive shell and Pydantic validation of
-input.
+
+class Show(BaseModel):
+	version: Any = Field(
+		None,
+		description="Show software version",
+		json_schema_extra={"function": "show_version"},
+	)
+	clock: Any = Field(
+		None,
+		description="Show current clock",
+		json_schema_extra={"function": "show_clock"},
+	)
+
+	@staticmethod
+	def show_version():
+		return "0.1.0"
+
+	@staticmethod
+	def show_clock():
+		return time.ctime()
+
+
+class Root(BaseModel):
+	show: Show = Field(None, description="Show commands")
+
+	class PicleConfig:
+		intro = "PICLE sample app"
+		prompt = "picle#"
+
+
+if __name__ == "__main__":
+	App(Root).start()
+```

@@ -1,211 +1,300 @@
-# PICLE APIs Reference
+# PICLE API reference
 
-## PicleConfig
+This page describes the configuration hooks PICLE reads from your Pydantic models and fields.
+It focuses on the parts you use when defining a shell (config, field metadata, execution, and output).
+For full API docs of `App` and built-in models, keep reading to the mkdocstrings reference at the bottom.
 
-Each Pydantic model can have ``PicleConfig`` subclass defined
-with model configuration parameters:
+## `PicleConfig` (model-level)
 
-- ``ruler`` - The character used to draw separator lines under the help-message headers. If empty, no ruler line is drawn, defaults is empty
-- ``intro`` - A string to issue as an intro or banner
-- ``prompt`` - command line shell prompt
-- ``use_rich`` - Use Python Rich library to print results if set to `True`
-- ``newline`` - newline character to use while printing output, default is ``\r\n``
-- ``completekey`` - is the ``readline`` name of a completion key, defaults to ``tab``
-- ``pipe`` - reference to Pydantic model class to use with ``|`` (pipe) to process the
-	results with various functions, special values:
-     - ``pipe = "self"`` instruct to use current model for piping results through
-     - ``import.path.to.model`` python import string to model for piping results through
-- ``processors`` - list of functions to run results of `first command` through one by one
-- ``outputter`` - function to output results, by default results written to stdout
-- ``outputter_kwargs`` - dictionary containing any additional argument to use with outputter
+Any Pydantic model may define an inner `PicleConfig` class. PICLE reads attributes from it (when present).
+Only a few are required; most are optional quality-of-life switches.
 
-Sample ``PicleConfig`` definition:
+`PicleConfig` is intentionally “open-ended”: the core `App` reads a known set of attributes (documented below),
+and specific built-in models may honor additional `PicleConfig` keys (for example, `ConfigModel`).
+
+| Name | Meaning |
+| --- | --- |
+| `ruler` | Separator line char used by `cmd` help formatting (empty disables) |
+| `intro` | Banner printed on shell start |
+| `prompt` | Prompt string |
+| `use_rich` | If `True` and Rich is installed, print via Rich console |
+| `newline` | Output newline, default `\r\n` |
+| `completekey` | Readline completion key name, default `tab` |
+| `pipe` | Enables `|` and selects the pipe model (`"self"`, import string, or model class) |
+| `processors` | List of callables applied to the first command result |
+| `outputter` | Callable used to render output when not overridden |
+| `outputter_kwargs` | Extra kwargs passed into `outputter` |
+
+Common additional flags used by the core shell logic:
+
+| Name | Meaning |
+| --- | --- |
+| `subshell` | If `True`, navigating to this model with no args enters a subshell (prompt changes, model is pushed onto a stack) |
+| `methods_override` | Dict of `{app_method_name: model_method_name}` used to override `App` methods at runtime |
+
+### Pipe configuration
+
+If `pipe` is set, the `|` token becomes valid and starts a new “segment”. The next segment is parsed using the pipe model.
+`pipe` can be:
 
 ```
+"self"                  re-use the current model as the pipe model
+"some.module.Model"     import a model by string
+SomeModelClass          use a model class directly
+```
+
+Example (enable pipe functions and post-process the first command):
+
+```python
+from pydantic import BaseModel
 from picle.models import PipeFunctionsModel, Outputters
 
-class ShellModel(BaseModel):
-    """ define command attributes here """
-	<...>
 
+class ShellModel(BaseModel):
     class PicleConfig:
         prompt = "picle#"
-        ruler = ""
         intro = "PICLE Sample app"
-        newline = "\r\n"
-        completekey = "tab"
-		pipe = PipeFunctionsModel
-		processors = [Outputters.outputter_json]
-		outputter = Outputters.outputter_rich_print
-		outputter_kwargs = {"any": "extra_argument"}
+        pipe = PipeFunctionsModel
+        processors = [Outputters.outputter_json]
 ```
 
-## Field json_schema_extra
+`processors` run on the first command segment only (before any `|` segments).
 
-PICLE supports reading additional parameters from model Field's ``json_schema_extra``
-definition to control PICLE behavior.
+## `json_schema_extra` (field-level)
 
-``json_schema_extra`` PICLE parameters:
+PICLE reads extra behavior from `Field(..., json_schema_extra={...})`.
 
-- ``function`` - refers to ``@staticmethod`` of the model to call with command arguments
-- ``presence`` - command argument set to ``presence`` value if command given
-- ``processors`` - list of functions to run results of each command through one by one
-- ``outputter`` - function to output results, by default results written to
-	stdout. Field's ``outputter`` overrides PicleConfig's ``outputter``
-- ``outputter_kwargs`` - dictionary containing any additional argument to use with outputter
-- ``multiline`` - True/False, indicates if multi line input mode is enabled for this field
-- ``root_model`` - True/False, if True reference to PICLE App's root model passed on to
-    the ``run`` method or to the ``function`` inside ``root_model`` argument
-- ``picle_app`` - True/False, if True reference to PICLE App passed on to the ``run``
-    method or to the ``function`` inside ``picle_app`` argument, useful if need to modify
-    PICLE App in a runtime, for example mount or remove models
+Note: command tokens come from the field name (or its `alias` / `serialization_alias`), not from the Pydantic class name.
 
-### Field processors
+| Key | Meaning |
+| --- | --- |
+| `function` | Name of a model `@staticmethod` to call when `run()` is absent |
+| `presence` | Constant value used when field is referenced without a value |
+| `processors` | List of callables applied to the command result |
+| `outputter` | Callable that formats output for this field (overrides model outputter) |
+| `outputter_kwargs` | Extra kwargs passed into `outputter` |
+| `multiline` | If `True`, the literal value `input` triggers multi-line collection |
+| `root_model` | If `True`, pass the app root model as `root_model=...` |
+| `picle_app` | If `True`, pass the `App` instance as `picle_app=...` |
+| `use_parent_run` | If `True` (default), and the leaf model has no `run()`, PICLE searches parent models for a `run()` to execute. If `False`, the command errors unless the leaf model defines `run()` or `function`. |
 
-Processors allow to pass command execution results through a list of arbitrary functions.
-Results returned by processor function passed on as input to next processor function in the
-list and so on.
+### `function` vs `run()`
 
-In example below results returned by ``produce_structured_data`` function passed through
-pprint outputter ``Outputters.outputter_pprint`` function to produce pretty formatted string.
+Execution is resolved like this:
 
-```
-from picle.models import Outputters
+1. If the current model has `run`, PICLE calls `model.run(**kwargs)`.
+2. Otherwise, if the last referenced field sets `json_schema_extra={"function": "method_name"}`, PICLE calls `getattr(model, method_name)(**kwargs)`.
 
-class model_show(BaseModel):
-    data_pprint: Any = Field(
-        None,
-        description="Show data using pprint outputter",
-        json_schema_extra={
-            "processors": [
-                    Outputters.outputter_pprint
-                ],
-            "function": "produce_structured_data"
-        }
+This lets small models define many “command -> staticmethod” fields, while larger models can centralize behavior in `run()`.
+
+### Callable parameters (`run()` / field functions)
+
+PICLE builds `**kwargs` from collected field values and calls either `run()` or the field-level `function`.
+It can also inject extra context if (and only if) the callable declares a matching parameter name.
+
+- `root_model`: injected when the leaf field sets `json_schema_extra={"root_model": True}`
+- `picle_app`: injected when the leaf field sets `json_schema_extra={"picle_app": True}`
+- `shell_command`: injected when the callable signature includes `shell_command`
+
+`shell_command` is the parsed command context for the current segment: a list of model dicts produced by `parse_command()`.
+This is useful when your function needs to inspect the command path, model defaults, or other parsing details.
+
+#### Pipes: positional input + kwargs
+
+When the command contains pipes (`|`), execution happens left-to-right by segment:
+
+- Segment 0: `run_function(**kwargs)`
+- Segment N (after `|`): `run_function(previous_result, **kwargs)`
+
+If the segment’s callable declares `shell_command`, PICLE passes it as a keyword argument for that segment.
+
+### `presence`
+
+`presence` is useful for boolean-ish flags where you want the value to be set just by mentioning the field.
+
+```python
+from pydantic import BaseModel, Field
+
+
+class Root(BaseModel):
+    verbose: bool = Field(
+        False,
+        description="Enable verbose mode",
+        json_schema_extra={"presence": True},
     )
-
-    @staticmethod
-    def produce_structured_data():
-        return {"some": {"dictionary": {"data": None}}, "more": {"dictionary": ["data"]}, "even": {"more": {"dictionary": "data"}}}
-```
-
-### Multi Line Input
-
-Multi line input allows to read multiple lines of text into field value if
-json_schema_extra ``multiline`` argument is set to ``True``. To use it need
-to specify ``input`` as a field value on the command line, that will trigger
-multi line input collection when hit return:
-
-Sample model that has multi line input enabled:
-
-```
-class model_TestMultilineInput(BaseModel):
-    data: StrictStr = Field(
-		None,
-		description="Multi line string",
-		json_schema_extra={"multiline": True}
-	)
-    arg: Any = Field(None, description="Some field")
 
     @staticmethod
     def run(**kwargs):
         return kwargs
 ```
 
-This is how help will look like for ``data`` field:
+Example interaction:
+
+```
+picle#verbose
+{'verbose': True}
+```
+
+### Processors
+
+Processors are just functions that transform results. They run in order.
+
+```python
+from typing import Any
+from pydantic import BaseModel, Field
+from picle.models import Outputters
+
+
+class ModelShow(BaseModel):
+    data_pprint: Any = Field(
+        None,
+        description="Show structured data using pprint",
+        json_schema_extra={
+            "function": "produce_structured_data",
+            "processors": [Outputters.outputter_pprint],
+        },
+    )
+
+    @staticmethod
+    def produce_structured_data():
+        return {"some": {"nested": {"data": None}}}
+```
+
+If you also set `PicleConfig.processors`, they run for the first segment after field-level processors.
+
+### Multi-line input
+
+If a field enables multi-line input, the user can type the literal value `input` to start collection.
+PICLE reads lines until EOF (Ctrl+D) and uses the collected text (joined by `\n`) as the field value.
+
+```python
+from typing import Any
+from pydantic import BaseModel, Field, StrictStr
+
+
+class TestMultilineInput(BaseModel):
+    data: StrictStr = Field(
+        None,
+        description="Multi line string",
+        json_schema_extra={"multiline": True},
+    )
+    arg: Any = Field(None, description="Some field")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
+class Root(BaseModel):
+    test_multiline_input: TestMultilineInput = Field(
+        None,
+        description="Multi-line input demo",
+    )
+```
+
+Help shows the `input` option when appropriate:
 
 ```
 picle#test_multiline_input data ?
  <'data' value>    Multi line string
  input             Collect value using multi line input mode
-picle#
 ```
 
-Tab completion for ``input`` value also works. On hitting ``enter``,
-multi line input mode will be invoked:
+Invoking multi-line collection:
 
 ```
 picle#test_multiline_input data input arg foo
 Enter lines and hit Ctrl+D to finish multi line input
-I'am
-Multi Line
-Input
-<ctrl+D hit>
+line 1
+line 2
+<Ctrl+D>
 ```
 
-## Result Specific Outputters
+## Result-specific outputters
 
-Sometimes having outputter defined per model is not enough and depending on produced
-result different outputter need to be used, in that case result specific outputter can
-be provided in return to ``run`` function call by returning a tuple of
-``(result, outputter function, outputter kwargs,)``, where ``outputter kwargs`` is
-optional.
-
-Example:
+Sometimes a single model-level outputter is not enough. If you need to choose an outputter based on runtime data,
+return a tuple from `run()`:
 
 ```
-from picle.models import Outputters
-
-class model_ResultSpecificOutputter(BaseModel):
-    data: StrictStr = Field(None, description="Multi line string")
-    arg: Any = Field(None, description="Some field")
-
-    class PicleConfig:
-		outputter = Outputters.outputter_rich_print
-		outputter_kwargs = {"any": "extra_argument"}
-
-    @staticmethod
-    def run(**kwargs):
-		if kwargs.get("args") == "json":
-			return kwargs["data"], Outputters.outputter_rich_json, {}
-		elif kwargs.get("args") == "table":
-			return kwargs["data"], Outputters.outputter_rich_table
-		else:
-			return kwargs
+(result, outputter)
+(result, outputter, outputter_kwargs)
 ```
 
-In addition to ``PicleConfig`` outputter, depending on arguments provided  ``run``
-function returns outputter function to use to output the result with optional
-``outputter_kwargs`` as a third argument. By default, if return result is not a tuple,
-outputter specified in ``PicleConfig`` is used.
+This overrides model and field outputters for that specific execution.
 
-!!! note
+## `ConfigModel` (configuration shells)
 
-	Result specific outputters supported starting with PICLE version 0.7.0
+PICLE ships a helper base model for “configuration-mode” shells: `picle.models.ConfigModel`.
+It implements a common workflow:
 
-## Mounting Models at a Runtime
+- Load configuration from YAML (optional dependency: `pyyaml`)
+- Stage edits into a temporary file (`<config_file>.tmp`)
+- Review staged changes (`show changes`) and commit them (`commit`)
+- Keep rotating backups on commit (`.old1`, `.old2`, ...)
+- Roll back by loading a backup into the temp file (`rollback <n>`) and then committing
 
-Sometimes it is needed to dynamically add new shell commands to the app,
-for that PICLE ``App`` has ``model_mount`` and ``model_remove`` methods.
+### `ConfigModel.PicleConfig` keys
 
-Example how to mount Pydantic model to PICLE App at given path in a runtime.
+`ConfigModel` reads additional settings from the concrete model’s `PicleConfig`.
+These keys are **only honored by `ConfigModel`** (the core `App` ignores them):
+
+| Name | Meaning |
+| --- | --- |
+| `config_file` | Path to the YAML config file (default: `configuration.yaml`) |
+| `backup_on_save` | How many `.oldN` backups to keep when committing (0 disables backups) |
+| `commit_hook` | Optional callable invoked after a successful commit |
+
+### Typical command flow
+
+Assuming you mount a `ConfigModel`-derived model under `configure_terminal`:
 
 ```
+picle#configure_terminal
+... (optionally enters a subshell if `PicleConfig.subshell = True`)
+
+...#logging terminal severity debug
+Configuration updated (uncommitted). Use 'commit' to save or 'show changes' to review.
+
+...#show changes
+--- app_config.yaml
++++ app_config.yaml.tmp
+...
+
+...#commit
+Configuration committed successfully
+```
+
+## Mounting/removing models at runtime
+
+`App` can add/remove models to the root tree:
+
+```python
+from pydantic import BaseModel, Field, StrictStr
 from picle import App
-from pydantic import BaseModel, StrictStr
 
-class my_mount_model(BaseModel):
+
+class Mounted(BaseModel):
     param: StrictStr = Field(None, description="Param string")
 
     @staticmethod
     def run(**kwargs):
         return kwargs
 
-# create PICLE Root model
+
 class Root(BaseModel):
-    command: StrictStr = Field(None, description="Some command string")
+    command: StrictStr = Field(None, description="Some command")
 
-# instantiate PICLE App shell
+
 shell = App(Root)
-
-# mount model
-shell.model_mount(my_mount_model, ["another_command"])
-
-# remove model
+shell.model_mount(Mounted, ["another_command"])
 shell.model_remove(["another_command"])
-
-shell.close()
 ```
+
+Notes:
+
+- `path` may be a list of segments or a single string.
+- `model_mount` can only mount under an existing path, except for the final segment (which is created).
+- Mounted fields are added to the root model’s `model_fields` and participate in completion/help.
 
 ## PICLE App
 

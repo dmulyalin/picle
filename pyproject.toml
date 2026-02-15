@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "picle"
-version = "0.9.4"
+version = "0.10.0"
 description = "Python Interactive Command Line Shells"
 authors = ["Denis Mulyalin <d.mulyalin@gmail.com>"]
 license = "MIT"
@@ -38,6 +38,7 @@ mkdocstrings = "*"
 pygments = "*"
 pymdown-extensions = "*"
 mkdocstrings-python = "*"
+griffe = "<2.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -49,3 +50,12 @@ full = [
 	"tabulate",
 	"pyyaml"
 ]
+
+[tool.ruff.lint]
+ignore = [
+    "E712", # true-false-comparison
+    "E722", # Do not use bare `except`
+]
+
+[tool.ruff.lint.isort]
+case-sensitive = true

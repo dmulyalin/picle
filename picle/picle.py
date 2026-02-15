@@ -15,6 +15,7 @@ import enum
 import traceback
 import os
 import platform
+import inspect
 
 from typing import Any, Optional, Union
 from pydantic import ValidationError, Json
@@ -45,6 +46,22 @@ def model_fields(model: Any) -> dict[str, FieldInfo]:
     if isinstance(model, type):
         return model.model_fields
     return type(model).model_fields
+
+
+def callable_expects_argument(func: callable, arg_name: str) -> bool:
+    """
+    Check if a callable function expects a specific argument name.
+
+    :param func: A callable (function, method, lambda, etc.).
+    :param arg_name: The name of the argument to check for.
+    :return: True if the callable expects the argument, False otherwise.
+    """
+    try:
+        sig = inspect.signature(func)
+        return arg_name in sig.parameters
+    except (ValueError, TypeError):
+        # Some built-in functions don't have inspectable signatures
+        return False
 
 
 class FieldLooseMatchOnly(Exception):
@@ -239,6 +256,43 @@ class App(cmd.Cmd):
         else:
             field["values"] = [field.pop("values"), value]
 
+    def _resolve_field(
+        self, model: Any, parameter: str
+    ) -> Optional[tuple[str, FieldInfo]]:
+        """
+        Resolve a parameter to a model field by name, alias, or serialization_alias.
+
+        :param model: Pydantic model class or instance.
+        :param parameter: parameter string to resolve.
+        :return: tuple of (canonical_field_name, FieldInfo) or None.
+        """
+        fields = model_fields(model)
+        if parameter in fields:
+            return parameter, fields[parameter]
+        for f_name, field in fields.items():
+            if parameter == field.alias or parameter == field.serialization_alias:
+                return f_name, field
+        return None
+
+    def _has_partial_match(self, model: Any, parameter: str) -> bool:
+        """
+        Check if parameter is a prefix of any field name, alias, or serialization_alias.
+
+        :param model: Pydantic model class or instance.
+        :param parameter: parameter string to check.
+        :return: True if any field partially matches.
+        """
+        for name, field in model_fields(model).items():
+            if name.startswith(parameter):
+                return True
+            if field.alias and field.alias.startswith(parameter):
+                return True
+            if field.serialization_alias and field.serialization_alias.startswith(
+                parameter
+            ):
+                return True
+        return False
+
     def _get_field_params(self, field: Union[FieldInfo, dict]) -> dict:
         """
         Extract ``json_schema_extra`` parameters from a field.
@@ -325,7 +379,11 @@ class App(cmd.Cmd):
             # ignore None default values
             if field.get_default() is None:
                 continue
-            ret[name] = field.get_default()
+            default = field.get_default()
+            # convert Enum defaults to their plain value
+            if isinstance(default, enum.Enum):
+                default = default.value
+            ret[name] = default
 
         return ret
 
@@ -386,143 +444,87 @@ class App(cmd.Cmd):
         # to a model or model's field value
         while parameters:
             parameter = parameters.pop(0)
+
             # handle pipe - "|"
             if parameter == "|":
-                # check if current model has pipe defined
-                if hasattr(current_model["model"], "PicleConfig") and getattr(
-                    current_model["model"].PicleConfig, "pipe", None
-                ):
-                    if current_model["model"].PicleConfig.pipe == "self":
-                        # reference pipe model to current model
-                        current_model = {
-                            "model": current_model["model"],
-                            "fields": [],
-                            "parameter": parameter,
-                        }
-                    elif isinstance(current_model["model"].PicleConfig.pipe, str):
-                        # if PicleConfig.pipe is "picle.models.PipeFunctionsModel" string
-                        # below is same as "from picle.models import PipeFunctionsModel"
-                        pipe_model_name = current_model["model"].PicleConfig.pipe.split(
-                            "."
-                        )[-1]
-                        module = ".".join(
-                            current_model["model"].PicleConfig.pipe.split(".")[:-1]
-                        )
-                        module = __import__(module, fromlist=[""])
-                        current_model = {
-                            "model": getattr(module, pipe_model_name),
-                            "fields": [],
-                            "parameter": parameter,
-                        }
-                    else:
-                        # goto pipe model
-                        current_model = {
-                            "model": current_model["model"].PicleConfig.pipe,
-                            "fields": [],
-                            "parameter": parameter,
-                        }
-                    models = [current_model]
-                    ret.append(models)
-                else:
+                pipe_config = getattr(
+                    getattr(current_model["model"], "PicleConfig", None),
+                    "pipe",
+                    None,
+                )
+                if not pipe_config:
                     log.error(
                         f"'{current_model['model'].__name__}' does not support pipe handling"
                     )
                     break
-            # collect json dictionary string
-            elif parameter.strip().startswith("{") and current_field:
-                value_items = [parameter]
-                # collect further values
-                while parameters:
-                    parameter = parameters.pop(0)
-                    value_items.append(parameter)
-                    if parameter.strip().endswith("}"):
-                        break
-                value = " ".join(value_items)  # form value string
-                self._save_collected_value(current_field, value)
-            # collect json list string
-            elif parameter.strip().startswith("[") and current_field:
-                value_items = [parameter]
-                # collect further values
-                while parameters:
-                    parameter = parameters.pop(0)
-                    value_items.append(parameter)
-                    if parameter.strip().endswith("]"):
-                        break
-                value = " ".join(value_items)  # form value string
-                self._save_collected_value(current_field, value)
-            # collect double quoted field value
-            elif '"' in parameter and current_field:
-                value_items = [parameter.replace('"', "")]
-                # collect further values if first parameter not double quoted value e.g. "nrp1"
-                if parameter.count('"') != 2:
-                    while parameters:
-                        parameter = parameters.pop(0)
-                        value_items.append(parameter.replace('"', ""))
-                        if '"' in parameter:
-                            break
-                value = " ".join(value_items)  # form value string
-                self._save_collected_value(current_field, value)
-            # collect single quoted field value
-            elif "'" in parameter and current_field:
-                value_items = [parameter.replace("'", "")]
-                # collect further values if first parameter not double quoted value e.g. 'nrp1'
-                if parameter.count("'") != 2:
-                    while parameters:
-                        parameter = parameters.pop(0)
-                        value_items.append(parameter.replace("'", ""))
-                        if "'" in parameter:
-                            break
-                value = " ".join(value_items)  # form value string
-                self._save_collected_value(current_field, value)
-            # handle reference to model
-            elif model_fields(current_model["model"]).get(parameter) or any(
-                parameter == f.alias or parameter == f.serialization_alias
-                for f in model_fields(current_model["model"]).values()
-            ):
-                # source field by name
-                if model_fields(current_model["model"]).get(parameter):
-                    field = model_fields(current_model["model"])[parameter]
+                # resolve pipe model
+                if pipe_config == "self":
+                    pipe_model = current_model["model"]
+                # import pipe model from module path string
+                elif isinstance(pipe_config, str):
+                    # rpartition - returns a tuple of (before_last_dot, dot, after_last_dot)
+                    module_path, _, class_name = pipe_config.rpartition(".")
+                    module = __import__(module_path, fromlist=[""])
+                    pipe_model = getattr(module, class_name)
                 else:
-                    # source field by alias
-                    for f_name, field in model_fields(current_model["model"]).items():
-                        if parameter == field.alias:
-                            parameter = f_name  # use actual field name
+                    pipe_model = pipe_config
+                current_model = {
+                    "model": pipe_model,
+                    "fields": [],
+                    "parameter": parameter,
+                }
+                models = [current_model]
+                ret.append(models)
+
+            # collect JSON dictionary or list string
+            elif parameter.strip().startswith(("{", "[")) and current_field:
+                close = "}" if parameter.strip().startswith("{") else "]"
+                value_items = [parameter]
+                while parameters:
+                    parameter = parameters.pop(0)
+                    value_items.append(parameter)
+                    if parameter.strip().endswith(close):
+                        break
+                self._save_collected_value(current_field, " ".join(value_items))
+
+            # collect quoted field value (single or double quotes)
+            elif ('"' in parameter or "'" in parameter) and current_field:
+                quote = '"' if '"' in parameter else "'"
+                value_items = [parameter.replace(quote, "")]
+                if parameter.count(quote) != 2:
+                    while parameters:
+                        parameter = parameters.pop(0)
+                        value_items.append(parameter.replace(quote, ""))
+                        if quote in parameter:
                             break
-                        elif parameter == field.serialization_alias:
-                            parameter = f_name  # use actual field name
-                            break
+                self._save_collected_value(current_field, " ".join(value_items))
+
+            # handle exact match to model field by name, alias, or serialization_alias
+            elif resolved := self._resolve_field(current_model["model"], parameter):
+                parameter, field = resolved
+                # record presence for previous field before moving on
+                if current_field.get(
+                    "values"
+                ) is ... and "presence" in current_field.get("json_schema_extra", {}):
+                    self._save_collected_value(
+                        current_field,
+                        current_field["json_schema_extra"]["presence"],
+                    )
                 # handle next level model reference
                 if isinstance(field.annotation, ModelMetaclass):
-                    # check need to record field presence before going to next model
-                    if (
-                        current_field.get("values") is ...
-                        and "presence" in current_field["json_schema_extra"]
-                    ):
-                        value = current_field["json_schema_extra"]["presence"]
-                        self._save_collected_value(current_field, value)
-                    # goto next model
                     current_model = {
                         "model": field.annotation,
                         "fields": [],
                         "parameter": parameter,
                     }
                     models.append(current_model)
-                    current_field = {}  # empty current field
-                    # extract first command default values from current model
+                    current_field = {}
                     if len(ret) == 1:
                         current_model["defaults"] = self.extract_model_defaults(
                             field.annotation
                         )
                 # handle actual field reference
                 elif isinstance(field, FieldInfo):
-                    # check need to record field presence before going to next field
-                    if (
-                        current_field.get("values") is ...
-                        and "presence" in current_field["json_schema_extra"]
-                    ):
-                        value = current_field["json_schema_extra"]["presence"]
-                        self._save_collected_value(current_field, value)
-                    # goto next field
                     current_field = {
                         "name": parameter,
                         "values": ...,
@@ -530,9 +532,9 @@ class App(cmd.Cmd):
                         "json_schema_extra": field.json_schema_extra or {},
                     }
                     # find and replace default value if present
-                    for index, field in enumerate(current_model["fields"]):
-                        if field["name"] == current_field["name"]:
-                            current_model["fields"][index] = current_field
+                    for idx, f in enumerate(current_model["fields"]):
+                        if f["name"] == current_field["name"]:
+                            current_model["fields"][idx] = current_field
                             break
                     else:
                         current_model["fields"].append(current_field)
@@ -542,42 +544,26 @@ class App(cmd.Cmd):
                         f"parameter: '{parameter}', command: '{command}', current model: "
                         f"'{current_model['model']}'"
                     )
+
             # check if last field is an Enumerator
             elif current_field and isinstance(
                 current_field["field"].annotation, enum.EnumMeta
             ):
-                # check if last field has enum values equal to parameter
                 if any(
                     str(i.value) == parameter for i in current_field["field"].annotation
                 ):
                     self._save_collected_value(current_field, parameter)
-                # check if last field has enum values partially matching parameter
                 elif any(
                     str(i.value).startswith(parameter)
                     for i in current_field["field"].annotation
                 ):
                     raise FieldLooseMatchOnly(current_model, parameter)
-            # check if parameter partially matches any of the model fields
-            elif any(
-                field_name.startswith(parameter)
-                for field_name in model_fields(current_model["model"])
-            ):
+
+            # check if parameter partially matches any model field
+            elif self._has_partial_match(current_model["model"], parameter):
                 raise FieldLooseMatchOnly(current_model, parameter)
-            # check if parameter partially matches any of the model fields' aliases
-            elif any(
-                field.alias.startswith(parameter)
-                for field in model_fields(current_model["model"]).values()
-                if field.alias is not None
-            ):
-                raise FieldLooseMatchOnly(current_model, parameter)
-            # check if parameter partially matches any of the model fields' serialization aliases
-            elif any(
-                field.serialization_alias.startswith(parameter)
-                for field in model_fields(current_model["model"]).values()
-                if field.serialization_alias is not None
-            ):
-                raise FieldLooseMatchOnly(current_model, parameter)
-            # parameter is a value, save it to current model
+
+            # parameter is a value, save it to current field
             elif current_field:
                 self._save_collected_value(current_field, parameter)
             else:
@@ -820,21 +806,13 @@ class App(cmd.Cmd):
         try:
             command_models = self.parse_command(line, is_help=True)
             fieldnames.extend(model_fields(command_models[-1][-1]["model"]))
-        # collect arguments that startswith last parameter
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
             for name, f in model_fields(model["model"]).items():
-                if f.alias and f.alias.startswith(parameter):
-                    fieldnames.append(f.alias)
-                elif f.serialization_alias and f.serialization_alias.startswith(
-                    parameter
-                ):
-                    fieldnames.append(f.serialization_alias)
-                elif name.startswith(parameter):
-                    fieldnames.append(name)
-        # raised if no model fields matched last parameter
-        except FieldKeyError as e:
-            log.debug(f"No model fields matched last parameter - {e}")
+                display = f.alias or f.serialization_alias or name
+                if display.startswith(parameter):
+                    fieldnames.append(display)
+        except FieldKeyError:
             pass
         return sorted([f"{i} " for i in fieldnames])
 
@@ -848,18 +826,14 @@ class App(cmd.Cmd):
             return
         except FieldKeyError as e:
             model, parameter = e.args
-            model_name = (
-                model["model"].__name__
-                if hasattr(model["model"], "__name__")
-                else model["model"].__repr_name__()
-            )
             self.write(
-                f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
+                f"Incorrect command, '{parameter}' not part of "
+                f"'{self._get_model_name(model)}' model fields"
             )
             return
         help_msg, width = self.print_model_help(
             command_models,
-            verbose=True if arg.strip().endswith("?") else False,
+            verbose=arg.strip().endswith("?"),
             print_help=False,
         )
         # print help for global top commands
@@ -870,12 +844,10 @@ class App(cmd.Cmd):
                     name = method_name.replace("do_", "")
                     lines[name] = getattr(self, method_name).__doc__
                     width = max(width, len(name))
-            # form help lines
             if lines:
                 for k, v in lines.items():
                     padding = " " * (width - len(k)) + (" " * 4)
                     help_msg.append(f" {k}{padding}{v}")
-        # print help message
         self.write(self.newline.join(help_msg))
 
     def do_exit(self, arg: str) -> Optional[bool]:
@@ -940,51 +912,49 @@ class App(cmd.Cmd):
             elif "WINDOWS" in platform.system().upper():
                 os.system("cls")
 
+    def _get_model_name(self, model) -> str:
+        """Get display name for a model dict's model value."""
+        m = model["model"]
+        return m.__name__ if hasattr(m, "__name__") else m.__repr_name__()
+
+    def _find_parent_run(self, command: list) -> callable:
+        """
+        Backtrace through parent models (in reverse order) to find one with
+        a 'run' method defined.
+
+        :param command: list of model dicts from parse_command, where earlier
+            indices are parent models and later indices are child models.
+        :return: tuple of (model, method_name, json_schema_extra, command_arguments)
+            or None if no executable parent found.
+        """
+        # Iterate through models in reverse order (child to parent)
+        for model_dict in reversed(command):
+            model = model_dict["model"]
+            if hasattr(model, "run"):
+                return getattr(model, "run")
+
+        return None
+
     def process_help_command(self, line: str) -> None:
         """
-        Processes a help command by parsing the input line and providing relevant
-        information about the command or model fields.
+        Process inline help triggered by '?' or '??' at the end of a command line.
 
-        Args:
-            line (str): The input command line string, which may end with "?" or "??"
-                to indicate a help request.
-
-        Exceptions:
-            FieldLooseMatchOnly: Raised when a parameter loosely matches a field in the model.
-                Provides detailed help for the matched model and parameter.
-            FieldKeyError: Raised when a parameter does not match any field in the model.
-                Displays an error message indicating the incorrect parameter.
-
-        Behavior:
-            - If the line ends with "?", provides basic help for the command or model.
-            - If the line ends with "??", provides verbose help for the command or model.
-            - Handles errors gracefully by displaying appropriate messages for incorrect
-              or loosely matched parameters.
+        :param line: input command line string ending with '?' or '??'.
         """
+        verbose = line.endswith("??")
         try:
             command_models = self.parse_command(line.rstrip("?"), is_help=True)
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
-            self.print_model_help(
-                [[model]],
-                verbose=True if line.endswith("??") else False,
-                match=parameter,
-            )
+            self.print_model_help([[model]], verbose=verbose, match=parameter)
         except FieldKeyError as e:
             model, parameter = e.args
-            model_name = (
-                model["model"].__name__
-                if hasattr(model["model"], "__name__")
-                else model["model"].__repr_name__()
-            )
             self.write(
-                f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
+                f"Incorrect command, '{parameter}' not part of "
+                f"'{self._get_model_name(model)}' model fields"
             )
         else:
-            self.print_model_help(
-                command_models,
-                verbose=True if line.endswith("??") else False,
-            )
+            self.print_model_help(command_models, verbose=verbose)
 
     @run_print_exception
     def default(self, line: str) -> Optional[bool]:
@@ -1001,7 +971,6 @@ class App(cmd.Cmd):
                 command_models = self.parse_command(line, collect_multiline=True)
             except FieldLooseMatchOnly as e:
                 model, parameter = e.args
-                # filter fields to return message for
                 fields = [
                     f.alias or f.serialization_alias or name
                     for name, f in model_fields(model["model"]).items()
@@ -1013,17 +982,13 @@ class App(cmd.Cmd):
                     )
                 ]
                 self.write(
-                    f"Incomplete command, possible completions: " f"{', '.join(fields)}"
+                    f"Incomplete command, possible completions: {', '.join(fields)}"
                 )
             except FieldKeyError as e:
                 model, parameter = e.args
-                model_name = (
-                    model["model"].__name__
-                    if hasattr(model["model"], "__name__")
-                    else model["model"].__repr_name__()
-                )
                 self.write(
-                    f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
+                    f"Incorrect command, '{parameter}' not part of "
+                    f"'{self._get_model_name(model)}' model fields"
                 )
             except ValidationError as e:
                 self.write(e)
@@ -1044,107 +1009,99 @@ class App(cmd.Cmd):
                     for cmd in command:
                         command_defaults.update(cmd.get("defaults", {}))
                     model = command[-1]["model"]
-                    # check if model has subshell
+                    picle_config = getattr(model, "PicleConfig", None)
+
+                    # check if model has subshell and no arguments provided - enter subshell
                     if (
                         not command_arguments
-                        and hasattr(model, "PicleConfig")
-                        and getattr(model.PicleConfig, "subshell", None) is True
+                        and getattr(picle_config, "subshell", None) is True
                     ):
-                        # collect parent shells and defaults
                         for item in command[:-1]:
                             m = item["model"]
-                            self.defaults_update(m)  # store shell defaults
+                            self.defaults_update(m)
                             if (
-                                hasattr(m, "PicleConfig")
-                                and getattr(m.PicleConfig, "subshell", None) is True
+                                getattr(
+                                    getattr(m, "PicleConfig", None), "subshell", None
+                                )
+                                is True
+                                and m not in self.shells
                             ):
-                                if m not in self.shells:
-                                    self.shells.append(m)
-                        # update prompt value
-                        self.prompt = getattr(model.PicleConfig, "prompt", self.prompt)
+                                self.shells.append(m)
+                        self.prompt = getattr(picle_config, "prompt", self.prompt)
                         self.shell = model
                         self.shells.append(self.shell)
                         continue
 
-                    # run model "run" function if it exits
-                    if hasattr(model, "run"):
-                        method_name = "run"
-
-                    # extract json_schema_extra
+                    # resolve run function - prefer json_schema_extra "function", fallback to "run" method, search parents for "run"
                     if command[-1]["fields"]:
                         json_schema_extra = command[-1]["fields"][-1][
                             "json_schema_extra"
                         ]
-                        # use function from json_schema_extra definition no run method
-                        if method_name is None:
-                            method_name = json_schema_extra.get("function")
+                    if callable(json_schema_extra.get("function")):
+                        run_function = json_schema_extra["function"]
+                    else:
+                        method_name = json_schema_extra.get("function", "run")
+                        if hasattr(model, method_name):
+                            run_function = getattr(model, method_name)
+                        elif method_name != "run":
+                            ret = f"Model '{model.__name__}' has no '{method_name}' method defined"
+                            break
+                        elif json_schema_extra.get("use_parent_run", True):
+                            run_function = self._find_parent_run(command)
+                            if run_function is None:
+                                self.defaults_pop(model)
+                                ret = f"Incorrect command for '{model.__name__}', model parents have no 'run' method to execute command"
+                                break
+                        else:
+                            self.defaults_pop(model)
+                            ret = f"Incorrect command for '{model.__name__}', model has no method to execute command"
+                            break
 
-                    # do checks
-                    if method_name and not hasattr(model, method_name):
-                        ret = f"Model '{model.__name__}' has no '{method_name}' method defined"
-                        break
-                    elif method_name is None:
-                        self.defaults_pop(model)
-                        ret = f"Incorrect command for '{model.__name__}' model"
-                        break
-                    self._validate_values(command)  # raises error if not valid
+                    self._validate_values(command)
 
-                    # call first command using collected arguments only
+                    # build kwargs and call the method
                     if index == 0:
                         kw = {
                             **self.shell_defaults,
                             **command_defaults,
                             **command_arguments,
                         }
-                        # check if need to give root model as an argument
                         if json_schema_extra.get("root_model"):
                             kw["root_model"] = self.root
-                        # check if need to give PICLE App as an argument
                         if json_schema_extra.get("picle_app"):
                             kw["picle_app"] = self
-                        ret = getattr(model, method_name)(**kw)
-                    # pipe results through subsequent commands
+                        if callable_expects_argument(run_function, "shell_command"):
+                            kw["shell_command"] = command
+                        ret = run_function(**kw)
                     else:
-                        kw = {
-                            **command_defaults,
-                            **command_arguments,
-                        }
-                        ret = getattr(model, method_name)(ret, **kw)
+                        kw = {**command_defaults, **command_arguments}
+                        if callable_expects_argument(run_function, "shell_command"):
+                            kw["shell_command"] = command
+                        ret = run_function(ret, **kw)
 
-                    # use processors from Field definition if any
-                    if json_schema_extra.get("processors"):
-                        for processor in json_schema_extra["processors"]:
+                    # apply field-level processors
+                    for processor in json_schema_extra.get("processors", []):
+                        if callable(processor):
+                            ret = processor(ret)
+
+                    # apply PicleConfig processors for first command only
+                    if index == 0:
+                        for processor in getattr(picle_config, "processors", []):
                             if callable(processor):
                                 ret = processor(ret)
 
-                    # run processors from PicleConfig if any for first command only
-                    if index == 0:
-                        if hasattr(model, "PicleConfig") and hasattr(
-                            model.PicleConfig, "processors"
-                        ):
-                            for processor in model.PicleConfig.processors:
-                                if callable(processor):
-                                    ret = processor(ret)
-
-                    # check if outputter returned together with results
-                    if isinstance(ret, tuple):
-                        if len(ret) == 2:
-                            ret, outputter = ret
-                            outputter_kwargs = {}
-                        elif len(ret) == 3:
-                            ret, outputter, outputter_kwargs = ret
-                    # use outputter from Field definition
+                    # resolve outputter: from return tuple, field definition, or PicleConfig
+                    if isinstance(ret, tuple) and len(ret) == 2:
+                        ret, outputter = ret
+                        outputter_kwargs = {}
+                    elif isinstance(ret, tuple) and len(ret) == 3:
+                        ret, outputter, outputter_kwargs = ret
                     elif json_schema_extra.get("outputter"):
                         outputter = json_schema_extra["outputter"]
                         outputter_kwargs = json_schema_extra.get("outputter_kwargs", {})
-                    # use PicleConfig outputter
-                    elif hasattr(model, "PicleConfig") and hasattr(
-                        model.PicleConfig, "outputter"
-                    ):
-                        outputter = model.PicleConfig.outputter
-                        outputter_kwargs = getattr(
-                            model.PicleConfig, "outputter_kwargs", {}
-                        )
+                    elif picle_config and hasattr(picle_config, "outputter"):
+                        outputter = picle_config.outputter
+                        outputter_kwargs = getattr(picle_config, "outputter_kwargs", {})
 
         # returning True will end the shell - exit
         if ret is True:
