@@ -1,3 +1,24 @@
+# 0.9.4
+
+## CHANGES
+
+1. Dependencies updates to loosen them up
+2. Adding type hints throughout and updating doc strings
+3. Fixed pydantic depretiacion warning about model_fields access and about using extra arguments on fields
+
+
+## BUGS
+
+1	__init__ ~L97 -PicleConfig accessed without hasattr guard — crash for models without it
+2	do_help ~L855 - Multi-word help silently discarded — never printed
+3	do_help ~L857 - Unhandled FieldLooseMatchOnly/FieldKeyError exceptions
+4	print_model_help - Medium	width not computed for all lines keys — misaligned output
+5	default ~L1004 - Partial alias match reports empty completions list
+6	do_exit ~L872 - Missing PicleConfig guard on prompt access
+7	do_top ~L883 - Same missing guard
+
+---
+
 # 0.9.3
 
 ## CHANGES

@@ -68,7 +68,9 @@ class EnumTableTypes(str, Enum):
 
 class model_nr_cli(filters):
     commands: Union[StrictStr, List[StrictStr]] = Field(
-        ..., description="CLI commands to send to devices", required=True
+        ...,
+        description="CLI commands to send to devices",
+        json_schema_extra={"required": True},
     )
     plugin: NrCliPlugins = Field("netmiko", description="Connection plugin name")
     next_model: NextModel = Field(None, description="Next model handling test")
@@ -385,7 +387,7 @@ class model_model_TestAliasHandlingMandatoryField(BaseModel):
     mandatory_field_with_alias: StrictStr = Field(
         ...,
         description="string",
-        required=True,
+        json_schema_extra={"required": True},
         serialization_alias="mandatory-field-with-alias",
     )
 
@@ -483,6 +485,7 @@ class model_TestEnumBoolen(BaseModel):
     @staticmethod
     def run(**kwargs):
         return kwargs
+
 
 class model_TestIntConversion(BaseModel):
     value_StrictStr: StrictStr = Field(None, description="Value to test")

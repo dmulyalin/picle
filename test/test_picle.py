@@ -154,14 +154,11 @@ def test_processors_formatter_pprint():
 
     print(f" shell output: '{shell_output}'")
 
-    assert (
-        """{   'even': {'more': {'dictionary': 'data'}},
+    assert """{   'even': {'more': {'dictionary': 'data'}},
     'list': [   {'more': {'dictionary': 'data'}},
                 {'more': {'dictionary': 'data'}}],
     'more': {'dictionary': ['data']},
-    'some': {'dictionary': {'data': None}}}"""
-        in shell_output
-    )
+    'some': {'dictionary': {'data': None}}}""" in shell_output
 
 
 def test_pipe_formatter_pprint():
@@ -173,14 +170,11 @@ def test_pipe_formatter_pprint():
 
     print(f" shell output: '{shell_output}'")
 
-    assert (
-        """{   'even': {'more': {'dictionary': 'data'}},
+    assert """{   'even': {'more': {'dictionary': 'data'}},
     'list': [   {'more': {'dictionary': 'data'}},
                 {'more': {'dictionary': 'data'}}],
     'more': {'dictionary': ['data']},
-    'some': {'dictionary': {'data': None}}}"""
-        in shell_output
-    )
+    'some': {'dictionary': {'data': None}}}""" in shell_output
 
 
 def test_pipe_formatter_json_and_alias():
@@ -193,8 +187,7 @@ def test_pipe_formatter_json_and_alias():
 
     print(f" shell output: '{shell_output}'")
 
-    assert (
-        """{
+    assert """{
     "even": {
         "more": {
             "dictionary": "data"
@@ -222,9 +215,7 @@ def test_pipe_formatter_json_and_alias():
             "data": null
         }
     }
-}"""
-        in shell_output
-    )
+}""" in shell_output
 
 
 def test_alias_handling():
@@ -296,8 +287,7 @@ def test_pipe_formatter_yaml():
 
     print(f" shell output: '{shell_output}'")
 
-    assert (
-        """even:
+    assert """even:
   more:
     dictionary: data
 list:
@@ -310,9 +300,7 @@ more:
   - data
 some:
   dictionary:
-    data: null"""
-        in shell_output
-    )
+    data: null""" in shell_output
 
 
 def test_outputter_rich_json():
@@ -358,15 +346,12 @@ def test_PicleConfig_processor_with_run_method():
 
     print(f"shell output: '{shell_output}'")
 
-    assert (
-        """{
+    assert """{
     "commands": "bla",
     "plugin": "netmiko",
     "target": "proxy:proxytype:nornir",
     "tgt_type": "pillar"
-}"""
-        in shell_output
-    )
+}""" in shell_output
 
 
 def test_PicleConfig_outputter_with_run_method():
@@ -461,12 +446,9 @@ def test_pipe_formatter_kv():
 
     print(f" shell output: '{shell_output}'")
 
-    assert (
-        """some: {'dictionary': {'data': None}}
+    assert """some: {'dictionary': {'data': None}}
  more: {'dictionary': ['data']}
- even: {'more': {'dictionary': 'data'}}"""
-        in shell_output
-    )
+ even: {'more': {'dictionary': 'data'}}""" in shell_output
 
 
 def test_model_run_kwargs_unpacking():

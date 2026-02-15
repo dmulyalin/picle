@@ -5,7 +5,7 @@ PICLE - Python Interactive Command Line Shells
 PICLE is a module to construct interactive command line shell
 applications.
 
-PICLE build on top of Python standard library CMD module and
+PICLE is built on top of Python standard library CMD module and
 uses Pydantic models to construct shell environments.
 """
 
@@ -16,7 +16,7 @@ import traceback
 import os
 import platform
 
-from typing import Union
+from typing import Any, Optional, Union
 from pydantic import ValidationError, Json
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.fields import FieldInfo
@@ -34,17 +34,30 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
+def model_fields(model: Any) -> dict[str, FieldInfo]:
+    """
+    Access model_fields from the class to avoid Pydantic V2.11 deprecation
+    warning about accessing model_fields on an instance.
+
+    :param model: Pydantic model class or instance.
+    :return: dictionary mapping field names to their ``FieldInfo`` objects.
+    """
+    if isinstance(model, type):
+        return model.model_fields
+    return type(model).model_fields
+
+
 class FieldLooseMatchOnly(Exception):
     """
-    Raised if parameter not in model's fields but some of the
-    fields names starts with parameter.
+    Raised when a parameter is not an exact match of any model field
+    but one or more field names start with the parameter string.
     """
 
 
 class FieldKeyError(Exception):
     """
-    Raised if parameter not in model's fields and none of the
-    fields names starts with parameter.
+    Raised when a parameter does not match any model field and none
+    of the field names start with the parameter string.
     """
 
 
@@ -79,13 +92,13 @@ class App(cmd.Cmd):
                 self.shell.PicleConfig, "completekey", self.completekey
             )
 
-        # mount override methods
-        if hasattr(self.shell.PicleConfig, "methods_override"):
-            for (
-                method_name,
-                override,
-            ) in self.shell.PicleConfig.methods_override.items():
-                setattr(self, method_name, getattr(self.shell, override))
+            # mount override methods
+            if hasattr(self.shell.PicleConfig, "methods_override"):
+                for (
+                    method_name,
+                    override,
+                ) in self.shell.PicleConfig.methods_override.items():
+                    setattr(self, method_name, getattr(self.shell, override))
 
         # mount models
         self.model_mount(MAN, ["man"], "Manual/documentation functions")
@@ -178,11 +191,11 @@ class App(cmd.Cmd):
         self, field: dict, value: str, replace: bool = False
     ) -> None:
         """
-        Helper function to save collected value into field values
+        Helper function to save collected value into field values.
 
-        :param field: field dictionary
-        :param value: value to save string
-        :pram replace: replaces current field value with new value
+        :param field: field dictionary containing ``field``, ``values`` and ``name`` keys.
+        :param value: value string to save.
+        :param replace: if True, replaces the current field value with the new value.
         """
         # leave it as a string as it is Json field
         if field["field"].metadata and isinstance(field["field"].metadata[0], Json):
@@ -226,7 +239,13 @@ class App(cmd.Cmd):
         else:
             field["values"] = [field.pop("values"), value]
 
-    def _get_field_params(self, field: FieldInfo) -> dict:
+    def _get_field_params(self, field: Union[FieldInfo, dict]) -> dict:
+        """
+        Extract ``json_schema_extra`` parameters from a field.
+
+        :param field: a ``FieldInfo`` instance or a field dictionary.
+        :return: dictionary of extra JSON-schema parameters, or an empty dict.
+        """
         if isinstance(field, FieldInfo):
             if getattr(field, "json_schema_extra"):
                 return field.json_schema_extra
@@ -235,6 +254,15 @@ class App(cmd.Cmd):
         return {}
 
     def _collect_multiline(self, field: dict) -> None:
+        """
+        Prompt the user for multi-line input when the field supports it.
+
+        If the field has ``multiline`` set to ``True`` in its JSON-schema
+        extra parameters and its current value is the literal string
+        ``"input"``, the user is prompted to enter lines until Ctrl+D.
+
+        :param field: field dictionary with ``field`` and ``values`` keys.
+        """
         fparam = self._get_field_params(field["field"])
         multiline_buffer = []
         if fparam.get("multiline") is True and field["values"] == "input":
@@ -250,7 +278,15 @@ class App(cmd.Cmd):
 
     def _validate_values(self, models: list) -> None:
         """
-        Method to validate current model field values
+        Validate current model field values against the root or current
+        shell model.
+
+        Aggregates field values collected from each model in *models*
+        (processed in reverse order) and validates the resulting data
+        dictionary against the appropriate Pydantic model.
+
+        :param models: list of model dictionaries produced by :meth:`parse_command`.
+        :raises ValidationError: when the collected data fails Pydantic validation.
         """
         data = {}
         for model in reversed(models):
@@ -270,10 +306,16 @@ class App(cmd.Cmd):
         else:
             self.shell(**data)
 
-    def extract_model_defaults(self, model) -> dict:
+    def extract_model_defaults(self, model: Any) -> dict:
+        """
+        Extract non-None default values from a Pydantic model's fields.
+
+        :param model: Pydantic model class or instance to extract defaults from.
+        :return: dictionary mapping field names to their default values.
+        """
         ret = {}
         # extract default values from model fields
-        for name, field in model.model_fields.items():
+        for name, field in model_fields(model).items():
             # skip non Field references e.g. to other models
             if not isinstance(field, FieldInfo):
                 continue
@@ -287,14 +329,31 @@ class App(cmd.Cmd):
 
         return ret
 
-    def defaults_update(self, model) -> None:
+    def defaults_update(self, model: Any) -> None:
+        """
+        Merge the given model's default field values into :attr:`shell_defaults`.
+
+        :param model: Pydantic model class or instance.
+        """
         self.shell_defaults.update(self.extract_model_defaults(model))
 
-    def defaults_pop(self, model) -> None:
-        for name in model.model_fields.keys():
+    def defaults_pop(self, model: Any) -> None:
+        """
+        Remove the given model's field names from :attr:`shell_defaults`.
+
+        :param model: Pydantic model class or instance.
+        """
+        for name in model_fields(model).keys():
             self.shell_defaults.pop(name, None)
 
-    def defaults_set(self, model) -> None:
+    def defaults_set(self, model: Any) -> None:
+        """
+        Replace :attr:`shell_defaults` with the given model's defaults.
+
+        Clears the existing defaults and populates them from *model*.
+
+        :param model: Pydantic model class or instance.
+        """
         self.shell_defaults.clear()
         self.defaults_update(model)
 
@@ -416,16 +475,16 @@ class App(cmd.Cmd):
                 value = " ".join(value_items)  # form value string
                 self._save_collected_value(current_field, value)
             # handle reference to model
-            elif current_model["model"].model_fields.get(parameter) or any(
+            elif model_fields(current_model["model"]).get(parameter) or any(
                 parameter == f.alias or parameter == f.serialization_alias
-                for f in current_model["model"].model_fields.values()
+                for f in model_fields(current_model["model"]).values()
             ):
                 # source field by name
-                if current_model["model"].model_fields.get(parameter):
-                    field = current_model["model"].model_fields[parameter]
+                if model_fields(current_model["model"]).get(parameter):
+                    field = model_fields(current_model["model"])[parameter]
                 else:
                     # source field by alias
-                    for f_name, field in current_model["model"].model_fields.items():
+                    for f_name, field in model_fields(current_model["model"]).items():
                         if parameter == field.alias:
                             parameter = f_name  # use actual field name
                             break
@@ -501,20 +560,20 @@ class App(cmd.Cmd):
             # check if parameter partially matches any of the model fields
             elif any(
                 field_name.startswith(parameter)
-                for field_name in current_model["model"].model_fields
+                for field_name in model_fields(current_model["model"])
             ):
                 raise FieldLooseMatchOnly(current_model, parameter)
             # check if parameter partially matches any of the model fields' aliases
             elif any(
                 field.alias.startswith(parameter)
-                for field in current_model["model"].model_fields.values()
+                for field in model_fields(current_model["model"]).values()
                 if field.alias is not None
             ):
                 raise FieldLooseMatchOnly(current_model, parameter)
             # check if parameter partially matches any of the model fields' serialization aliases
             elif any(
                 field.serialization_alias.startswith(parameter)
-                for field in current_model["model"].model_fields.values()
+                for field in model_fields(current_model["model"]).values()
                 if field.serialization_alias is not None
             ):
                 raise FieldLooseMatchOnly(current_model, parameter)
@@ -546,9 +605,9 @@ class App(cmd.Cmd):
         self,
         models: list,
         verbose: bool = False,
-        match: str = None,
+        match: Optional[str] = None,
         print_help: bool = True,
-    ) -> None:
+    ) -> Optional[tuple[list[str], int]]:
         """
         Function to form and print help message for model fields.
 
@@ -571,7 +630,6 @@ class App(cmd.Cmd):
                 lines[name] = f"{field.description}"
                 name = "<ENTER>"
                 lines[name] = "Execute command"
-                width = max(width, len(name))
             # add options for enumerations
             elif isinstance(field.annotation, enum.EnumMeta):
                 options = [i.value for i in field.annotation]
@@ -601,9 +659,8 @@ class App(cmd.Cmd):
             ):
                 name = "<ENTER>"
                 lines[name] = "Enter command subshell"
-                width = max(width, len(name))
             # iterate over model fields
-            for name, field in model["model"].model_fields.items():
+            for name, field in model_fields(model["model"]).items():
                 # skip fields that already have values
                 if any(f["name"] == name for f in model["fields"]):
                     continue
@@ -622,15 +679,13 @@ class App(cmd.Cmd):
                         f"; default '{field.get_default()}', type '{str(field.annotation)}', "
                         f"is required - {field.is_required()}"
                     )
-                width = max(width, len(name))
         # check if model has pipe defined
         if hasattr(model["model"], "PicleConfig") and getattr(
             model["model"].PicleConfig, "pipe", None
         ):
             name = "|"
             lines[name] = "Execute pipe command"
-            width = max(width, len(name))
-        width = max(width, len(name))
+        width = max((len(k) for k in lines), default=width)
         # form help lines
         help_msg = []
         for k in sorted(lines.keys()):
@@ -642,10 +697,14 @@ class App(cmd.Cmd):
         else:
             return help_msg, width
 
-    def completedefault(self, text, line, begidx, endidx):
+    def completedefault(
+        self, text: str, line: str, begidx: int, endidx: int
+    ) -> list[str]:
         """
-        This method called for every  command parameter on
-        complete key hit except for the very first one.
+        Return completions for every command parameter after the first one.
+
+        Called by :mod:`cmd` on a tab-key hit for arguments beyond the
+        initial command keyword.
         """
         fieldnames = []
         try:
@@ -654,7 +713,7 @@ class App(cmd.Cmd):
             # check if last model has fields collected
             if command_models[-1][-1]["fields"]:
                 last_field_name = command_models[-1][-1]["fields"][-1]["name"]
-                last_field = last_model.model_fields[last_field_name]
+                last_field = model_fields(last_model)[last_field_name]
                 last_field_value = command_models[-1][-1]["fields"][-1]["values"]
                 fparam = self._get_field_params(last_field)
                 if isinstance(last_field_value, list):
@@ -695,7 +754,7 @@ class App(cmd.Cmd):
             # return a list of all model fields
             else:
                 if line.endswith(" "):
-                    for name, f in last_model.model_fields.items():
+                    for name, f in model_fields(last_model).items():
                         if f.alias:
                             fieldnames.append(f.alias)
                         elif f.serialization_alias:
@@ -707,7 +766,7 @@ class App(cmd.Cmd):
                     fieldnames.append(last_fieldname)
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
-            for name, f in model["model"].model_fields.items():
+            for name, f in model_fields(model["model"]).items():
                 # skip fields with already collected values from complete prompt
                 if any(
                     collected_field["name"] == name
@@ -742,10 +801,13 @@ class App(cmd.Cmd):
 
         return sorted([f"{i} " for i in fieldnames])
 
-    def completenames(self, text, line, begidx, endidx):
+    def completenames(
+        self, text: str, line: str, begidx: int, endidx: int
+    ) -> list[str]:
         """
-        This method only called for the very first command parameter on
-        complete key hit.
+        Return completions for the very first command parameter.
+
+        Called by :mod:`cmd` on a tab-key hit for the initial keyword.
         """
         fieldnames = []
         # collect global methods
@@ -757,11 +819,11 @@ class App(cmd.Cmd):
         # collect model arguments
         try:
             command_models = self.parse_command(line, is_help=True)
-            fieldnames.extend(command_models[-1][-1]["model"].model_fields)
+            fieldnames.extend(model_fields(command_models[-1][-1]["model"]))
         # collect arguments that startswith last parameter
         except FieldLooseMatchOnly as e:
             model, parameter = e.args
-            for name, f in model["model"].model_fields.items():
+            for name, f in model_fields(model["model"]).items():
                 if f.alias and f.alias.startswith(parameter):
                     fieldnames.append(f.alias)
                 elif f.serialization_alias and f.serialization_alias.startswith(
@@ -776,9 +838,25 @@ class App(cmd.Cmd):
             pass
         return sorted([f"{i} " for i in fieldnames])
 
-    def do_help(self, arg):
-        """Print help message"""
-        command_models = self.parse_command(arg.strip("?"), is_help=True)
+    def do_help(self, arg: str) -> None:
+        """Print help message for the given command or model."""
+        try:
+            command_models = self.parse_command(arg.strip("?"), is_help=True)
+        except FieldLooseMatchOnly as e:
+            model, parameter = e.args
+            self.print_model_help([[model]], verbose=..., match=parameter)
+            return
+        except FieldKeyError as e:
+            model, parameter = e.args
+            model_name = (
+                model["model"].__name__
+                if hasattr(model["model"], "__name__")
+                else model["model"].__repr_name__()
+            )
+            self.write(
+                f"Incorrect command, '{parameter}' not part of '{model_name}' model fields"
+            )
+            return
         help_msg, width = self.print_model_help(
             command_models,
             verbose=True if arg.strip().endswith("?") else False,
@@ -797,11 +875,11 @@ class App(cmd.Cmd):
                 for k, v in lines.items():
                     padding = " " * (width - len(k)) + (" " * 4)
                     help_msg.append(f" {k}{padding}{v}")
-                # print help message
-                self.write(self.newline.join(help_msg))
+        # print help message
+        self.write(self.newline.join(help_msg))
 
-    def do_exit(self, arg):
-        """Exit current shell"""
+    def do_exit(self, arg: str) -> Optional[bool]:
+        """Exit current shell or terminate if at the top level."""
         if "?" in arg:
             self.write(" exit    Exit current shell")
         else:
@@ -810,34 +888,40 @@ class App(cmd.Cmd):
             _ = self.shells.pop(-1)
             if self.shells:
                 self.shell = self.shells[-1]
-                self.prompt = self.shell.PicleConfig.prompt
+                if hasattr(self.shell, "PicleConfig") and getattr(
+                    self.shell.PicleConfig, "prompt"
+                ):
+                    self.prompt = self.shell.PicleConfig.prompt
                 if len(self.shells) == 1:  # check if reached top shell
                     self.defaults_set(self.shell)
             else:
                 return True
 
-    def do_top(self, arg):
-        """Exit to top shell"""
+    def do_top(self, arg: str) -> None:
+        """Exit to top shell, resetting the shell stack."""
         if "?" in arg:
             self.write(" top    Exit to top shell")
         else:
             self.shell = self.shells[0]
-            self.prompt = self.shell.PicleConfig.prompt
+            if hasattr(self.shell, "PicleConfig") and getattr(
+                self.shell.PicleConfig, "prompt"
+            ):
+                self.prompt = self.shell.PicleConfig.prompt
             while self.shells:
                 _ = self.shells.pop()
             self.shells.append(self.shell)
             # set shell defaults
             self.defaults_set(self.shell)
 
-    def do_end(self, arg):
-        """Exit application"""
+    def do_end(self, arg: str) -> Optional[bool]:
+        """Exit the application entirely."""
         if "?" in arg:
             self.write(" end    Exit application")
         else:
             return True
 
-    def do_pwd(self, arg):
-        """Print current shell path"""
+    def do_pwd(self, arg: str) -> None:
+        """Print the current shell path from root."""
         if "?" in arg:
             self.write(" pwd    Print current shell path")
         else:
@@ -846,8 +930,8 @@ class App(cmd.Cmd):
                 path.append(shell.__name__)
             self.write("->".join(path))
 
-    def do_cls(self, arg):
-        """Clear shell Screen"""
+    def do_cls(self, arg: str) -> None:
+        """Clear the terminal screen."""
         if "?" in arg:
             self.write(" cls    Clear shell Screen")
         else:
@@ -903,8 +987,8 @@ class App(cmd.Cmd):
             )
 
     @run_print_exception
-    def default(self, line: str):
-        """Method called if no do_xyz methods found"""
+    def default(self, line: str) -> Optional[bool]:
+        """Process a command line when no matching ``do_*`` method is found."""
         ret = False
         outputter = True  # use default outputter - self.write
         outputter_kwargs = {}
@@ -920,8 +1004,13 @@ class App(cmd.Cmd):
                 # filter fields to return message for
                 fields = [
                     f.alias or f.serialization_alias or name
-                    for name, f in model["model"].model_fields.items()
+                    for name, f in model_fields(model["model"]).items()
                     if name.startswith(parameter)
+                    or (f.alias and f.alias.startswith(parameter))
+                    or (
+                        f.serialization_alias
+                        and f.serialization_alias.startswith(parameter)
+                    )
                 ]
                 self.write(
                     f"Incomplete command, possible completions: " f"{', '.join(fields)}"

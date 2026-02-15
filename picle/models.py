@@ -2,11 +2,10 @@ import json
 import pprint
 import logging
 import os
-import copy
 
 from enum import Enum
 from typing import List, Union, Optional, Callable, Any
-from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool, StrictInt
+from pydantic import BaseModel, StrictStr, Field, StrictBool, StrictInt
 from pydantic_core import PydanticOmit, core_schema
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic._internal._model_construction import ModelMetaclass
@@ -61,7 +60,7 @@ class Filters(BaseModel):
     def filter_include(data: Any, include: Any = None) -> str:
         """
         Filter data line by line using provided pattern. Returns
-        only lines that contains requested ``include`` pattern.
+        only lines that contain the requested ``include`` pattern.
 
         :param data: data to filter
         :param include: pattern to filter data
@@ -73,7 +72,7 @@ class Filters(BaseModel):
     def filter_exclude(data: Any, exclude: Any = None) -> str:
         """
         Filter data line by line using provided pattern. Returns
-        only lines that does not contains requested ``exclude`` pattern.
+        only lines that do not contain the requested ``exclude`` pattern.
 
         :param data: data to filter
         :param exclude: pattern to filter data
@@ -129,6 +128,8 @@ class TabulateTableFmt(str, Enum):
 
 
 class TabulateTableOutputter(BaseModel):
+    """Outputter that formats data as a text table using the tabulate library."""
+
     tablefmt: TabulateTableFmt = Field(None, description="Table format")
     headers: Union[StrictStr, List[str]] = Field(None, description="Table headers")
     sortby: StrictStr = Field(None, description="Column name to sort by")
@@ -158,6 +159,8 @@ class TabulateTableOutputter(BaseModel):
 
 
 class RichTableOutputter(BaseModel):
+    """Outputter that formats data as a Rich table."""
+
     title: Optional[StrictStr] = Field(None, description="Table title")
     headers: List[str] = Field(None, description="Table headers")
     sortby: Optional[StrictStr] = Field(None, description="Column name to sort by")
@@ -220,9 +223,10 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_kv(data: dict) -> str:
         """
-        Function to format dictionary result as a key: value output
+        Format a dictionary as a key-value output string.
 
-        :param data: dictionary to format
+        :param data: dictionary to format.
+        :return: formatted key-value string.
         """
         if isinstance(data, str):
             return data
@@ -231,9 +235,10 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_pprint(data: Any) -> str:
         """
-        Function to pretty print results using python ``pprint`` module
+        Pretty-print results using Python's ``pprint`` module.
 
-        :param data: any data to pretty print
+        :param data: any data to pretty-print.
+        :return: nicely formatted string representation.
         """
         if isinstance(data, str):
             return data
@@ -245,7 +250,7 @@ class Outputters(BaseModel):
         initial_indent: int = 0,
         with_tables: bool = False,
         tabulate_kwargs: dict = None,
-    ) -> None:
+    ) -> str:
         """
         Recursively formats and prints nested data structures (dictionaries and lists)
         in a human-readable format.
@@ -328,10 +333,20 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_rich_table(
         data: list[dict], headers: list = None, title: str = None, sortby: str = None
-    ):
-        original_data = copy.deepcopy(data)
+    ) -> Any:
+        """
+        Format a list of dictionaries as a Rich table.
 
+        :param data: list of dictionaries to display.
+        :param headers: column headers; defaults to the keys of the first row.
+        :param title: optional table title.
+        :param sortby: key name to sort rows by.
+        :return: a Rich ``Table`` object, or the original data if Rich is unavailable.
+        """
         if not HAS_RICH or not isinstance(data, list):
+            return data
+
+        if not data:
             return data
 
         headers = headers or list(data[0].keys())
@@ -349,7 +364,7 @@ class Outputters(BaseModel):
 
         # add table rows
         for item in sorted_data:
-            cells = [item.get(h, "") for h in headers]
+            cells = [str(item.get(h, "")) for h in headers]
             table.add_row(*cells)
 
         return table
@@ -357,7 +372,7 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_yaml(
         data: Union[dict, list, bytes], absolute_indent: int = 0, indent: int = 2
-    ) -> None:
+    ) -> Any:
         """
         Function to format structured data as YAML string
 
@@ -381,6 +396,10 @@ class Outputters(BaseModel):
                     data = "\n".join(
                         [f"{' ' * absolute_indent}{i}" for i in data.splitlines()]
                     )
+            else:
+                log.error(
+                    "PICLE YAML outputter yaml library import failed, install: pip install pyyaml"
+                )
         except Exception as e:
             print(
                 f"ERROR: Failed to format data as YAML string:\n{data}\n\nError: '{e}'"
@@ -389,7 +408,7 @@ class Outputters(BaseModel):
         return data
 
     @staticmethod
-    def outputter_json(data: Union[dict, list, bytes], indent: int = 4) -> None:
+    def outputter_json(data: Union[dict, list, bytes], indent: int = 4) -> Any:
         """
         Function to pretty print JSON string using Rich library
 
@@ -412,7 +431,7 @@ class Outputters(BaseModel):
         return data
 
     @staticmethod
-    def outputter_rich_markdown(data: Any) -> None:
+    def outputter_rich_markdown(data: Any) -> Any:
         """
         Function to print markdown output using Rich library
 
@@ -427,7 +446,7 @@ class Outputters(BaseModel):
             return data
 
     @staticmethod
-    def outputter_save(data: Any, save: str) -> None:
+    def outputter_save(data: Any, save: str) -> Any:
         """
         Function to output data into a file
 
@@ -457,7 +476,7 @@ class Outputters(BaseModel):
         headers: list = None,
         showindex: bool = True,
         maxcolwidths: int = None,
-    ) -> None:
+    ) -> Any:
         """
         Formats and outputs data as a text table.
 
@@ -616,13 +635,18 @@ class MAN(BaseModel):
 
         :param root_model: PICLE App root model to print tree for
         """
-        path = kwargs["tree"].split(".") if kwargs.get("tree") else []
-        rich_tree = RICHTREE("[bold]root[/bold]")
-        RICHCONSOLE.print(
-            MAN._construct_model_tree(
-                model=root_model.model_construct(), tree=rich_tree, path=path
+        if HAS_RICH:
+            path = kwargs["tree"].split(".") if kwargs.get("tree") else []
+            rich_tree = RICHTREE("[bold]root[/bold]")
+            RICHCONSOLE.print(
+                MAN._construct_model_tree(
+                    model=root_model.model_construct(), tree=rich_tree, path=path
+                )
             )
-        )
+        else:
+            log.error(
+                "PICLE model tree outputter requires Rich library, install: pip install rich"
+            )
 
     @staticmethod
     def _recurse_to_model(model, path: list) -> ModelMetaclass:
@@ -648,7 +672,7 @@ class MAN(BaseModel):
         return model
 
     @staticmethod
-    def print_model_json_schema(root_model, **kwargs) -> None:
+    def print_model_json_schema(root_model, **kwargs) -> str:
         """
         Method to print model json schema for shell model specified by dot separated path e.g. model.shell.command
 
@@ -663,7 +687,7 @@ class MAN(BaseModel):
 
             def callable_schema(self, schema):
                 print(schema)
-                raise SystemExit
+                raise PydanticOmit
 
             def render_warning_message(kind, detail: str) -> None:
                 print(kind, detail)
