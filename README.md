@@ -2,6 +2,7 @@
 [![PyPI][pypi-latest-release-badge]][pypi-latest-release-link]
 [![PyPI versions][pypi-pyversion-badge]][pypi-pyversion-link]
 [![Code style: black][black-badge]][black-link]
+[![Tests](https://github.com/dmulyalin/picle/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/dmulyalin/picle/actions/workflows/main.yml)
 
 # PICLE - Python Interactive Command Line Shells
 
