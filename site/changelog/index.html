@@ -463,6 +463,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FEATURES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#bugs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -581,6 +592,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FEATURES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#bugs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -616,16 +638,22 @@
 <ol>
 <li>Dependencies updates to loosen them up</li>
 <li>Adding type hints throughout and updating doc strings</li>
-<li>Fixed pydantic depretiacion warning about model_fields access and about using extra arguments on fields</li>
+<li>Fixed pydantic warnings about model_fields access and about using extra arguments on fields</li>
+</ol>
+<h2 id="features">FEATURES</h2>
+<ol>
+<li>Added ConfigModel model to picle to help with maintaininng configuration files using Picle interactive shell.</li>
 </ol>
 <h2 id="bugs">BUGS</h2>
-<p>1   <strong>init</strong> ~L97 -PicleConfig accessed without hasattr guard — crash for models without it
-2   do_help ~L855 - Multi-word help silently discarded — never printed
-3   do_help ~L857 - Unhandled FieldLooseMatchOnly/FieldKeyError exceptions
-4   print_model_help - Medium   width not computed for all lines keys — misaligned output
-5   default ~L1004 - Partial alias match reports empty completions list
-6   do_exit ~L872 - Missing PicleConfig guard on prompt access
-7   do_top ~L883 - Same missing guard</p>
+<ol>
+<li><strong>init</strong> ~L97 -PicleConfig accessed without hasattr guard — crash for models without it</li>
+<li>do_help ~L855 - Multi-word help silently discarded — never printed</li>
+<li>do_help ~L857 - Unhandled FieldLooseMatchOnly/FieldKeyError exceptions</li>
+<li>print_model_help - Medium    width not computed for all lines keys — misaligned output</li>
+<li>default ~L1004 - Partial alias match reports empty completions list</li>
+<li>do_exit ~L872 - Missing PicleConfig guard on prompt access</li>
+<li>do_top ~L883 - Same missing guard</li>
+</ol>
 <hr />
 <h1 id="093">0.9.3</h1>
 <h2 id="changes_1">CHANGES</h2>
@@ -641,7 +669,7 @@
 </ol>
 <hr />
 <h1 id="091">0.9.1</h1>
-<h2 id="features">FEATURES</h2>
+<h2 id="features_1">FEATURES</h2>
 <ol>
 <li>Extending nested outputter with capability to include tables within nested output if data is a list of dictionaries</li>
 </ol>
@@ -654,7 +682,7 @@
 <li>Improved pipe functions handling logic </li>
 <li>Rich is now a default outputter, can be disabled using <code>use_rich</code> config parameter in the root's model PicleConfig </li>
 </ol>
-<h2 id="features_1">FEATURES</h2>
+<h2 id="features_2">FEATURES</h2>
 <ol>
 <li>Added Tabulate table outputter</li>
 <li>Added <code>save</code> outputter to save results into a file</li>

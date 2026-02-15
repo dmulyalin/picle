@@ -548,10 +548,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuration-shells-with-configmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration shells with ConfigModel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#multi-line-input" class="md-nav__link">
     <span class="md-ellipsis">
       
         Multi-line input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-shell-apps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample shell apps
       
     </span>
   </a>
@@ -686,10 +708,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuration-shells-with-configmodel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration shells with ConfigModel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#multi-line-input" class="md-nav__link">
     <span class="md-ellipsis">
       
         Multi-line input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-shell-apps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample shell apps
       
     </span>
   </a>
@@ -731,7 +775,8 @@ You define a model tree, and PICLE interprets the command line as a walk through
   └─ command -&gt; Field (collect value)
 </code></pre></div>
 <p>Concretely: field names (or <code>alias</code> / <code>serialization_alias</code>) become command tokens.
-Tokens after a leaf field become that field’s value(s). Once PICLE has enough information, it validates the collected data with Pydantic and then executes your code.</p>
+Tokens after a leaf field become that field’s value(s). Once PICLE has enough information, 
+it validates the collected data with Pydantic and then executes your code.</p>
 <p>How a line is processed:</p>
 <div class="highlight"><pre><span></span><code>user input
   -&gt; parse tokens into (models + fields)
@@ -833,9 +878,71 @@ The second segment receives the previous segment’s result as its first argumen
   | segment 2 (transform/format)
 </code></pre></div>
 <p>PICLE includes a ready-to-use pipe model (<code>PipeFunctionsModel</code>) with filters and outputters.</p>
+<h2 id="configuration-shells-with-configmodel">Configuration shells with <code>ConfigModel</code></h2>
+<p>If you want a CLI that edits a structured YAML configuration, PICLE includes <code>picle.models.ConfigModel</code>.
+It lets users navigate a nested Pydantic model, stage edits into <code>&lt;config_file&gt;.tmp</code>, review diffs, and then commit.</p>
+<p>Minimal shape:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">picle</span><span class="w"> </span><span class="kn">import</span> <span class="n">App</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">picle.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigModel</span><span class="p">,</span> <span class="n">PipeFunctionsModel</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Logging</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+  <span class="n">severity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Log severity&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+  <span class="n">logging</span><span class="p">:</span> <span class="n">Logging</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Logging config&quot;</span><span class="p">)</span>
+
+  <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+    <span class="n">subshell</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;app[cfg]#&quot;</span>
+    <span class="n">config_file</span> <span class="o">=</span> <span class="s2">&quot;app_config.yaml&quot;</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Root</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+  <span class="n">configure</span><span class="p">:</span> <span class="n">MyConfig</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Edit configuration&quot;</span><span class="p">)</span>
+
+  <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;app#&quot;</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">PipeFunctionsModel</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+  <span class="n">App</span><span class="p">(</span><span class="n">Root</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</code></pre></div>
+<p>Example interaction:</p>
+<div class="highlight"><pre><span></span><code>app#configure
+app[cfg]#logging severity debug
+Configuration updated (uncommitted). Use &#39;commit&#39; to save or &#39;show changes&#39; to review.
+
+app[cfg]#show changes
+... unified diff ...
+
+app[cfg]#commit
+Configuration committed successfully
+</code></pre></div>
+<p><code>ConfigModel</code> also honors a additional <code>PicleConfig</code> parameters:</p>
+<ul>
+<li><code>config_file</code>: YAML config path (default: <code>configuration.yaml</code>)</li>
+<li><code>backup_on_save</code>: number of rotating backups to keep on commit (default: 5)</li>
+<li><code>commit_hook</code>: optional callable executed after a successful commit</li>
+</ul>
+<p>Notes:</p>
+<ul>
+<li><code>show configuration</code> prints the running config, <code>show changes</code> prints the staged diff.</li>
+<li><code>clear-changes</code> discards the staged temp file; <code>erase-configuration</code> stages an empty config.</li>
+<li><code>rollback &lt;n&gt;</code> loads <code>app_config.yaml.old&lt;n&gt;</code> into the temp file for review/commit.</li>
+</ul>
 <h2 id="multi-line-input">Multi-line input</h2>
 <p>If a field sets <code>json_schema_extra={"multiline": True}</code>, the user can type <code>input</code> as the value to start multi-line collection.
 PICLE reads lines until EOF (Ctrl+D), then joins them with newlines and validates the result.</p>
+<h2 id="sample-shell-apps">Sample shell apps</h2>
+<p>If you want copy/paste starting points, the repository includes a couple of small runnable examples:</p>
+<ul>
+<li><code>test/docs_sample_app_1.py</code>: a tiny “show version/clock” shell</li>
+<li><code>test/config_app_example.py</code>: a complete <code>ConfigModel</code> configuration shell example</li>
+</ul>
 
 
 
