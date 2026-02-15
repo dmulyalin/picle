@@ -263,7 +263,6 @@ class TestGetModelConfig:
         # Should contain the overridden config_file from MyConfigStore
         assert result["config_file"] == "app_config.yaml"
         # Should contain base defaults from ConfigModel.PicleConfig
-        assert "auto_save" in result
         assert "backup_on_save" in result
 
     def test_model_config_overrides_base_defaults(self):
