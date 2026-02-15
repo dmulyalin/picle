@@ -46,7 +46,20 @@ theme:
   - toc.follow
   icon:
     repo: fontawesome/brands/github-alt
+  logo: images/logo_small.jpg
   name: material
   palette:
-    accent: teal
-    primary: orange
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    primary: black
+    accent: black
+    toggle:
+      icon: material/brightness-4
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: black
+    accent: black
+    toggle:
+      icon: material/brightness-7
+      name: Switch to light mode

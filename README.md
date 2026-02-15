@@ -4,7 +4,7 @@
 [![Code style: black][black-badge]][black-link]
 [![Tests](https://github.com/dmulyalin/picle/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/dmulyalin/picle/actions/workflows/main.yml)
 
-# PICLE - Python Interactive Command Line Shells
+# ![logo](docs/images/logo_small.jpg) PICLE - Python Interactive Command Line Shells
 
 PICLE helps you build interactive CLI shells from Pydantic v2 models.
 Think of it as: **your model tree becomes the command tree**.
