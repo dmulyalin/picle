@@ -625,6 +625,7 @@ class MAN(BaseModel):
                     if isinstance(field.examples, list)
                     else [field.examples]
                 )
+                examples = [str(e) for e in examples]
                 label.append(f"examples: {', '.join(examples)}")
             next_tree = tree.add(", ".join(label))
             # recurse to next level model

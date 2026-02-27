@@ -16,6 +16,7 @@ import traceback
 import os
 import platform
 import inspect
+import difflib
 
 from typing import Any, Optional, Union
 from pydantic import ValidationError, Json
@@ -91,12 +92,14 @@ class App(cmd.Cmd):
     newline = "\r\n"
     completekey = "tab"
     use_rich = True
+    history_length = 100
 
     def __init__(self, root, stdin=None, stdout=None):
         self.root = root
         self.shell = self.root.model_construct()
         self.shell_defaults = {}
         self.shells = [self.shell]
+        self.commands_history = []
 
         # extract configuration from shell model
         if hasattr(self.shell, "PicleConfig"):
@@ -107,6 +110,9 @@ class App(cmd.Cmd):
             self.use_rich = getattr(self.shell.PicleConfig, "use_rich", self.use_rich)
             self.completekey = getattr(
                 self.shell.PicleConfig, "completekey", self.completekey
+            )
+            self.history_length = getattr(
+                self.shell.PicleConfig, "history_length", self.history_length
             )
 
             # mount override methods
@@ -143,6 +149,15 @@ class App(cmd.Cmd):
             if not output.endswith(self.newline):
                 output += self.newline
             self.stdout.write(output)
+        self.stdout.flush()
+
+    def write_error(self, output: str) -> None:
+        """
+        Method to write error output to stdout in red color.
+
+        :param output: error message to write to stdout
+        """
+        self.write(f"\033[31m{output}\033[0m")
 
     def model_mount(
         self,
@@ -313,18 +328,18 @@ class App(cmd.Cmd):
 
         If the field has ``multiline`` set to ``True`` in its JSON-schema
         extra parameters and its current value is the literal string
-        ``"input"``, the user is prompted to enter lines until Ctrl+D.
+        ``"load-terminal"``, the user is prompted to enter lines until Ctrl+D.
 
         :param field: field dictionary with ``field`` and ``values`` keys.
         """
         fparam = self._get_field_params(field["field"])
         multiline_buffer = []
-        if fparam.get("multiline") is True and field["values"] == "input":
-            self.write("Enter lines and hit Ctrl+D to finish multi line input")
+        if fparam.get("multiline") is True and field["values"] == "load-terminal":
+            self.write("Enter lines and hit Ctrl+D to finish")
             while True:
                 try:
                     line = input()
-                except EOFError:
+                except EOFError:  # raise when user hits CTRL+D
                     break
                 else:
                     multiline_buffer.append(line)
@@ -353,12 +368,18 @@ class App(cmd.Cmd):
             if model["parameter"] is not ...:
                 data = {model["parameter"]: data}
         log.debug(f"Validating collected data against root model, data: {data}")
-        # validate against root model
-        if len(self.shells) == 1:
-            self.root(**data)
-        # validate against current shell model
-        else:
-            self.shell(**data)
+        try:
+            # validate against root model
+            if len(self.shells) == 1:
+                self.root(**data)
+            # validate against current shell model
+            else:
+                self.shell(**data)
+        except ValidationError as e:
+            self.write_error(e)
+            return False
+
+        return True
 
     def extract_model_defaults(self, model: Any) -> dict:
         """
@@ -605,6 +626,7 @@ class App(cmd.Cmd):
         last_field = model["fields"][-1] if model["fields"] else None
         fparam = self._get_field_params(last_field)
         lines = {}  # dict of {cmd: cmd_help}
+        lines_mandatory = {}  # dict of mandatory commands {cmd: cmd_help}
         width = 0  # record longest command width for padding
         # print help message only for last collected field
         if last_field and last_field["values"] == ...:
@@ -628,7 +650,7 @@ class App(cmd.Cmd):
                 lines[name] = f"{field.description}"
                 # check if field supports multiline input
                 if fparam.get("multiline") is True:
-                    lines["input"] = "Collect value using multi line input mode"
+                    lines["load-terminal"] = "Collect value using multi line input mode"
                 if verbose:
                     lines[name] += (
                         f"; default '{field.get_default()}', type '{str(field.annotation)}', "
@@ -659,7 +681,11 @@ class App(cmd.Cmd):
                 # filter fields
                 if match and not name.startswith(match):
                     continue
-                lines[name] = f"{field.description}"
+                # make mandatory fields standing out
+                if field.is_required():
+                    lines_mandatory[name] = f"{field.description}"
+                else:
+                    lines[name] = f"{field.description}"
                 if verbose:
                     lines[name] += (
                         f"; default '{field.get_default()}', type '{str(field.annotation)}', "
@@ -672,11 +698,20 @@ class App(cmd.Cmd):
             name = "|"
             lines[name] = "Execute pipe command"
         width = max((len(k) for k in lines), default=width)
-        # form help lines
+        # form help lines for mandatory fields first
         help_msg = []
+        for k in sorted(lines_mandatory.keys()):
+            padding = " " * (width - len(k)) + (" " * 4)
+            help_msg.append(f" \033[1m{k}\033[0m{padding}{lines_mandatory[k]}")
+        # form help lines for non-mandatory fields
         for k in sorted(lines.keys()):
             padding = " " * (width - len(k)) + (" " * 4)
             help_msg.append(f" {k}{padding}{lines[k]}")
+        # make sure ENTER is at the end of help message if subshell supported
+        enter_line = [c for c in help_msg if "<ENTER>" in c]
+        if enter_line:
+            help_msg.remove(enter_line[0])
+            help_msg.append(enter_line[0])
 
         if print_help:  # print help message
             self.write(self.newline.join(help_msg))
@@ -730,13 +765,13 @@ class App(cmd.Cmd):
                         fieldnames = [
                             i for i in fieldnames if i not in collected_values
                         ]
-                # auto complete 'input' for multi-line input mode
+                # auto complete 'load-terminal' for multi-line input mode
                 elif fparam.get("multiline") is True:
                     if (
-                        "input".startswith(last_field_value)
-                        and last_field_value != "input"
+                        "load-terminal".startswith(last_field_value)
+                        and last_field_value != "load-terminal"
                     ):
-                        fieldnames = ["input"]
+                        fieldnames = ["load-terminal"]
             # return a list of all model fields
             else:
                 if line.endswith(" "):
@@ -826,7 +861,7 @@ class App(cmd.Cmd):
             return
         except FieldKeyError as e:
             model, parameter = e.args
-            self.write(
+            self.write_error(
                 f"Incorrect command, '{parameter}' not part of "
                 f"'{self._get_model_name(model)}' model fields"
             )
@@ -902,6 +937,19 @@ class App(cmd.Cmd):
                 path.append(shell.__name__)
             self.write("->".join(path))
 
+    def do_history(self, arg: str) -> None:
+        """Print command history."""
+        if "?" in arg:
+            self.write(" history    Print command history")
+        else:
+            if not self.commands_history:
+                self.write("No command history")
+            else:
+                lines = [
+                    f" {i + 1:>4}  {cmd}" for i, cmd in enumerate(self.commands_history)
+                ]
+                self.write(self.newline.join(lines))
+
     def do_cls(self, arg: str) -> None:
         """Clear the terminal screen."""
         if "?" in arg:
@@ -949,7 +997,7 @@ class App(cmd.Cmd):
             self.print_model_help([[model]], verbose=verbose, match=parameter)
         except FieldKeyError as e:
             model, parameter = e.args
-            self.write(
+            self.write_error(
                 f"Incorrect command, '{parameter}' not part of "
                 f"'{self._get_model_name(model)}' model fields"
             )
@@ -981,18 +1029,31 @@ class App(cmd.Cmd):
                         and f.serialization_alias.startswith(parameter)
                     )
                 ]
-                self.write(
+                self.write_error(
                     f"Incomplete command, possible completions: {', '.join(fields)}"
                 )
             except FieldKeyError as e:
                 model, parameter = e.args
-                self.write(
-                    f"Incorrect command, '{parameter}' not part of "
-                    f"'{self._get_model_name(model)}' model fields"
+                candidates = [
+                    f.alias or f.serialization_alias or name
+                    for name, f in model_fields(model["model"]).items()
+                ]
+                close = difflib.get_close_matches(
+                    parameter, candidates, n=3, cutoff=0.6
                 )
+                msg = f"Incorrect command, '{parameter}' not part of '{self._get_model_name(model)}' model fields"
+                if close:
+                    msg += f". Did you mean: {', '.join(close)}?"
+                self.write_error(msg)
             except ValidationError as e:
-                self.write(e)
+                self.write_error(e)
             else:
+                # store command to a history list, trim history if exceeds defined length
+                self.commands_history.append(line)
+                if len(self.commands_history) > self.history_length:
+                    self.commands_history = self.commands_history[
+                        -self.history_length :
+                    ]
                 # go over collected commands separated by pipe
                 for index, command in enumerate(command_models):
                     json_schema_extra = {}
@@ -1057,7 +1118,9 @@ class App(cmd.Cmd):
                             ret = f"Incorrect command for '{model.__name__}', model has no method to execute command"
                             break
 
-                    self._validate_values(command)
+                    # validate command data and exit if failed
+                    if not self._validate_values(command):
+                        return
 
                     # build kwargs and call the method
                     if index == 0:

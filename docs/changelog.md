@@ -1,3 +1,22 @@
+# 0.10.1
+
+## BUGS
+
+1. MAN fixing examples output when examples are anything but string
+
+## CHANGES
+
+1. Making mandatory fields to be at the top of help output and in bold cursor
+2. To invoke multiline input mode changing command from `input` to `load-terminal`
+
+## FEATURES
+
+1. Adding `history` command to output commands history, adding `history_length` PicleConfig class config attribute
+2. Improving message back to a user for incorrect command with suggesting possible completions
+3. Enhancing errors output printed to the screen by making it to be printed in red color
+
+---
+
 # 0.10.0
 
 ## CHANGES
