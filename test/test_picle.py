@@ -1,14 +1,10 @@
 import unittest
 import unittest.mock
 import sys
-import time
-import pprint
 import pytest
 
 from picle import App
-from enum import Enum
-from typing import List, Union, Optional, Callable
-from pydantic import ValidationError, BaseModel, StrictStr, Field, StrictBool
+from pydantic import BaseModel, StrictStr, Field
 from .picle_test_shell import Root
 
 mock_stdin = unittest.mock.create_autospec(sys.stdin)
@@ -141,7 +137,7 @@ def test_multiple_pipe_functions():
         "Why did the network engineer always carry a ladder?" in shell_output
         and 'Because he wanted to reach the highest levels of connectivity... and occasionally fix the "cloud" when it crashed!'
         in shell_output
-        and not "End" in shell_output
+        and "End" not in shell_output
     )
 
 
@@ -484,7 +480,7 @@ def test_outputter_rich_table():
     assert True
 
 
-def test_outputter_rich_table_with_kwargs():
+def test_outputter_rich_table_no_kwargs():
     # outputter prints to terminal bypassing stdout, hence no output to test
 
     # just verify command run with no exceptions raised
@@ -820,8 +816,8 @@ def test_tabulate_table():
     print(f"shell output: '{shell_output}'")
 
     assert all(
-        l in shell_output
-        for l in [
+        i in shell_output
+        for i in [
             "+----+--------+-------------+-------------+",
             "|    | name   | key1        | key2        |",
             "+====+========+=============+=============+",
@@ -840,8 +836,8 @@ def test_tabulate_table_tablefmt_plain():
     print(f"shell output: '{shell_output}'")
 
     assert all(
-        l in shell_output
-        for l in [
+        i in shell_output
+        for i in [
             "name    key1         key2",
             " 1  name3   key1_value3  key2_value3",
             " 2  name1   key1_value1  key2_value1",
@@ -1327,7 +1323,7 @@ def test_outputter_yaml_with_absolute_indent():
 
     result = Outputters.outputter_yaml({"key": "value"}, absolute_indent=4)
     # lines with content should have 4 spaces prepended
-    lines = [l for l in result.splitlines() if l.strip()]
+    lines = [i for i in result.splitlines() if i.strip()]
     assert len(lines) > 0
     for line in lines:
         assert line.startswith("    ")
@@ -1724,7 +1720,6 @@ def test_help_with_loose_match():
 
 def test_pipe_on_model_without_pipe():
     """Test that piping on a model without pipe config is handled"""
-    from picle.models import Outputters
 
     class NoPipeModel(BaseModel):
         val: StrictStr = Field(None, description="val")
@@ -1843,3 +1838,33 @@ def test_help_pipe_available():
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
     print(f"shell output: '{shell_output}'")
     assert "|" in shell_output
+
+
+def test_dynamic_dictionary():
+    shell.onecmd("top")
+    shell.onecmd("test_dynamicdictionary mynestedkey myname1 k1 myvalue")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    assert (
+        shell_output.strip() == "{'name': 'myname1', 'k1': 'myvalue'}"
+    ), "Dynamic dictionary output mismatch"
+
+
+def test_dynamic_dictionary_pkey_help():
+    shell.onecmd("top")
+    shell.onecmd("test_dynamicdictionary mynestedkey ?")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    assert (
+        "<name>" in shell_output and "Input key-name" in shell_output
+    ), "Dynamic dictionary help output mismatch"
+
+
+def test_dynamic_dictionary_pkey_help_with_value():
+    shell.onecmd("top")
+    shell.onecmd("test_dynamicdictionary mynestedkey myname1 ?")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    assert (
+        "k1" in shell_output and "my description" in shell_output
+    ), "Dynamic dictionary help output mismatch"

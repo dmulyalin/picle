@@ -6,14 +6,13 @@ import os
 import sys
 import unittest
 import unittest.mock
-import shutil
 import pytest
 import yaml
-import difflib
+import pprint
 
 from pathlib import Path
 from picle import App
-from picle.models import ConfigModel, ConfigModelShowCommands
+from picle.models import ConfigModel
 
 from .config_app_example import RootShell, MyConfigStore
 
@@ -767,3 +766,30 @@ class TestEnumDefaultExtraction:
         )
         # The Enum default for severity should be serialized as a plain string
         assert temp_data["logging"]["file"]["severity"] == "warning"
+
+
+class TestDynamicDictionaryData:
+    """Tests Dynamic Dictionary data collection."""
+
+    def test_dynamic_dictionary_data(self):
+        shell, mock_stdout = _make_shell()
+
+        with open(CONFIG_FILE, "w") as f:
+            yaml.safe_dump({"original": True}, f)
+
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+        shell.onecmd("workers worker1 timeout 10")
+        shell.onecmd("workers worker2 timeout 10 num_threads 1")
+        shell.onecmd("commit")
+
+        # Main config should be unchanged
+        main_data = ConfigModel.load_config(CONFIG_FILE)
+        pprint.pprint(main_data)
+        assert main_data == {
+            "original": True,
+            "workers": {
+                "worker1": {"timeout": 10, "worker_name": "worker1"},
+                "worker2": {"num_threads": 1, "timeout": 10, "worker_name": "worker2"},
+            },
+        }

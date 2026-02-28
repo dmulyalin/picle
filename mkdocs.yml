@@ -15,6 +15,15 @@ nav:
   - Overview: index.md
   - Changelog: changelog.md
 - Getting Started: Getting Started.md
+- Features:
+  - Pipes: features/pipes.md
+  - Presence: features/fields_presence.md
+  - Processors: features/processors.md
+  - Multiline Input: features/multiline_input.md
+  - Result Specific Outputters: features/result_specific_outputters.md
+  - Mounting Shell Models: features/mounting_models_at_runtime.md
+  - Configuration Model: features/configuration_model.md
+  - Dynamic Dictionaries: features/dynamic_dictionary_input.md
 - API Reference: api_reference.md
 plugins:
 - search
@@ -29,7 +38,7 @@ plugins:
           show_root_heading: true
           show_root_toc_entry: true
           show_signature_annotations: true
-          docstring_style: sphinx
+          docstring_style: google
 repo_name: dmulyalin/picle
 repo_url: https://github.com/dmulyalin/picle
 site_author: Denis Mulyalin

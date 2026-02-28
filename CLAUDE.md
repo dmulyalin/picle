@@ -1,6 +1,6 @@
 # PICLE (repo context for code assistants)
 
-PICLE is a small framework for building interactive CLI shells from Pydantic v2 models.
+PICLE is a framework for building interactive CLI shells from Pydantic v2 models.
 It wraps Python’s standard `cmd.Cmd` loop and treats a command line as a path through a model tree:
 
 - Each token that matches a model field name (or field `alias` / `serialization_alias`) moves the parser deeper.
@@ -15,7 +15,7 @@ This repository is intentionally lightweight; most behavior lives in `picle/picl
 
 - `picle/picle.py`: `App` (the shell). Parsing, completion, help, piping, execution, output.
 - `picle/models.py`: built-in pipe functions (filters + outputters) and built-in `man` commands.
-- `picle/utils.py`: small helpers (exception wrapper, JSON schema generator).
+- `picle/utils.py`: helpers (exception wrapper, JSON schema generator).
 - `docs/`: MkDocs documentation sources.
 - `test/`: pytest tests and sample shell apps.
 

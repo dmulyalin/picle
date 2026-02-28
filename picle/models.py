@@ -6,7 +6,7 @@ import shutil
 import difflib
 
 from enum import Enum
-from typing import List, Union, Optional, Callable, Any
+from typing import List, Union, Optional, Callable, Any, get_args, get_origin, Dict
 from pathlib import Path
 from pydantic import BaseModel, StrictStr, Field, StrictBool, StrictInt
 from pydantic_core import PydanticOmit, core_schema
@@ -63,11 +63,14 @@ class Filters(BaseModel):
     @staticmethod
     def filter_include(data: Any, include: Any = None) -> str:
         """
-        Filter data line by line using provided pattern. Returns
-        only lines that contain the requested ``include`` pattern.
+        Filter data line by line using provided pattern. Returns only lines that contain the requested include pattern.
 
-        :param data: data to filter
-        :param include: pattern to filter data
+        Args:
+            data: Data to filter.
+            include: Pattern to filter data.
+
+        Returns:
+            str: Filtered lines joined by newline.
         """
         include = str(include)
         return "\n".join([line for line in str(data).splitlines() if include in line])
@@ -75,11 +78,14 @@ class Filters(BaseModel):
     @staticmethod
     def filter_exclude(data: Any, exclude: Any = None) -> str:
         """
-        Filter data line by line using provided pattern. Returns
-        only lines that do not contain the requested ``exclude`` pattern.
+        Filter data line by line using provided pattern. Returns only lines that do not contain the requested exclude pattern.
 
-        :param data: data to filter
-        :param exclude: pattern to filter data
+        Args:
+            data: Data to filter.
+            exclude: Pattern to filter data.
+
+        Returns:
+            str: Filtered lines joined by newline.
         """
         exclude = str(exclude)
         return "\n".join(
@@ -158,7 +164,7 @@ class TabulateTableOutputter(BaseModel):
         pipe = "picle.models.PipeFunctionsModel"
 
     @staticmethod
-    def run(*args, **kwargs):
+    def run(*args: list, **kwargs: dict):
         return Outputters.outputter_tabulate_table(*args, **kwargs)
 
 
@@ -170,7 +176,7 @@ class RichTableOutputter(BaseModel):
     sortby: Optional[StrictStr] = Field(None, description="Column name to sort by")
 
     @staticmethod
-    def run(*args, **kwargs):
+    def run(*args: list, **kwargs: dict):
         return Outputters.outputter_rich_table(*args, **kwargs)
 
 
@@ -229,8 +235,11 @@ class Outputters(BaseModel):
         """
         Format a dictionary as a key-value output string.
 
-        :param data: dictionary to format.
-        :return: formatted key-value string.
+        Args:
+            data (dict): Dictionary to format.
+
+        Returns:
+            str: Formatted key-value string.
         """
         if isinstance(data, str):
             return data
@@ -239,10 +248,13 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_pprint(data: Any) -> str:
         """
-        Pretty-print results using Python's ``pprint`` module.
+        Pretty-print results using Python's pprint module.
 
-        :param data: any data to pretty-print.
-        :return: nicely formatted string representation.
+        Args:
+            data: Any data to pretty-print.
+
+        Returns:
+            str: Nicely formatted string representation.
         """
         if isinstance(data, str):
             return data
@@ -256,12 +268,16 @@ class Outputters(BaseModel):
         tabulate_kwargs: dict = None,
     ) -> str:
         """
-        Recursively formats and prints nested data structures (dictionaries and lists)
-        in a human-readable format.
+        Recursively formats and prints nested data structures (dictionaries and lists) in a human-readable format.
 
-        :param data: nested data structure to be formatted and printed.
-        :param initial_indent: initial indentation level.
-        :param with_tables: if True, will format flat lists as Tabulate tables.
+        Args:
+            data (dict or list): Nested data structure to be formatted and printed.
+            initial_indent (int): Initial indentation level.
+            with_tables (bool): If True, will format flat lists as Tabulate tables.
+            tabulate_kwargs (dict, optional): Arguments for tabulate table outputter.
+
+        Returns:
+            str: Formatted nested string.
         """
         tabulate_kwargs = tabulate_kwargs or {"tablefmt": "simple"}
 
@@ -341,11 +357,14 @@ class Outputters(BaseModel):
         """
         Format a list of dictionaries as a Rich table.
 
-        :param data: list of dictionaries to display.
-        :param headers: column headers; defaults to the keys of the first row.
-        :param title: optional table title.
-        :param sortby: key name to sort rows by.
-        :return: a Rich ``Table`` object, or the original data if Rich is unavailable.
+        Args:
+            data (list[dict]): List of dictionaries to display.
+            headers (list, optional): Column headers; defaults to the keys of the first row.
+            title (str, optional): Table title.
+            sortby (str, optional): Key name to sort rows by.
+
+        Returns:
+            Any: A Rich Table object, or the original data if Rich is unavailable.
         """
         if not HAS_RICH or not isinstance(data, list):
             return data
@@ -378,10 +397,15 @@ class Outputters(BaseModel):
         data: Union[dict, list, bytes], absolute_indent: int = 0, indent: int = 2
     ) -> Any:
         """
-        Function to format structured data as YAML string
+        Format structured data as a YAML string.
 
-        :param data: any data to print
-        :param absolute_indent: indentation to prepend for entire output
+        Args:
+            data (dict, list, or bytes): Data to print.
+            absolute_indent (int): Indentation to prepend for entire output.
+            indent (int): Indentation for YAML output.
+
+        Returns:
+            Any: YAML-formatted string or error message.
         """
         if isinstance(data, bytes):
             data = data.decode("utf-8")
@@ -414,9 +438,14 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_json(data: Union[dict, list, bytes], indent: int = 4) -> Any:
         """
-        Function to pretty print JSON string using Rich library
+        Pretty print JSON string using Rich library.
 
-        :param data: any data to print
+        Args:
+            data (dict, list, or bytes): Data to print.
+            indent (int): Indentation for JSON output.
+
+        Returns:
+            Any: JSON-formatted string or error message.
         """
         if isinstance(data, bytes):
             data = data.decode("utf-8")
@@ -437,9 +466,13 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_rich_markdown(data: Any) -> Any:
         """
-        Function to print markdown output using Rich library
+        Print markdown output using Rich library.
 
-        :param data: any data to print
+        Args:
+            data: Any data to print.
+
+        Returns:
+            Any: Rich Markdown object or string.
         """
         if not isinstance(data, str):
             data = str(data)
@@ -452,9 +485,14 @@ class Outputters(BaseModel):
     @staticmethod
     def outputter_save(data: Any, save: str) -> Any:
         """
-        Function to output data into a file
+        Output data into a file.
 
-        :param data: any data to print
+        Args:
+            data: Any data to print.
+            save (str): File path to save data.
+
+        Returns:
+            Any: The data that was saved.
         """
         # create directories
         abspath = os.path.abspath(save)
@@ -482,26 +520,20 @@ class Outputters(BaseModel):
         maxcolwidths: int = None,
     ) -> Any:
         """
-        Formats and outputs data as a text table.
+        Format and output data as a text table using the tabulate library.
 
-        This function uses the `tabulate` library to format a list of dictionaries or
-        lists of lists of dictionaries into a table with various styles and options
-        for customization.
-
-        Parameters:
-
-            data (list): A list of dictionaries or list of lists to be formatted into a table.
-                If it is list of lists, the function merges nested lists.
-            headers (list or str, optional): Specifies the table headers. Can be:
-
-                - A list of headers.
-                - A comma-separated string of headers.
-                - "keys" to use dictionary keys as headers.
-
-            showindex (bool, optional): If True, includes an index column in the table.
+        Args:
+            data (list): A list of dictionaries or list of lists to be formatted into a table. If it is a list of lists, the function merges nested lists.
             headers_exclude (list, optional): A list or comma-separated string of headers to exclude from the table.
             sortby (str, optional): The key name to sort the table by. If None, no sorting is applied.
             reverse (bool, optional): If True, reverses the sort order. Defaults to False.
+            tablefmt (str): Table format style.
+            headers (list or str, optional): Specifies the table headers. Can be a list, a comma-separated string, or 'keys' to use dictionary keys as headers.
+            showindex (bool, optional): If True, includes an index column in the table.
+            maxcolwidths (int, optional): Maximum width of the column before wrapping text.
+
+        Returns:
+            Any: Tabulated table string or error message.
         """
         if not HAS_TABULATE:
             log.error(
@@ -599,6 +631,17 @@ class MAN(BaseModel):
 
     @staticmethod
     def _construct_model_tree(model, tree: RICHTREE, path: list) -> RICHTREE:
+        """
+        Recursively construct a Rich tree for a shell model.
+
+        Args:
+            model: Model or model class to construct tree for.
+            tree (RICHTREE): Rich tree object to add nodes to.
+            path (list): Path to traverse for nested models.
+
+        Returns:
+            RICHTREE: The constructed Rich tree.
+        """
         model_cls = model if isinstance(model, type) else type(model)
         for field_name, field in model_cls.model_fields.items():
             if (
@@ -608,11 +651,18 @@ class MAN(BaseModel):
                 and field.serialization_alias != path[0]
             ):
                 continue
+            flags = ""
+            json_schema_extra = field.json_schema_extra or {}
             # form tree element label
             label = [
-                f"[bold]{'*' if field.is_required() else ''}"
-                f"{field.alias or field.serialization_alias or field_name}:[/bold]    {field.description}"
+                f"[bold]{field.alias or field.serialization_alias or field_name}__FLAGS__:[/bold]"
             ]
+            if field.is_required():
+                flags += "R"
+            if json_schema_extra.get("multiline"):
+                flags += "M"
+            if field.description:
+                label[0] += f"    {field.description}"
             if field.get_default() is not None and field.annotation != Callable:
                 default_value = field.get_default()
                 if isinstance(
@@ -627,21 +677,43 @@ class MAN(BaseModel):
                 )
                 examples = [str(e) for e in examples]
                 label.append(f"examples: {', '.join(examples)}")
+            if flags:
+                label[0] = label[0].replace("__FLAGS__", f" ({flags})")
+            else:
+                label[0] = label[0].replace("__FLAGS__", "")
             next_tree = tree.add(", ".join(label))
+            # handle dynamic dictionary tree - Dict[str, NestedModel] with "pkey" in json_schema_extra
+            if get_origin(field.annotation) in (dict, Dict) and json_schema_extra.get(
+                "pkey"
+            ):
+                # add dynamic key info to the tree
+                key_name = json_schema_extra["pkey"]
+                key_desc = json_schema_extra.get("pkey_description", "Input key")
+                next_tree.add(f"[bold]{key_name} (D):[/bold]    {key_desc}")
+                # recurse to nested model for dynamic dictionary values
+                nested_model = get_args(field.annotation)[1]
+                MAN._construct_model_tree(nested_model, next_tree, path[1:])
             # recurse to next level model
-            if isinstance(field.annotation, ModelMetaclass):
+            elif isinstance(field.annotation, ModelMetaclass):
                 MAN._construct_model_tree(field.annotation, next_tree, path[1:])
 
         return tree
 
     @staticmethod
-    def print_model_tree(root_model, **kwargs) -> None:
+    def print_model_tree(root_model: object, **kwargs: dict) -> None:
         """
-        Method to print model tree for shell model specified by dot separated path e.g. model.shell.command
+        Print model tree for shell model specified by dot separated path (e.g. model.shell.command).
 
-        :param root_model: PICLE App root model to print tree for
+        Args:
+            root_model: PICLE App root model to print tree for.
+            **kwargs: Additional keyword arguments (expects 'tree' for path).
         """
         if HAS_RICH:
+            RICHCONSOLE.print(
+                "\n[bold]R[/bold] - required field, "
+                + "[bold]M[/bold] - supports multiline input, "
+                + "[bold]D[/bold] - dynamic key\n"
+            )
             path = kwargs["tree"].split(".") if kwargs.get("tree") else []
             rich_tree = RICHTREE("[bold]root[/bold]")
             RICHCONSOLE.print(
@@ -657,10 +729,14 @@ class MAN(BaseModel):
     @staticmethod
     def _recurse_to_model(model, path: list) -> ModelMetaclass:
         """
-        Recurse to model specified by dot separated path e.g. model.shell.command
+        Recurse to model specified by dot separated path (e.g. model.shell.command).
 
-        :param model: Model to recurse through
-        :param path: path to recurse to
+        Args:
+            model: Model to recurse through.
+            path (list): Path to recurse to.
+
+        Returns:
+            ModelMetaclass: The model at the specified path.
         """
         if not path:
             return model
@@ -680,11 +756,16 @@ class MAN(BaseModel):
         return model
 
     @staticmethod
-    def print_model_json_schema(root_model, **kwargs) -> str:
+    def print_model_json_schema(root_model: object, **kwargs: dict) -> str:
         """
-        Method to print model json schema for shell model specified by dot separated path e.g. model.shell.command
+        Print model JSON schema for shell model specified by dot separated path (e.g. model.shell.command).
 
-        :param root_model: PICLE App root model to print json schema for
+        Args:
+            root_model: PICLE App root model to print JSON schema for.
+            **kwargs: Additional keyword arguments (expects 'json_schema' for path).
+
+        Returns:
+            str: JSON schema as a formatted string.
         """
 
         class MyGenerateJsonSchema(GenerateJsonSchema):
@@ -731,8 +812,11 @@ class ConfigModelShowCommands(BaseModel):
         """
         Load and return the running configuration.
 
-        :param shell_command: The shell command context
-        :return: Configuration content dictionary
+        Args:
+            shell_command (list): The shell command context.
+
+        Returns:
+            dict: Configuration content dictionary.
         """
         model_config = ConfigModel.get_model_config(shell_command)
         config_file = model_config["config_file"]
@@ -743,8 +827,11 @@ class ConfigModelShowCommands(BaseModel):
         """
         Show diff between saved config and uncommitted temp config.
 
-        :param shell_command: The shell command context
-        :return: Unified diff string
+        Args:
+            shell_command (list): The shell command context.
+
+        Returns:
+            str: Unified diff string.
         """
         model_config = ConfigModel.get_model_config(shell_command)
         config_file = model_config["config_file"]
@@ -831,8 +918,11 @@ class ConfigModel(BaseModel):
         """
         Load configuration from YAML file.
 
-        :param config_file: Path to the configuration file
-        :return: Loaded configuration dictionary
+        Args:
+            config_file (str): Path to the configuration file.
+
+        Returns:
+            dict: Loaded configuration dictionary.
         """
         if not HAS_YAML:
             raise RuntimeError("PyYAML is required for config file operations")
@@ -858,10 +948,13 @@ class ConfigModel(BaseModel):
         """
         Save configuration to YAML file with rotating backups.
 
-        :param config_file: Path to the configuration file
-        :param config_data: Configuration dictionary to save
-        :param backup_on_save: Number of backup files to keep (0 to disable)
-        :return: Status message
+        Args:
+            config_file (str): Path to the configuration file.
+            config_data (dict): Configuration dictionary to save.
+            backup_on_save (int): Number of backup files to keep (0 to disable).
+
+        Returns:
+            str: Status message.
         """
         config_path = Path(config_file)
 
@@ -901,10 +994,13 @@ class ConfigModel(BaseModel):
         """
         Set a value in nested dictionary using path list.
 
-        :param data: Dictionary to modify
-        :param path: List of keys representing the path
-        :param value: Value to set at the path
-        :return: Modified dictionary
+        Args:
+            data (dict): Dictionary to modify.
+            path (list): List of keys representing the path.
+            value: Value to set at the path.
+
+        Returns:
+            dict: Modified dictionary.
         """
         if not path:
             return data
@@ -935,8 +1031,11 @@ class ConfigModel(BaseModel):
         """
         Extract the configuration path from parsed command segments.
 
-        :param command: List of parsed command segment dicts
-        :return: List of string path components
+        Args:
+            command (list): List of parsed command segment dicts.
+
+        Returns:
+            list: List of string path components.
         """
         ret = []
         for item in command:
@@ -948,11 +1047,13 @@ class ConfigModel(BaseModel):
     @staticmethod
     def get_model_config(shell_command: list) -> dict:
         """
-        Reconstruct model configuration by merging ConfigModel defaults
-        with the command's root model PicleConfig.
+        Reconstruct model configuration by merging ConfigModel defaults with the command's root model PicleConfig.
 
-        :param shell_command: The shell command context
-        :return: Merged configuration dictionary
+        Args:
+            shell_command (list): The shell command context.
+
+        Returns:
+            dict: Merged configuration dictionary.
         """
         command_root_model = shell_command[0]["model"]
 
@@ -976,9 +1077,12 @@ class ConfigModel(BaseModel):
         """
         Erase configuration and save empty config to temp file.
 
-        :param shell_command: The shell command context
-        :param erase_config: Presence flag (always True when invoked)
-        :return: Status message
+        Args:
+            shell_command (list): The shell command context.
+            erase_configuration (bool): Presence flag (always True when invoked).
+
+        Returns:
+            str: Status message.
         """
         model_config = ConfigModel.get_model_config(shell_command)
         config_file = model_config["config_file"]
@@ -994,8 +1098,12 @@ class ConfigModel(BaseModel):
         """
         Discard uncommitted changes by deleting the temp config file.
 
-        :param shell_command: The shell command context
-        :return: Status message
+        Args:
+            shell_command (list): The shell command context.
+            clear_changes (bool): Presence flag (always True when invoked).
+
+        Returns:
+            str: Status message.
         """
         model_config = ConfigModel.get_model_config(shell_command)
         config_file = model_config["config_file"]
@@ -1012,9 +1120,12 @@ class ConfigModel(BaseModel):
         """
         Commit pending changes - save temp config to the main config file and remove temp.
 
-        :param shell_command: The shell command context
-        :param commit: Presence flag (always True when invoked)
-        :return: Status message
+        Args:
+            shell_command (list): The shell command context.
+            commit (bool): Presence flag (always True when invoked).
+
+        Returns:
+            str: Status message.
         """
         model_config = ConfigModel.get_model_config(shell_command)
         config_file = model_config["config_file"]
@@ -1044,9 +1155,12 @@ class ConfigModel(BaseModel):
         """
         Rollback to a backup version by loading .oldN file into temp config.
 
-        :param shell_command: The shell command context
-        :param rollback: Backup number to rollback to (1, 2, 3, ...)
-        :return: Status message
+        Args:
+            shell_command (list): The shell command context.
+            rollback (int): Backup number to rollback to (1, 2, 3, ...).
+
+        Returns:
+            str: Status message.
         """
         model_config = ConfigModel.get_model_config(shell_command)
         config_file = model_config["config_file"]
@@ -1067,14 +1181,16 @@ class ConfigModel(BaseModel):
         return f"Loaded backup {backup_file} into temp config. Use 'commit' to apply or 'show changes' to review."
 
     @staticmethod
-    def run(shell_command: list, **kwargs) -> str:
+    def run(shell_command: list, **kwargs: dict) -> str:
         """
-        Run method for configuration operations.
-        Saves changes to a temp file. Use 'commit' to persist to config file.
+        Run method for configuration operations. Saves changes to a temp file. Use 'commit' to persist to config file.
 
-        :param shell_command: The shell command that triggered this run method
-        :param kwargs: Field values collected from the command line
-        :return: Status message
+        Args:
+            shell_command (list): The shell command that triggered this run method.
+            **kwargs: Field values collected from the command line.
+
+        Returns:
+            str: Status message.
         """
         model_config = ConfigModel.get_model_config(shell_command)
         command_path = ConfigModel.get_command_path(shell_command)

@@ -6,8 +6,7 @@ ConfigModel to handle YAML configuration files with structured validation.
 """
 
 from enum import Enum
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, StrictStr
 
 from picle.models import ConfigModel, PipeFunctionsModel
 from picle.picle import App
@@ -55,6 +54,12 @@ class LoggingConfigModel(BaseModel):
     file: FileLoggingConfig = Field(None, description="File logging configuration")
 
 
+class WorkerConfigModel(BaseModel):
+    timeout: int = Field(None, description="Worker timeout in seconds")
+    num_threads: int = Field(None, description="Number of worker threads")
+    use_cache: bool = Field(None, description="Whether to use cache for worker results")
+
+
 # --------------------------------------------------------------------------------
 # Configuration Store with Commands
 # --------------------------------------------------------------------------------
@@ -70,6 +75,14 @@ class MyConfigStore(ConfigModel):
 
     # Configuration structure definition
     logging: LoggingConfigModel = Field(None, description="Logging configuration")
+    workers: dict[StrictStr, WorkerConfigModel] = Field(
+        None,
+        description="Worker configurations",
+        json_schema_extra={
+            "pkey": "worker_name",
+            "pkey_description": "Name of the worker",
+        },
+    )
 
     class PicleConfig:
         subshell = True

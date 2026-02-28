@@ -3,13 +3,11 @@ This file contains Pydantic models to test PICLE
 by building sample App.
 """
 
-import json
 from picle import App
 from picle.models import PipeFunctionsModel, Outputters
 from enum import Enum
-from typing import List, Union, Optional, Any
+from typing import List, Union, Optional, Any, Dict
 from pydantic import (
-    ValidationError,
     BaseModel,
     StrictStr,
     Field,
@@ -263,7 +261,6 @@ The End.
     @staticmethod
     def produce_structured_data_nested_table():
         return {
-            "some": {"dictionary": {"data": None}},
             "more": {"dictionary": ["data"]},
             "even": {"more": {"dictionary": "data"}},
             "some_data": [
@@ -591,6 +588,22 @@ class model_TestFunctionField(BaseModel):
         return "action_executed"
 
 
+class DynamicDicktNestedModel(BaseModel):
+    k1: StrictStr = Field(None, description="my description")
+
+
+class DynamicDicktKeysModel(BaseModel):
+    mynestedkey: Dict[StrictStr, DynamicDicktNestedModel] = Field(
+        None,
+        description="foobar",
+        json_schema_extra={"pkey": "name", "pkey_description": "Input key-name"},
+    )
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -664,6 +677,9 @@ class Root(BaseModel):
     )
     test_function_field: model_TestFunctionField = Field(
         None, description="Test function field"
+    )
+    test_dynamicdictionary: DynamicDicktKeysModel = Field(
+        None, description="Test model with dynamic dictionary keys"
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

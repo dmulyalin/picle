@@ -8,3 +8,4 @@ docs/build/*
 docs/make.bat
 docs/Makefile
 *ipynb_checkpoints*
+*picle_history.txt*

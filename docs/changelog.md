@@ -1,3 +1,17 @@
+# 0.11.0
+
+## FEATURES
+
+1. Adding commands history persistency across shells, added `picle_file` config attribute to indicate where to store commands, default is `picle_history.txt`
+2. Support added to handle parsing of cli commands into dynamic dictionaries, added `pkey` and `pkey_description` config parameters to `json_schema_extra`
+
+## CHANGES
+
+1. Enhanced MAN model to output tree for dynamic dictionaries models
+2. Changing history handling to use `pyreadline` module
+
+---
+
 # 0.10.1
 
 ## BUGS
