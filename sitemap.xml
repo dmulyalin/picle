@@ -2,18 +2,50 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://picle.github.io/</loc>
-         <lastmod>2026-02-15</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://picle.github.io/Getting%20Started/</loc>
-         <lastmod>2026-02-15</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://picle.github.io/api_reference/</loc>
-         <lastmod>2026-02-15</lastmod>
+         <lastmod>2026-02-28</lastmod>
     </url>
     <url>
          <loc>https://picle.github.io/changelog/</loc>
-         <lastmod>2026-02-15</lastmod>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/configuration_model/</loc>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/dynamic_dictionary_input/</loc>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/fields_presence/</loc>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/mounting_models_at_runtime/</loc>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/multiline_input/</loc>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/pipes/</loc>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/processors/</loc>
+         <lastmod>2026-02-28</lastmod>
+    </url>
+    <url>
+         <loc>https://picle.github.io/features/result_specific_outputters/</loc>
+         <lastmod>2026-02-28</lastmod>
     </url>
 </urlset>
