@@ -1023,9 +1023,7 @@ Transition: PICLE looks at the dictionary definition (Dict[..., MyNestedModel]).
 <h2 id="3-reconstructing-the-data">3. Reconstructing the Data</h2>
 <p>At the end, PICLE takes these three pieces—the field name (mytopkey), the captured key (name1), and the nested data ({'k1': 'v1'})—and stitches them together into the final nested structure:</p>
 <h2 id="4-customizing-help">4. Customizing Help</h2>
-<p>To make the "Bridge" user-friendly, we look at json_schema_extra keys (pkey and pkey_description).</p>
-<p>Instead of showing nothing, PICLE uses these to tell the user: <name> Input name when they ask for help (?).
-This allows you to mix structured, strict Pydantic models with free-form dictionary keys seamlessly.</p>
+<p>To make the "Bridge" user-friendly, we look at json_schema_extra keys (<code>pkey</code> and <code>pkey_description</code>). PICLE uses these to tell the user: <name> Input name when they ask for help (?). This allows you to mix structured, strict Pydantic models with free-form dictionary keys seamlessly.</p>
 
 
 

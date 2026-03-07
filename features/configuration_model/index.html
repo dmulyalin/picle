@@ -801,6 +801,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#negating-configuration-the-no-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negating configuration — the no command
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Negating configuration — the no command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deleting-a-specific-leaf-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting a specific leaf field
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-an-entire-sub-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting an entire sub-tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -917,6 +956,45 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#negating-configuration-the-no-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negating configuration — the no command
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Negating configuration — the no command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deleting-a-specific-leaf-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting a specific leaf field
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-an-entire-sub-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting an entire sub-tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1143,6 +1221,47 @@ test-config-shell[cfg]#commit
 Configuration committed successfully
 test-config-shell[cfg]#exit
 test-config-shell#
+</code></pre></div>
+<h2 id="negating-configuration-the-no-command">Negating configuration — the <code>no</code> command</h2>
+<p>Every <code>ConfigModel</code> subclass automatically gains a <code>no</code> command that mirrors the full configuration field tree. It provides the same tab-completion as regular set commands and lets you delete individual keys or entire sub-trees from the staged configuration.</p>
+<p>Changes made with <code>no</code> are written to the temp file (same as regular set commands) and only become permanent after <code>commit</code>.</p>
+<h3 id="deleting-a-specific-leaf-field">Deleting a specific leaf field</h3>
+<p>Name one or more leaf fields after the path to remove those keys only:</p>
+<div class="highlight"><pre><span></span><code>test-config-shell[cfg]#no workers worker-1 timeout
+Configuration negated (uncommitted). Use &#39;commit&#39; to save or &#39;show changes&#39; to review.
+test-config-shell[cfg]#show changes
+--- app_config.yaml
++++ app_config.yaml.tmp
+@@ -1,6 +1,5 @@
+ workers:
+   worker-1:
+     num_threads: 1
+-    timeout: 1
+     use_cache: true
+     worker_name: worker-1
+test-config-shell[cfg]#commit
+Configuration committed successfully
+</code></pre></div>
+<p>Multiple leaf fields can be removed in a single command:</p>
+<div class="highlight"><pre><span></span><code>test-config-shell[cfg]#no workers worker-1 timeout num_threads
+</code></pre></div>
+<h3 id="deleting-an-entire-sub-tree">Deleting an entire sub-tree</h3>
+<p>Omit leaf fields and the whole node is removed:</p>
+<div class="highlight"><pre><span></span><code>test-config-shell[cfg]#no workers worker-1
+Configuration negated (uncommitted). Use &#39;commit&#39; to save or &#39;show changes&#39; to review.
+test-config-shell[cfg]#show changes
+--- app_config.yaml
++++ app_config.yaml.tmp
+@@ -1,6 +1 @@
+-workers:
+-  worker-1:
+-    num_threads: 1
+-    timeout: 1
+-    use_cache: true
+-    worker_name: worker-1
++{}
+test-config-shell[cfg]#commit
+Configuration committed successfully
 </code></pre></div>
 
 

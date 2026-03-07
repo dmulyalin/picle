@@ -858,7 +858,7 @@
 &quot;some.module.Model&quot;     import a model by string
 SomeModelClass          use a model class directly
 </code></pre></div>
-<p>Example (enable pipe functions and post-process the first command):</p>
+<p>Example - enable pipe functions:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">picle.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipeFunctionsModel</span><span class="p">,</span> <span class="n">Outputters</span>
 
@@ -868,7 +868,6 @@ SomeModelClass          use a model class directly
         <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;picle#&quot;</span>
         <span class="n">intro</span> <span class="o">=</span> <span class="s2">&quot;PICLE Sample app&quot;</span>
         <span class="n">pipe</span> <span class="o">=</span> <span class="n">PipeFunctionsModel</span>
-        <span class="n">processors</span> <span class="o">=</span> <span class="p">[</span><span class="n">Outputters</span><span class="o">.</span><span class="n">outputter_json</span><span class="p">]</span>
 </code></pre></div>
 <p>!!! note <code>processors</code> run on the first command segment only (before any <code>|</code> segments). They do not apply to subsequent pipe segments. If you want to post-process the output of a pipe segment, use an outputter or a pipe function in that segment.</p>
 
