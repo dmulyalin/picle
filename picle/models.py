@@ -175,27 +175,104 @@ class RichTableOutputter(BaseModel):
     headers: List[str] = Field(None, description="Table headers")
     sortby: Optional[StrictStr] = Field(None, description="Column name to sort by")
 
+    class PicleConfig:
+        pipe = "picle.models.PipeFunctionsModel"
+
     @staticmethod
     def run(*args: list, **kwargs: dict):
         return Outputters.outputter_rich_table(*args, **kwargs)
 
+class PprintOutputterModel(BaseModel):
+    """Model for pretty-print outputter"""
+    indent: StrictInt = Field(4, description="Indentation added for each nesting level")
+    width: StrictInt = Field(80, description="Maximum number of characters per line")
+    depth: StrictInt = Field(None, description="Maximum depth of nested structures to display")
+    compact: StrictBool = Field(False, description="Fit as many items as possible on each line", json_schema_extra={"presence": True})
+    sort_dicts: StrictBool = Field(True, description="Sort dictionary keys before display", alias="sort-dicts", json_schema_extra={"presence": True})
+
+    class PicleConfig:
+        pipe = "picle.models.PipeFunctionsModel"
+
+    @staticmethod
+    def run(*args: list, **kwargs: dict):
+        return Outputters.outputter_pprint(*args, **kwargs)
+
+
+class NestedOutputterModel(BaseModel):
+    """Model for nested outputter"""
+    initial_indent: int = Field(0, description="Initial indentation level for nested output", alias="initial-indent")
+    with_tables: bool = Field(False, description="Whether to format output in nested tables", alias="with-tables", json_schema_extra={"presence": True})
+    tabulate_kwargs: dict = Field(None, description="JSON string of additional keyword arguments for tabulate", alias="tabulate-kwargs")
+
+    class PicleConfig:
+        pipe = "picle.models.PipeFunctionsModel"
+
+    @staticmethod
+    def run(*args: list, **kwargs: dict):
+        if kwargs.get("tabulate_kwargs"):
+            kwargs["tabulate_kwargs"] = json.loads(kwargs["tabulate_kwargs"])
+        return Outputters.outputter_nested(*args, **kwargs)
+
+
+class JsonOutputterModel(BaseModel):
+    """Model for JSON outputter"""
+    indent: StrictInt = Field(4, description="Indentation level for JSON output")
+    sort_keys: StrictBool = Field(True, description="Sort dictionary keys in output", alias="sort-keys", json_schema_extra={"presence": True})
+    ensure_ascii: StrictBool = Field(True, description="Escape non-ASCII characters in output", alias="ensure-ascii", json_schema_extra={"presence": True})
+    separators: StrictStr = Field(None, description="Item and key separators as 'item_sep,key_sep' (e.g. ',: ' for compact output)")
+
+    class PicleConfig:
+        pipe = "picle.models.PipeFunctionsModel"
+
+    @staticmethod
+    def run(*args: list, **kwargs: dict):
+        if kwargs.get("separators"):
+            parts = kwargs["separators"].split(",", 1)
+            kwargs["separators"] = tuple(parts) if len(parts) == 2 else (parts[0], ":")
+        return Outputters.outputter_json(*args, **kwargs)
+
+
+class YamlOutputterModel(BaseModel):
+    """Model for YAML outputter"""
+    indent: StrictInt = Field(2, description="Indentation level for YAML output")
+    absolute_indent: StrictInt = Field(0, description="Absolute indentation prepended to every output line", alias="absolute-indent")
+    sort_keys: StrictBool = Field(True, description="Sort dictionary keys in output", alias="sort-keys", json_schema_extra={"presence": True})
+    allow_unicode: StrictBool = Field(True, description="Allow Unicode characters instead of escaping them", alias="allow-unicode", json_schema_extra={"presence": True})
+    width: StrictInt = Field(None, description="Maximum line width before wrapping")
+    default_flow_style: StrictBool = Field(False, description="Use flow style for collections", alias="default-flow-style", json_schema_extra={"presence": True})
+
+    class PicleConfig:
+        pipe = "picle.models.PipeFunctionsModel"
+
+    @staticmethod
+    def run(*args: list, **kwargs: dict):
+        return Outputters.outputter_yaml(*args, **kwargs)
+
+
+class KvOutputterModel(BaseModel):
+    """Model for key-value outputter"""
+    separator: StrictStr = Field(".", description="Separator used between nested key path segments")
+
+    class PicleConfig:
+        pipe = "picle.models.PipeFunctionsModel"
+        
+    @staticmethod
+    def run(*args: list, **kwargs: dict):
+        return Outputters.outputter_kv(*args, **kwargs)
 
 class Outputters(BaseModel):
-    pprint: Any = Field(
+    pprint: PprintOutputterModel = Field(
         None,
         description="Convert results to pretty string",
-        json_schema_extra={"function": "outputter_pprint", "outputter": True},
     )
-    json_: Union[dict, list] = Field(
+    json_: JsonOutputterModel = Field(
         None,
-        description="Print JSON string using Rich",
-        json_schema_extra={"function": "outputter_json", "outputter": True},
+        description="Print JSON string",
         alias="json",
     )
-    yaml: Any = Field(
+    yaml: YamlOutputterModel = Field(
         None,
-        description="Print YAML output using Rich",
-        json_schema_extra={"function": "outputter_yaml", "outputter": True},
+        description="Print YAML output",
     )
     markdown: Any = Field(
         None,
@@ -203,10 +280,9 @@ class Outputters(BaseModel):
         json_schema_extra={"function": "outputter_rich_markdown", "outputter": True},
         alias="markdown",
     )
-    nested: Any = Field(
+    nested: NestedOutputterModel = Field(
         None,
-        description="Print data in nested format",
-        json_schema_extra={"function": "outputter_nested", "outputter": True},
+        description="Print data in nested format"
     )
     save: StrictStr = Field(
         None,
@@ -224,41 +300,69 @@ class Outputters(BaseModel):
         json_schema_extra={"function": "outputter_rich_table", "outputter": True},
         alias="rich-table",
     )
-    kv: dict = Field(
+    kv: KvOutputterModel = Field(
         None,
         description="Convert dictionary result to Key-Value string",
-        json_schema_extra={"function": "outputter_kv", "outputter": True},
     )
 
     @staticmethod
-    def outputter_kv(data: dict) -> str:
+    def outputter_kv(data: dict, parent_key="", separator=".", is_top=True) -> str:
         """
-        Format a dictionary as a key-value output string.
+        Turn a nested structure (combination of lists/dictionaries) into a
+        flattened dictionary.
 
-        Args:
-            data (dict): Dictionary to format.
-
-        Returns:
-            str: Formatted key-value string.
+        This function is useful to explore deeply nested structures.
         """
-        if isinstance(data, str):
-            return data
-        return "\n".join([f" {k}: {v}" for k, v in data.items()])
+        items = []
+        if isinstance(data, dict):
+            for key, value in data.items():
+                new_key = "{}{}{}".format(parent_key, separator, key) if parent_key else key
+                items.extend(Outputters.outputter_kv(value, new_key, separator, is_top=False).items())
+        elif isinstance(data, list):
+            for k, v in enumerate(data):
+                new_key = "{}{}{}".format(parent_key, separator, k) if parent_key else k
+                items.extend(Outputters.outputter_kv({str(new_key): v}, separator=separator, is_top=False).items())
+        else:
+            items.append((parent_key, data))
+
+        if is_top:
+            return "\n".join(f"{k}: {v}" if k else v for k, v in items)
+        else:
+            return dict(items)
 
     @staticmethod
-    def outputter_pprint(data: Any) -> str:
+    def outputter_pprint(
+        data: Any,
+        indent: int = 4,
+        width: int = 80,
+        depth: int = None,
+        compact: bool = False,
+        sort_dicts: bool = True,
+    ) -> str:
         """
         Pretty-print results using Python's pprint module.
 
         Args:
             data: Any data to pretty-print.
+            indent (int): Indentation added for each nesting level.
+            width (int): Maximum number of characters per line.
+            depth (int): Maximum depth of nested structures to display.
+            compact (bool): Fit as many items as possible on each line.
+            sort_dicts (bool): Sort dictionary keys before display.
 
         Returns:
             str: Nicely formatted string representation.
         """
         if isinstance(data, str):
             return data
-        return pprint.pformat(data, indent=4)
+        return pprint.pformat(
+            data,
+            indent=indent,
+            width=width,
+            depth=depth,
+            compact=compact,
+            sort_dicts=sort_dicts,
+        )
 
     @staticmethod
     def outputter_nested(
@@ -341,7 +445,11 @@ class Outputters(BaseModel):
             if isinstance(data, dict):
                 data = dict(sorted(data.items()))
             elif isinstance(data, list):
-                data = list(sorted(data))
+                if data and isinstance(data[0], dict):
+                    first_key = next(iter(data[0]))
+                    data = list(sorted(data, key=lambda x: x.get(first_key, "")))
+                else:
+                    data = list(sorted(data))
         except Exception as e:
             log.warning(f"Nested outputter data sorting failed: '{e}'")
 
@@ -394,7 +502,13 @@ class Outputters(BaseModel):
 
     @staticmethod
     def outputter_yaml(
-        data: Union[dict, list, bytes], absolute_indent: int = 0, indent: int = 2
+        data: Union[dict, list, bytes],
+        absolute_indent: int = 0,
+        indent: int = 2,
+        sort_keys: bool = True,
+        allow_unicode: bool = True,
+        width: int = None,
+        default_flow_style: bool = False,
     ) -> Any:
         """
         Format structured data as a YAML string.
@@ -403,6 +517,10 @@ class Outputters(BaseModel):
             data (dict, list, or bytes): Data to print.
             absolute_indent (int): Indentation to prepend for entire output.
             indent (int): Indentation for YAML output.
+            sort_keys (bool): Sort dictionary keys in output.
+            allow_unicode (bool): Allow Unicode characters instead of escaping them.
+            width (int): Maximum line width before wrapping.
+            default_flow_style (bool): Use flow style for collections.
 
         Returns:
             Any: YAML-formatted string or error message.
@@ -417,9 +535,14 @@ class Outputters(BaseModel):
         try:
             if HAS_YAML:
                 data = yaml.safe_dump(
-                    data, default_flow_style=False, sort_keys=True, indent=indent
+                    data,
+                    default_flow_style=default_flow_style,
+                    sort_keys=sort_keys,
+                    indent=indent,
+                    allow_unicode=allow_unicode,
+                    width=width,
                 )
-                # add  indent
+                # add indent
                 if absolute_indent:
                     data = "\n".join(
                         [f"{' ' * absolute_indent}{i}" for i in data.splitlines()]
@@ -436,13 +559,22 @@ class Outputters(BaseModel):
         return data
 
     @staticmethod
-    def outputter_json(data: Union[dict, list, bytes], indent: int = 4) -> Any:
+    def outputter_json(
+        data: Union[dict, list, bytes],
+        indent: int = 4,
+        sort_keys: bool = True,
+        ensure_ascii: bool = True,
+        separators: tuple = None,
+    ) -> Any:
         """
-        Pretty print JSON string using Rich library.
+        Pretty print JSON string.
 
         Args:
             data (dict, list, or bytes): Data to print.
             indent (int): Indentation for JSON output.
+            sort_keys (bool): Sort dictionary keys in output.
+            ensure_ascii (bool): Escape non-ASCII characters in output.
+            separators (tuple): Item and key separators, e.g. (',', ': ').
 
         Returns:
             Any: JSON-formatted string or error message.
@@ -455,7 +587,13 @@ class Outputters(BaseModel):
 
         # data should be a json string
         try:
-            data = json.dumps(data, indent=indent, sort_keys=True)
+            data = json.dumps(
+                data,
+                indent=indent,
+                sort_keys=sort_keys,
+                ensure_ascii=ensure_ascii,
+                separators=separators,
+            )
         except Exception as e:
             print(
                 f"ERROR: Failed to format data as JSON string:\n{data}\n\nError: '{e}'"
@@ -620,12 +758,12 @@ class MAN(BaseModel):
     tree: Optional[StrictStr] = Field(
         None,
         description="Print commands tree for shell model specified by dot separated path e.g. model.shell.command",
-        json_schema_extra={"function": "print_model_tree", "root_model": True},
+        json_schema_extra={"function": "print_model_tree"},
     )
     json_schema: Optional[StrictStr] = Field(
         None,
         description="Print json schema for shell model specified by dot separated path e.g. model.shell.command",
-        json_schema_extra={"function": "print_model_json_schema", "root_model": True},
+        json_schema_extra={"function": "print_model_json_schema"},
         alias="json-schema",
     )
 

@@ -12,25 +12,31 @@
         <meta name="author" content="Denis Mulyalin">
       
       
+        <link rel="canonical" href="https://picle.github.io/features/configuration_model/">
       
+      
+        <link rel="prev" href="../mounting_models_at_runtime/">
+      
+      
+        <link rel="next" href="../dynamic_dictionary_input/">
       
       
         
       
       
-      <link rel="icon" href="/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>PICLE</title>
+        <title>Configuration Model - PICLE</title>
       
     
     
-      <link rel="stylesheet" href="/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -49,9 +55,9 @@
       
     
     
-      <link rel="stylesheet" href="/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -75,6 +81,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#configmodel-configuration-shells" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -87,9 +98,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/." title="PICLE" class="md-header__button md-logo" aria-label="PICLE" data-md-component="logo">
+    <a href="../.." title="PICLE" class="md-header__button md-logo" aria-label="PICLE" data-md-component="logo">
       
-  <img src="/images/logo_small.jpg" alt="logo">
+  <img src="../../images/logo_small.jpg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -106,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Configuration Model
             
           </span>
         </div>
@@ -213,7 +224,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/." class="md-tabs__link">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -231,7 +242,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/Getting%20Started/" class="md-tabs__link">
+      <a href="../../Getting%20Started/" class="md-tabs__link">
         
   
   
@@ -248,11 +259,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/features/pipes/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../pipes/" class="md-tabs__link">
           
   
   
@@ -270,7 +283,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/api_reference/" class="md-tabs__link">
+      <a href="../../api_reference/" class="md-tabs__link">
         
   
   
@@ -311,9 +324,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/." title="PICLE" class="md-nav__button md-logo" aria-label="PICLE" data-md-component="logo">
+    <a href="../.." title="PICLE" class="md-nav__button md-logo" aria-label="PICLE" data-md-component="logo">
       
-  <img src="/images/logo_small.jpg" alt="logo">
+  <img src="../../images/logo_small.jpg" alt="logo">
 
     </a>
     PICLE
@@ -392,7 +405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -420,7 +433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -455,7 +468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/Getting%20Started/" class="md-nav__link">
+      <a href="../../Getting%20Started/" class="md-nav__link">
         
   
   
@@ -479,26 +492,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -516,7 +534,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -534,7 +552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/features/pipes/" class="md-nav__link">
+      <a href="../pipes/" class="md-nav__link">
         
   
   
@@ -562,7 +580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/features/fields_presence/" class="md-nav__link">
+      <a href="../fields_presence/" class="md-nav__link">
         
   
   
@@ -590,7 +608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/features/processors/" class="md-nav__link">
+      <a href="../processors/" class="md-nav__link">
         
   
   
@@ -618,7 +636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/features/multiline_input/" class="md-nav__link">
+      <a href="../multiline_input/" class="md-nav__link">
         
   
   
@@ -646,7 +664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/features/result_specific_outputters/" class="md-nav__link">
+      <a href="../result_specific_outputters/" class="md-nav__link">
         
   
   
@@ -674,7 +692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/features/mounting_models_at_runtime/" class="md-nav__link">
+      <a href="../mounting_models_at_runtime/" class="md-nav__link">
         
   
   
@@ -699,10 +717,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/features/configuration_model/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -718,6 +763,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configmodelpicleconfig-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConfigModel.PicleConfig keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-config-model-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample Config Model Shell
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -730,7 +817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/features/dynamic_dictionary_input/" class="md-nav__link">
+      <a href="../dynamic_dictionary_input/" class="md-nav__link">
         
   
   
@@ -765,7 +852,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/api_reference/" class="md-nav__link">
+      <a href="../../api_reference/" class="md-nav__link">
         
   
   
@@ -802,6 +889,38 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configmodelpicleconfig-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConfigModel.PicleConfig keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-config-model-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample Config Model Shell
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -814,8 +933,230 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="configmodel-configuration-shells"><code>ConfigModel</code> (configuration shells)</h1>
+<p>PICLE ships a helper base model for “configuration-mode” shells: <code>picle.models.ConfigModel</code>.
+It implements a common workflow:</p>
+<ul>
+<li>Load configuration from YAML (optional dependency: <code>pyyaml</code>)</li>
+<li>Stage edits into a temporary file (<code>&lt;config_file&gt;.tmp</code>)</li>
+<li>Review staged changes (<code>show changes</code>) and commit them (<code>commit</code>)</li>
+<li>Keep rotating backups on commit (<code>.old1</code>, <code>.old2</code>, ...)</li>
+<li>Roll back by loading a backup into the temp file (<code>rollback &lt;n&gt;</code>) and then committing</li>
+</ul>
+<h2 id="configmodelpicleconfig-keys"><code>ConfigModel.PicleConfig</code> keys</h2>
+<p><code>ConfigModel</code> reads additional settings from the concrete model’s <code>PicleConfig</code>.
+These keys are <strong>only honored by <code>ConfigModel</code></strong> (the core <code>App</code> ignores them):</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config_file</code></td>
+<td>Path to the YAML config file (default: <code>configuration.yaml</code>)</td>
+</tr>
+<tr>
+<td><code>backup_on_save</code></td>
+<td>How many <code>.oldN</code> backups to keep when committing (0 disables backups)</td>
+</tr>
+<tr>
+<td><code>commit_hook</code></td>
+<td>Optional callable invoked after a successful commit</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sample-config-model-shell">Sample Config Model Shell</h2>
+<p>Below is example of how to use configuration model to construct interactive shell to manage YAML file content.</p>
+<div class="highlight"><pre><span></span><code>&quot;&quot;&quot;
+Example demonstrating ConfigModel usage in PICLE shells.
+
+This example shows how to create a configuration management system using
+ConfigModel to handle YAML configuration files with structured validation.
+&quot;&quot;&quot;
+
+from enum import Enum
+from typing import Optional, Dict
+from pydantic import BaseModel, Field, ConfigDict, StrictStr
+
+from picle.models import ConfigModel, PipeFunctionsModel
+from picle.picle import App
+
+# --------------------------------------------------------------------------------
+# Configuration Structure Models
+# --------------------------------------------------------------------------------
+
+
+class SeverityEnum(str, Enum):
+    &quot;&quot;&quot;Logging severity levels.&quot;&quot;&quot;
+
+    debug = &quot;debug&quot;
+    info = &quot;info&quot;
+    warning = &quot;warning&quot;
+    error = &quot;error&quot;
+    critical = &quot;critical&quot;
+
+
+class TerminalLoggingConfig(BaseModel):
+    &quot;&quot;&quot;Terminal logging configuration.&quot;&quot;&quot;
+
+    severity: SeverityEnum = Field(
+        SeverityEnum.info, description=&quot;Logging severity level&quot;
+    )
+    format: str = Field(None, description=&quot;Log message format&quot;, alias=&quot;format&quot;)
+
+
+class FileLoggingConfig(BaseModel):
+    &quot;&quot;&quot;File logging configuration.&quot;&quot;&quot;
+
+    enabled: bool = Field(False, description=&quot;Enable file logging&quot;)
+    path: str = Field(None, description=&quot;Log file path&quot;)
+    severity: SeverityEnum = Field(
+        SeverityEnum.warning, description=&quot;File logging severity level&quot;
+    )
+
+
+class LoggingConfigModel(BaseModel):
+    &quot;&quot;&quot;Main logging configuration.&quot;&quot;&quot;
+
+    terminal: TerminalLoggingConfig = Field(
+        None, description=&quot;Terminal logging configuration&quot;
+    )
+    file: FileLoggingConfig = Field(None, description=&quot;File logging configuration&quot;)
+
+class WorkerConfigModel(BaseModel):
+    timeout: int = Field(None, description=&quot;Worker timeout in seconds&quot;)
+    num_threads: int = Field(None, description=&quot;Number of worker threads&quot;)
+    use_chache: bool = Field(None, description=&quot;Whether to use cache for worker results&quot;)
+
+
+# --------------------------------------------------------------------------------
+# Configuration Store with Commands
+# --------------------------------------------------------------------------------
+
+
+class MyConfigStore(ConfigModel):
+    &quot;&quot;&quot;
+    Configuration store for application settings.
+
+    This model manages YAML configuration files and provides commands
+    to view, get, and set configuration values.
+    &quot;&quot;&quot;
+
+    # Configuration structure definition
+    logging: LoggingConfigModel = Field(None, description=&quot;Logging configuration&quot;)
+    workers: dict[StrictStr, WorkerConfigModel] = Field(
+        None, description=&quot;Worker configurations&quot;, json_schema_extra={&quot;pkey&quot;: &quot;worker_name&quot;, &quot;pkey_description&quot;: &quot;Name of the worker&quot;}
+    )
+    class PicleConfig:
+        subshell = True
+        prompt = &quot;test-config-shell[cfg]#&quot;
+        config_file = &quot;app_config.yaml&quot;  # Default config file path
+
+
+# --------------------------------------------------------------------------------
+# Root Shell Model
+# --------------------------------------------------------------------------------
+
+
+class RootShell(BaseModel):
+    &quot;&quot;&quot;Root shell with config command.&quot;&quot;&quot;
+
+    configure_terminal: MyConfigStore = Field(
+        None, description=&quot;Configuration management commands&quot;
+    )
+
+    class PicleConfig:
+        pipe = PipeFunctionsModel
+        prompt = &quot;test-config-shell#&quot;
+
+
+# --------------------------------------------------------------------------------
+# Example Usage
+# --------------------------------------------------------------------------------
+
+
+if __name__ == &quot;__main__&quot;:
+    shell = App(RootShell)
+    shell.start()
+</code></pre></div>
+<p>Above app constructs shell with this commands tree:</p>
+<div class="highlight"><pre><span></span><code>test-config-shell#man tree configure_terminal
+
+R - required field, M - supports multiline input, D - dynamic key
+
+root
+└── configure_terminal:    Configuration management commands
+    ├── show:    Show commands
+    │   ├── configuration:    Show running configuration content
+    │   └── changes:    Show uncommitted changes diff between temp and running config
+    ├── commit:    Commit pending config changes
+    ├── rollback:    Rollback to a backup version
+    ├── erase-configuration:    Erase running configuration
+    ├── clear-changes:    Discard uncommitted changes
+    ├── logging:    Logging configuration
+    │   ├── terminal:    Terminal logging configuration
+    │   │   ├── severity:    Logging severity level, default &#39;SeverityEnum.info&#39;
+    │   │   └── format:    Log message format
+    │   └── file:    File logging configuration
+    │       ├── enabled:    Enable file logging, default &#39;False&#39;
+    │       ├── path:    Log file path
+    │       └── severity:    File logging severity level, default &#39;SeverityEnum.warning&#39;
+    └── workers:    Worker configurations
+        ├── worker_name (D):    Name of the worker
+        ├── timeout:    Worker timeout in seconds
+        ├── num_threads:    Number of worker threads
+        └── use_cache:    Whether to use cache for worker results
+test-config-shell#
+</code></pre></div>
+<p>And above shell can be used like this:</p>
+<div class="highlight"><pre><span></span><code>test-config-shell#configure_terminal
+test-config-shell[cfg]#workers ?
+ &lt;worker_name&gt;    Name of the worker
+test-config-shell[cfg]#workers worker-1 ?
+ num_threads    Number of worker threads
+ timeout        Worker timeout in seconds
+ use_cache      Whether to use cache for worker results
+test-config-shell[cfg]#workers worker-1 num_threads 1 timeout 1 use_cache True
+Configuration updated (uncommitted). Use &#39;commit&#39; to save or &#39;show changes&#39; to review.
+test-config-shell[cfg]#show changes
+--- app_config.yaml
++++ app_config.yaml.tmp
+@@ -1 +1,6 @@
+-{}
++workers:
++  worker-1:
++    num_threads: 1
++    timeout: 1
++    use_cache: true
++    worker_name: worker-1
+test-config-shell[cfg]#commit
+Configuration committed successfully
+test-config-shell[cfg]#exit
+test-config-shell#
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -885,10 +1226,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "toc.follow"], "search": "/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

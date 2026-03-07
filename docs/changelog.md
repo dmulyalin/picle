@@ -1,3 +1,22 @@
+# 0.11.1
+
+## FEATURES
+
+1. Improving pipe handling back backtracing it to parents models, if `pipe` set to False on the model `PicleConfig`, backtracing disabled
+
+## ENHANCEMENTS
+
+1. Updating outputter_kv to support flatenning arbitrary nested structures .
+2. Added dedicated model for each outputter with configurable arguments: 
+
+  - `PprintOutputterModel` indent, width, depth, compact, sort-dicts
+  - `JsonOutputterModel` indent, sort-keys, ensure-ascii, separators
+  - `YamlOutputterModel` indent, absolute-indent, sort-keys, allow-unicode, width, default-flow-style
+  - `KvOutputterModel` separator
+  - `NestedOutputterModel` initial_indent, with_tables, tabulate_kwargs
+
+---
+
 # 0.11.0
 
 ## FEATURES

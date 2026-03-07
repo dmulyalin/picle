@@ -588,6 +588,47 @@ class model_TestFunctionField(BaseModel):
         return "action_executed"
 
 
+class model_TestParentPipeChild(BaseModel):
+    """Child model with no pipe config - pipe should be inherited from parent via backtracing."""
+
+    value: StrictStr = Field(None, description="A string value")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs.get("value", "")
+
+
+class model_TestParentPipeChildDisabled(BaseModel):
+    """Child model with pipe explicitly set to False - should block parent pipe backtracing."""
+
+    value: StrictStr = Field(None, description="A string value")
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs.get("value", "")
+
+    class PicleConfig:
+        pipe = False
+
+
+class model_TestParentPipe(BaseModel):
+    """Parent model with pipe config - children without pipe should inherit it via backtracing."""
+
+    child: model_TestParentPipeChild = Field(
+        None, description="Child model without pipe config"
+    )
+    child_no_pipe: model_TestParentPipeChildDisabled = Field(
+        None, description="Child model with pipe=False"
+    )
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs.get("value", "")
+
+    class PicleConfig:
+        pipe = PipeFunctionsModel
+
+
 class DynamicDicktNestedModel(BaseModel):
     k1: StrictStr = Field(None, description="my description")
 
@@ -680,6 +721,9 @@ class Root(BaseModel):
     )
     test_dynamicdictionary: DynamicDicktKeysModel = Field(
         None, description="Test model with dynamic dictionary keys"
+    )
+    test_parent_pipe: model_TestParentPipe = Field(
+        None, description="Test parent pipe inheritance via backtracing"
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

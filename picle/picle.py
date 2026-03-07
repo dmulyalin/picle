@@ -578,14 +578,15 @@ class App(cmd.Cmd):
 
             # handle pipe - "|"
             if parameter == "|":
-                pipe_config = getattr(
-                    getattr(current_model["model"], "PicleConfig", None),
-                    "pipe",
-                    None,
-                )
-                if not pipe_config:
+                pipe_config = self._find_pipe_config(models)
+                if pipe_config is False:
                     log.error(
-                        f"'{current_model['model'].__name__}' does not support pipe handling"
+                        f"'{current_model['model'].__name__}' pipe handling disabled"
+                    )
+                    break
+                elif pipe_config is None:
+                    log.error(
+                        f"'{current_model['model'].__name__}' pipe not found"
                     )
                     break
                 # resolve pipe model
@@ -840,9 +841,7 @@ class App(cmd.Cmd):
                     width = max(width, len(k))
 
         # check if model has pipe defined
-        if hasattr(model["model"], "PicleConfig") and getattr(
-            model["model"].PicleConfig, "pipe", None
-        ):
+        if self._find_pipe_config(models[-1]):
             name = "|"
             lines[name] = "Execute pipe command"
         width = max((len(k) for k in lines), default=width)
@@ -1169,6 +1168,34 @@ class App(cmd.Cmd):
             if hasattr(model, "run"):
                 return getattr(model, "run")
 
+        return None
+
+    def _find_pipe_config(self, models: list):
+        """
+        Backtrace through parent models (in reverse order) to find a pipe config.
+
+        If a model explicitly sets ``PicleConfig.pipe = False``, backtracing stops
+        immediately and None is returned (pipe explicitly disabled).
+
+        Args:
+            models (list): List of model dicts for the current segment, where earlier
+                indices are parent models and later indices are child models.
+
+        Returns:
+            Pipe config value if found, otherwise None.
+        """
+        for i, model_dict in enumerate(reversed(models)):
+            model = model_dict["model"]
+            picle_config = getattr(model, "PicleConfig", None)
+            pipe = getattr(picle_config, "pipe", None)
+            if pipe is False:
+                # only stop backtracing if it's the current (innermost) model
+                if i == 0:
+                    return False
+                # for parent models, ignore False and continue searching
+                continue
+            if pipe:
+                return pipe
         return None
 
     def process_help_command(self, line: str) -> None:

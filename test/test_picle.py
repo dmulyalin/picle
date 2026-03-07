@@ -434,19 +434,6 @@ def test_shell_top_defaults_handling():
     assert shell.shell_defaults == {}
 
 
-def test_pipe_formatter_kv():
-    shell.onecmd("top")  # go to top
-    shell.onecmd("show data | kv")
-
-    shell_output = mock_stdout.write.call_args_list[-1][0][0]
-
-    print(f" shell output: '{shell_output}'")
-
-    assert """some: {'dictionary': {'data': None}}
- more: {'dictionary': ['data']}
- even: {'more': {'dictionary': 'data'}}""" in shell_output
-
-
 def test_model_run_kwargs_unpacking():
     shell.onecmd("top")  # go to top
     # give command with plugin keyword that is part of defaults
@@ -1252,15 +1239,6 @@ def test_function_field_execution():
     print(f"shell output: '{shell_output}'")
     assert "action_executed" in shell_output
 
-
-def test_pipe_kv_with_string_data():
-    """Test kv outputter with string data passes through"""
-    from picle.models import Outputters
-
-    result = Outputters.outputter_kv("already a string")
-    assert result == "already a string"
-
-
 def test_pipe_pprint_with_string_data():
     """Test pprint outputter with string data passes through"""
     from picle.models import Outputters
@@ -1868,3 +1846,225 @@ def test_dynamic_dictionary_pkey_help_with_value():
     assert (
         "k1" in shell_output and "my description" in shell_output
     ), "Dynamic dictionary help output mismatch"
+
+
+def test_pipe_inherited_from_parent_model():
+    """Child model has no pipe config; pipe should be inherited from parent via backtracing."""
+    shell.onecmd("top")
+    shell.onecmd("test_parent_pipe child value hello | include hello")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    assert "hello" in shell_output
+
+
+def test_pipe_inherited_from_parent_model_exclude():
+    """Pipe inherited from parent correctly filters output using exclude.
+    The exclude filter removes the only line, so nothing is written to stdout."""
+    shell.onecmd("top")
+    call_count_before = len(mock_stdout.write.call_args_list)
+    shell.onecmd("test_parent_pipe child value hello | exclude hello")
+    call_count_after = len(mock_stdout.write.call_args_list)
+    # exclude filtered all content - no new write should have occurred
+    assert call_count_after == call_count_before
+
+
+def test_pipe_disabled_in_child_model():
+    """Child model with pipe=False blocks pipe backtracing; command still runs, pipe segment is dropped."""
+    shell.onecmd("top")
+    shell.onecmd("test_parent_pipe child_no_pipe value hello | include hello")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    # pipe is blocked - first segment runs and outputs raw value, pipe filter is not applied
+    assert "hello" in shell_output
+
+
+def test_pipe_help_shown_for_child_inheriting_parent_pipe():
+    """Help for child model (no pipe config) should display the '|' option inherited from parent via backtracing."""
+    shell.onecmd("top")
+    shell.onecmd("test_parent_pipe child ?")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    assert "|" in shell_output
+
+
+def test_pipe_help_not_shown_for_child_with_pipe_disabled():
+    """Help for child model with pipe=False should NOT display '|' since pipe is explicitly disabled."""
+    shell.onecmd("top")
+    shell.onecmd("test_parent_pipe child_no_pipe ?")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    assert "|" not in shell_output
+
+
+# ============================================================
+# outputter_kv tests
+# ============================================================
+
+
+def test_outputter_kv_flat_dict():
+    """outputter_kv flattens a flat dict to 'key: value' lines"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"a": 1, "b": 2})
+    assert "a: 1" in result
+    assert "b: 2" in result
+
+
+def test_outputter_kv_nested_dict():
+    """outputter_kv flattens nested dicts using dot separator"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"a": {"b": {"c": "leaf"}}})
+    assert "a.b.c: leaf" in result
+
+
+def test_outputter_kv_none_value():
+    """outputter_kv handles None leaf values"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"key": None})
+    assert "key: None" in result
+
+
+def test_outputter_kv_list_values():
+    """outputter_kv flattens list values with integer index keys"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"items": ["a", "b"]})
+    assert "items.0: a" in result
+    assert "items.1: b" in result
+
+
+def test_outputter_kv_top_level_list():
+    """outputter_kv handles a top-level list, producing '0: val' lines"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv(["x", "y"])
+    assert "0: x" in result
+    assert "1: y" in result
+
+
+def test_outputter_kv_empty_dict():
+    """outputter_kv with empty dict returns empty string"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({})
+    assert result == ""
+
+
+def test_outputter_kv_empty_list():
+    """outputter_kv with empty list returns empty string"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv([])
+    assert result == ""
+
+
+def test_outputter_kv_numeric_leaf():
+    """outputter_kv correctly renders numeric leaf values"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"count": 42, "ratio": 3.14})
+    assert "count: 42" in result
+    assert "ratio: 3.14" in result
+
+
+def test_outputter_kv_boolean_leaf():
+    """outputter_kv correctly renders boolean leaf values"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"flag": True, "off": False})
+    assert "flag: True" in result
+    assert "off: False" in result
+
+
+def test_outputter_kv_list_of_dicts():
+    """outputter_kv flattens a list of dicts, indexing by list position"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"hosts": [{"name": "r1"}, {"name": "r2"}]})
+    assert "hosts.0.name: r1" in result
+    assert "hosts.1.name: r2" in result
+
+
+def test_outputter_kv_custom_separator():
+    """outputter_kv respects a custom separator for nested dicts"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"a": {"b": "c"}}, separator="/")
+    assert "a/b: c" in result
+    assert "a.b: c" not in result
+
+
+def test_outputter_kv_custom_separator_with_list():
+    """outputter_kv forwards custom separator through list branches (bug fix check)"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv({"a": [{"b": "c"}]}, separator="/")
+    # Without the fix, this would produce "a/0.b: c" (mixing separators)
+    assert "a/0/b: c" in result
+    assert "a/0.b: c" not in result
+
+
+def test_outputter_kv_deeply_nested():
+    """outputter_kv handles deeply nested structures correctly"""
+    from picle.models import Outputters
+
+    data = {"l1": {"l2": {"l3": {"l4": "deep"}}}}
+    result = Outputters.outputter_kv(data)
+    assert "l1.l2.l3.l4: deep" in result
+
+
+def test_outputter_kv_mixed_list_and_dict():
+    """outputter_kv handles structures mixing lists and dicts at multiple levels"""
+    from picle.models import Outputters
+
+    data = {
+        "some": {"dictionary": {"data": None}},
+        "more": {"dictionary": ["data"]},
+        "even": {"more": {"dictionary": "data"}},
+        "list": [
+            {"more": {"dictionary": "data"}},
+            {"more": {"dictionary": "data"}},
+        ],
+    }
+    result = Outputters.outputter_kv(data)
+    assert "some.dictionary.data: None" in result
+    assert "more.dictionary.0: data" in result
+    assert "even.more.dictionary: data" in result
+    assert "list.0.more.dictionary: data" in result
+    assert "list.1.more.dictionary: data" in result
+
+
+def test_outputter_kv_via_pipe():
+    """outputter_kv works end-to-end via shell pipe command"""
+    shell.onecmd("top")
+    shell.onecmd("show data | kv")
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    print(f"shell output: '{shell_output}'")
+    assert "some.dictionary.data: None" in shell_output
+    assert "more.dictionary.0: data" in shell_output
+    assert "even.more.dictionary: data" in shell_output
+    assert "list.0.more.dictionary: data" in shell_output
+    assert "list.1.more.dictionary: data" in shell_output
+
+def test_pipe_kv_with_string_data():
+    """Test kv outputter with string data passes through"""
+    from picle.models import Outputters
+
+    result = Outputters.outputter_kv("already a string")
+    assert result == "already a string"
+
+def test_pipe_formatter_kv():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show data | kv")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert """some.dictionary.data: None
+more.dictionary.0: data
+even.more.dictionary: data
+list.0.more.dictionary: data
+list.1.more.dictionary: data""" in shell_output
