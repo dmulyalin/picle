@@ -30,7 +30,4 @@ At the end, PICLE takes these three pieces—the field name (mytopkey), the capt
 
 ## 4. Customizing Help
 
-To make the "Bridge" user-friendly, we look at json_schema_extra keys (pkey and pkey_description).
-
-Instead of showing nothing, PICLE uses these to tell the user: <name> Input name when they ask for help (?).
-This allows you to mix structured, strict Pydantic models with free-form dictionary keys seamlessly.
+To make the "Bridge" user-friendly, we look at json_schema_extra keys (`pkey` and `pkey_description`). PICLE uses these to tell the user: <name> Input name when they ask for help (?). This allows you to mix structured, strict Pydantic models with free-form dictionary keys seamlessly.

@@ -125,6 +125,42 @@ def test_pipe_function_exclude():
     assert "Why did the network engineer always carry a ladder?" not in shell_output
 
 
+def test_pipe_function_last():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show joke | last 2")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert "The End." in shell_output
+    assert "Why did the network engineer always carry a ladder?" not in shell_output
+
+
+def test_pipe_function_last_single_line():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show joke | last 1")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert len(shell_output.splitlines()) == 1
+    assert "Why did the network engineer always carry a ladder?" not in shell_output
+
+
+def test_pipe_function_last_many_lines():
+    shell.onecmd("top")  # go to top
+    shell.onecmd("show joke | last 6")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+
+    print(f" shell output: '{shell_output}'")
+
+    assert "Why did the network engineer always carry a ladder?" in shell_output
+    assert "The End." in shell_output
+
+
 def test_multiple_pipe_functions():
     shell.onecmd("top")  # go to top
     shell.onecmd("show joke | include d | exclude End")

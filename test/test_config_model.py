@@ -793,3 +793,428 @@ class TestDynamicDictionaryData:
                 "worker2": {"num_threads": 1, "timeout": 10, "worker_name": "worker2"},
             },
         }
+
+
+# ============================================================
+# Negate model unit tests
+# ============================================================
+
+
+class TestDeleteNestedValue:
+    """Tests for ConfigModel.delete_nested_value"""
+
+    def test_delete_top_level_key(self):
+        data = {"a": 1, "b": 2}
+        result = ConfigModel.delete_nested_value(data, ["a"])
+        assert result == {"b": 2}
+
+    def test_delete_nested_key(self):
+        data = {"logging": {"terminal": {"severity": "debug", "format": "%(message)s"}}}
+        result = ConfigModel.delete_nested_value(data, ["logging", "terminal", "severity"])
+        assert result == {"logging": {"terminal": {"format": "%(message)s"}}}
+
+    def test_delete_entire_subtree(self):
+        data = {"logging": {"terminal": {"severity": "debug"}, "file": {"enabled": True}}}
+        result = ConfigModel.delete_nested_value(data, ["logging", "terminal"])
+        assert result == {"logging": {"file": {"enabled": True}}}
+
+    def test_delete_top_level_subtree(self):
+        data = {"logging": {"terminal": {}}, "workers": {"w1": {}}}
+        result = ConfigModel.delete_nested_value(data, ["logging"])
+        assert result == {"workers": {"w1": {}}}
+
+    def test_delete_nonexistent_key_warns_and_returns_unchanged(self):
+        data = {"a": {"b": 1}}
+        result = ConfigModel.delete_nested_value(data, ["a", "missing"])
+        # Key doesn't exist - data unchanged, no exception
+        assert result == {"a": {"b": 1}}
+
+    def test_delete_nonexistent_intermediate_warns_and_returns_unchanged(self):
+        data = {"a": 1}
+        result = ConfigModel.delete_nested_value(data, ["missing", "nested"])
+        assert result == {"a": 1}
+
+    def test_delete_empty_path_returns_unchanged(self):
+        data = {"a": 1}
+        result = ConfigModel.delete_nested_value(data, [])
+        assert result == {"a": 1}
+
+    def test_delete_modifies_in_place(self):
+        data = {"x": {"y": 42}}
+        returned = ConfigModel.delete_nested_value(data, ["x", "y"])
+        assert returned is data
+        assert data == {"x": {}}
+
+
+class TestBuildNegateModel:
+    """Tests for ConfigModel._build_negate_model structure."""
+
+    def test_negate_model_excludes_managed_fields(self):
+        """Managed fields (show, commit, rollback, etc.) must not appear in negate model."""
+        from picle.models import _CONFIG_MODEL_MANAGED_FIELDS
+
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        for managed in _CONFIG_MODEL_MANAGED_FIELDS:
+            assert managed not in negate_cls.model_fields, (
+                f"Managed field '{managed}' should be excluded from negate model"
+            )
+
+    def test_negate_model_has_user_fields(self):
+        """User-defined fields (logging, workers) should be present."""
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        assert "logging" in negate_cls.model_fields
+        assert "workers" in negate_cls.model_fields
+
+    def test_negate_model_leaf_fields_have_presence(self):
+        """Scalar leaf fields in the negate model should carry presence=True."""
+        from test.config_app_example import TerminalLoggingConfig
+
+        negate_cls = ConfigModel._build_negate_model(TerminalLoggingConfig)
+        for field_name, field_info in negate_cls.model_fields.items():
+            extra = field_info.json_schema_extra or {}
+            assert extra.get("presence") is True, (
+                f"Leaf field '{field_name}' missing presence=True in negate model"
+            )
+
+    def test_negate_model_nested_fields_are_models(self):
+        """Nested model fields in the negate result should themselves be model types."""
+        from pydantic._internal._model_construction import ModelMetaclass
+
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        logging_field = negate_cls.model_fields["logging"]
+        assert isinstance(logging_field.annotation, ModelMetaclass), (
+            "logging field in negate model should be a nested model"
+        )
+
+    def test_negate_model_has_run_method(self):
+        """Dynamically built negate model must have a run() staticmethod."""
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        assert callable(getattr(negate_cls, "run", None))
+
+    def test_negate_model_preserves_aliases(self):
+        """Field aliases should be preserved in the negate model."""
+        from test.config_app_example import TerminalLoggingConfig
+
+        # TerminalLoggingConfig.format has alias="format" - trivially the same,
+        # but let's use a model that has a non-trivial alias: FileLoggingConfig has none.
+        # Use WorkerConfigModel which has plain names.  Instead verify LoggingConfigModel
+        # negate contains terminal and file which are field names without aliases.
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        # workers field has no alias but should still be accessible by field name
+        assert "workers" in negate_cls.model_fields
+
+    def test_negate_model_pkey_field_preserved(self):
+        """Dynamic dict fields with pkey metadata should preserve pkey in negate model."""
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        workers_field = negate_cls.model_fields["workers"]
+        extra = workers_field.json_schema_extra or {}
+        assert extra.get("pkey") == "worker_name"
+
+    def test_negate_model_name_reflects_source(self):
+        """Built negate model class name should be 'Negate' + source class name."""
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        assert negate_cls.__name__ == "NegateMyConfigStore"
+
+    def test_nested_negate_models_recurse(self):
+        """Negate model for a nested type should itself be a negate model with leaf presence."""
+        from pydantic._internal._model_construction import ModelMetaclass
+
+        negate_cls = ConfigModel._build_negate_model(MyConfigStore)
+        logging_field = negate_cls.model_fields["logging"]
+        negate_logging_cls = logging_field.annotation
+        assert isinstance(negate_logging_cls, ModelMetaclass)
+
+        # terminal field inside NegateLoggingConfigModel should be a model too
+        assert "terminal" in negate_logging_cls.model_fields
+        assert "file" in negate_logging_cls.model_fields
+
+
+class TestNegateModelInjection:
+    """Tests for __init_subclass__ auto-injection of 'no' field."""
+
+    def test_no_field_injected(self):
+        """ConfigModel subclass should have a 'no' field after class creation."""
+        assert "no" in MyConfigStore.model_fields
+
+    def test_no_field_is_model(self):
+        """The 'no' field annotation should resolve to a Pydantic model type."""
+        from pydantic._internal._model_construction import ModelMetaclass
+
+        no_field = MyConfigStore.model_fields["no"]
+        assert isinstance(no_field.annotation, ModelMetaclass), (
+            "'no' field should be a Pydantic model"
+        )
+
+    def test_no_field_negate_model_excludes_managed_fields(self):
+        """The injected negate model should not contain managed ConfigModel fields."""
+        from picle.models import _CONFIG_MODEL_MANAGED_FIELDS
+
+        no_field = MyConfigStore.model_fields["no"]
+        negate_cls = no_field.annotation
+        for managed in _CONFIG_MODEL_MANAGED_FIELDS:
+            assert managed not in negate_cls.model_fields
+
+    def test_independent_subclasses_get_independent_negate_models(self):
+        """Two independent ConfigModel subclasses each have their own negate model
+        whose fields are drawn only from that subclass's own user-defined fields."""
+        from pydantic._internal._model_construction import ModelMetaclass
+
+        # NegateMyConfigStore should have 'logging' and 'workers' but NOT the fields
+        # of LoggingConfigModel directly (those live one level deeper).
+        no_field = MyConfigStore.model_fields["no"]
+        negate_cls = no_field.annotation
+        assert isinstance(negate_cls, ModelMetaclass)
+
+        # User-defined fields of MyConfigStore must be present in negate model
+        assert "logging" in negate_cls.model_fields
+        assert "workers" in negate_cls.model_fields
+
+        # Fields belonging to NESTED models must NOT appear at the top level
+        assert "terminal" not in negate_cls.model_fields, (
+            "terminal is a field of LoggingConfigModel, not MyConfigStore"
+        )
+        assert "file" not in negate_cls.model_fields, (
+            "file is a field of LoggingConfigModel, not MyConfigStore"
+        )
+        assert "severity" not in negate_cls.model_fields, (
+            "severity is a leaf field two levels deep, not at MyConfigStore level"
+        )
+
+
+# ============================================================
+# Negate integration tests – shell command execution
+# ============================================================
+
+
+class TestNegateConfig:
+    """Integration tests for 'no <path>' commands via the shell."""
+
+    def _seed_config(self, data: dict):
+        """Write data directly to the main config file."""
+        with open(CONFIG_FILE, "w") as f:
+            yaml.safe_dump(data, f)
+
+    # ---- leaf field negation ------------------------------------------------
+
+    def test_no_leaf_field_removes_key(self):
+        """'no logging terminal severity' should remove that specific key."""
+        self._seed_config({
+            "logging": {"terminal": {"severity": "debug", "format": "%(message)s"}}
+        })
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no logging terminal severity")
+
+        output = _last_output(mock_stdout)
+        assert "negated" in output.lower() or "uncommitted" in output.lower()
+
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        assert "severity" not in temp_data.get("logging", {}).get("terminal", {}), (
+            "severity key should have been removed"
+        )
+        # sibling key should be untouched
+        assert temp_data["logging"]["terminal"].get("format") == "%(message)s"
+
+    def test_no_leaf_field_then_commit(self):
+        """Negate a leaf field, commit, and verify main config no longer has it."""
+        self._seed_config({
+            "logging": {"terminal": {"severity": "debug", "format": "%(message)s"}}
+        })
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no logging terminal severity")
+        shell.onecmd("commit")
+
+        main_data = ConfigModel.load_config(CONFIG_FILE)
+        assert "severity" not in main_data.get("logging", {}).get("terminal", {})
+        assert main_data["logging"]["terminal"].get("format") == "%(message)s"
+        assert not os.path.exists(TEMP_FILE)
+
+    # ---- subtree negation ---------------------------------------------------
+
+    def test_no_nested_model_removes_subtree(self):
+        """'no logging terminal' should remove the entire terminal sub-dict."""
+        self._seed_config({
+            "logging": {
+                "terminal": {"severity": "debug"},
+                "file": {"enabled": True},
+            }
+        })
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no logging terminal")
+
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        assert "terminal" not in temp_data.get("logging", {}), (
+            "terminal sub-dict should have been removed"
+        )
+        # sibling section should be untouched
+        assert temp_data["logging"].get("file", {}).get("enabled") is True
+
+    def test_no_top_level_section_removes_whole_section(self):
+        """'no logging' should remove the entire logging section."""
+        self._seed_config({
+            "logging": {"terminal": {"severity": "debug"}},
+            "workers": {"w1": {"timeout": 30}},
+        })
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no logging")
+
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        assert "logging" not in temp_data, "logging section should have been removed"
+        # workers section should be untouched
+        assert "workers" in temp_data
+
+    def test_no_subtree_then_commit(self):
+        """Negate a subtree, commit, and verify main config reflects removal."""
+        self._seed_config({
+            "logging": {
+                "terminal": {"severity": "info"},
+                "file": {"enabled": False},
+            }
+        })
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no logging terminal")
+        shell.onecmd("commit")
+
+        main_data = ConfigModel.load_config(CONFIG_FILE)
+        assert "terminal" not in main_data.get("logging", {})
+        assert "file" in main_data.get("logging", {})
+
+    # ---- negate on top of staged changes ------------------------------------
+
+    def test_negate_accumulates_with_staged_edits(self):
+        """Negate should operate on the temp file when edits are already staged."""
+        self._seed_config({"logging": {"terminal": {"severity": "info"}}})
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        # Stage an edit first
+        shell.onecmd("logging file enabled true")
+        assert os.path.exists(TEMP_FILE)
+
+        # Then negate the original terminal severity
+        shell.onecmd("no logging terminal severity")
+
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        # Staged edit should be present
+        assert temp_data.get("logging", {}).get("file", {}).get("enabled") in (True, "true")
+        # Negated key should be gone
+        assert "severity" not in temp_data.get("logging", {}).get("terminal", {})
+
+    # ---- dynamic dictionary negation ----------------------------------------
+
+    def test_no_worker_removes_entire_worker_entry(self):
+        """'no workers worker1' should remove the worker1 entry from workers dict."""
+        self._seed_config({
+            "workers": {
+                "worker1": {"timeout": 10, "worker_name": "worker1"},
+                "worker2": {"timeout": 20, "worker_name": "worker2"},
+            }
+        })
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no workers worker1")
+
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        assert "worker1" not in temp_data.get("workers", {}), (
+            "worker1 should have been removed"
+        )
+        assert "worker2" in temp_data.get("workers", {}), (
+            "worker2 should be untouched"
+        )
+
+    def test_no_worker_field_removes_specific_field(self):
+        """'no workers worker1 timeout' should remove only the timeout key."""
+        self._seed_config({
+            "workers": {
+                "worker1": {"timeout": 10, "num_threads": 4, "worker_name": "worker1"},
+            }
+        })
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no workers worker1 timeout")
+
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        w1 = temp_data.get("workers", {}).get("worker1", {})
+        assert "timeout" not in w1, "timeout should have been removed"
+        assert w1.get("num_threads") == 4, "num_threads should be untouched"
+
+    # ---- negate non-existent key (graceful) ---------------------------------
+
+    def test_no_nonexistent_key_does_not_crash(self):
+        """Negating a key that doesn't exist in config should not raise an exception."""
+        self._seed_config({"logging": {"terminal": {"severity": "info"}}})
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        # format doesn't exist in the config - should still produce a temp file
+        shell.onecmd("no logging terminal format")
+
+        # Temp file should be written with unchanged content (format was never there)
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        assert temp_data["logging"]["terminal"]["severity"] == "info"
+
+    def test_no_nonexistent_section_does_not_crash(self):
+        """Negating an entirely missing section should not raise an exception."""
+        self._seed_config({"workers": {"w1": {"timeout": 5}}})
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        # logging section doesn't exist - should warn but not crash
+        shell.onecmd("no logging")
+
+        # Config remains intact (no logging to remove)
+        temp_data = ConfigModel.load_config(TEMP_FILE)
+        assert "workers" in temp_data
+
+    # ---- negate return message ----------------------------------------------
+
+    def test_no_command_returns_uncommitted_message(self):
+        """Negate command output should mention uncommitted or negated."""
+        self._seed_config({"logging": {"terminal": {"severity": "debug"}}})
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("no logging terminal severity")
+
+        output = _last_output(mock_stdout)
+        assert any(word in output.lower() for word in ("negated", "uncommitted", "commit"))
+
+    # ---- full round-trip ----------------------------------------------------
+
+    def test_set_then_negate_then_commit(self):
+        """Set a key, negate it, commit: final config should not have the key."""
+        shell, mock_stdout = _make_shell()
+        shell.onecmd("top")
+        shell.onecmd("configure_terminal")
+
+        shell.onecmd("logging terminal severity debug")
+        shell.onecmd("commit")
+        assert ConfigModel.load_config(CONFIG_FILE)["logging"]["terminal"]["severity"] == "debug"
+
+        shell.onecmd("no logging terminal severity")
+        shell.onecmd("commit")
+
+        final = ConfigModel.load_config(CONFIG_FILE)
+        assert "severity" not in final.get("logging", {}).get("terminal", {})

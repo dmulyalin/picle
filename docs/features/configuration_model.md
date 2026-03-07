@@ -199,3 +199,59 @@ Configuration committed successfully
 test-config-shell[cfg]#exit
 test-config-shell#
 ```
+
+## Negating configuration — the `no` command
+
+Every `ConfigModel` subclass automatically gains a `no` command that mirrors the full configuration field tree. It provides the same tab-completion as regular set commands and lets you delete individual keys or entire sub-trees from the staged configuration.
+
+Changes made with `no` are written to the temp file (same as regular set commands) and only become permanent after `commit`.
+
+### Deleting a specific leaf field
+
+Name one or more leaf fields after the path to remove those keys only:
+
+```
+test-config-shell[cfg]#no workers worker-1 timeout
+Configuration negated (uncommitted). Use 'commit' to save or 'show changes' to review.
+test-config-shell[cfg]#show changes
+--- app_config.yaml
++++ app_config.yaml.tmp
+@@ -1,6 +1,5 @@
+ workers:
+   worker-1:
+     num_threads: 1
+-    timeout: 1
+     use_cache: true
+     worker_name: worker-1
+test-config-shell[cfg]#commit
+Configuration committed successfully
+```
+
+Multiple leaf fields can be removed in a single command:
+
+```
+test-config-shell[cfg]#no workers worker-1 timeout num_threads
+```
+
+### Deleting an entire sub-tree
+
+Omit leaf fields and the whole node is removed:
+
+```
+test-config-shell[cfg]#no workers worker-1
+Configuration negated (uncommitted). Use 'commit' to save or 'show changes' to review.
+test-config-shell[cfg]#show changes
+--- app_config.yaml
++++ app_config.yaml.tmp
+@@ -1,6 +1 @@
+-workers:
+-  worker-1:
+-    num_threads: 1
+-    timeout: 1
+-    use_cache: true
+-    worker_name: worker-1
++{}
+test-config-shell[cfg]#commit
+Configuration committed successfully
+```
+

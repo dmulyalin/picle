@@ -9,7 +9,7 @@ If PicleConfig class `pipe` is set, the `|` token becomes valid and starts a new
 SomeModelClass          use a model class directly
 ```
 
-Example (enable pipe functions and post-process the first command):
+Example - enable pipe functions:
 
 ```python
 from pydantic import BaseModel
@@ -21,7 +21,6 @@ class ShellModel(BaseModel):
         prompt = "picle#"
         intro = "PICLE Sample app"
         pipe = PipeFunctionsModel
-        processors = [Outputters.outputter_json]
 ```
 
 

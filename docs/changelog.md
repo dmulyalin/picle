@@ -3,6 +3,8 @@
 ## FEATURES
 
 1. Improving pipe handling back backtracing it to parents models, if `pipe` set to False on the model `PicleConfig`, backtracing disabled
+2. Adding support negate `no` command to configuraiton model, negate arguments are dynamically constructed for every model
+3. Adding `last` filter to pipe functions to return last N lines of output
 
 ## ENHANCEMENTS
 

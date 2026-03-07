@@ -8,7 +8,8 @@ import difflib
 from enum import Enum
 from typing import List, Union, Optional, Callable, Any, get_args, get_origin, Dict
 from pathlib import Path
-from pydantic import BaseModel, StrictStr, Field, StrictBool, StrictInt
+from pydantic import BaseModel, StrictStr, Field, StrictBool, StrictInt, create_model
+from pydantic.fields import FieldInfo
 from pydantic_core import PydanticOmit, core_schema
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic._internal._model_construction import ModelMetaclass
@@ -59,6 +60,11 @@ class Filters(BaseModel):
         description="Filter output by pattern exclusion",
         json_schema_extra={"function": "filter_exclude"},
     )
+    last: StrictInt = Field(
+        None,
+        description="Return last N lines",
+        json_schema_extra={"function": "filter_last"},
+    )
 
     @staticmethod
     def filter_include(data: Any, include: Any = None) -> str:
@@ -91,6 +97,21 @@ class Filters(BaseModel):
         return "\n".join(
             [line for line in str(data).splitlines() if exclude not in line]
         )
+
+    @staticmethod
+    def filter_last(data: Any, last: int = None) -> str:
+        """
+        Returns only the last N lines.
+
+        Args:
+            data: Data to filter.
+            last: Number of lines to return from the end.
+
+        Returns:
+            str: Last N lines joined by newline.
+        """
+        lines = str(data).splitlines()
+        return "\n".join(lines[-last:] if last else lines)
 
 
 # --------------------------------------------------------------------------------
@@ -255,7 +276,7 @@ class KvOutputterModel(BaseModel):
 
     class PicleConfig:
         pipe = "picle.models.PipeFunctionsModel"
-        
+
     @staticmethod
     def run(*args: list, **kwargs: dict):
         return Outputters.outputter_kv(*args, **kwargs)
@@ -1000,6 +1021,12 @@ class ConfigModelShowCommands(BaseModel):
         outputter = Outputters.outputter_nested
 
 
+# Fields managed internally by ConfigModel, excluded from negate model mirroring
+_CONFIG_MODEL_MANAGED_FIELDS = frozenset(
+    {"show", "commit", "rollback", "erase_configuration", "clear_changes", "no"}
+)
+
+
 class ConfigModel(BaseModel):
     """
     Base class for configuration management models.
@@ -1162,6 +1189,45 @@ class ConfigModel(BaseModel):
             current[path[-1]].extend(value)
         else:
             current[path[-1]] = value
+        return data
+
+    @staticmethod
+    def delete_nested_value(data: dict, path: list) -> dict:
+        """
+        Delete a key from a nested dictionary using a path list.
+
+        Args:
+            data (dict): Dictionary to modify.
+            path (list): List of keys representing the path to the key to delete.
+
+        Returns:
+            dict: Modified dictionary.
+        """
+        if not path:
+            return data
+
+        current = data
+        for key in path[:-1]:
+            if not isinstance(current, dict) or key not in current:
+                log.warning(
+                    f"Cannot traverse path for deletion: "
+                    f"'{'.'.join(str(k) for k in path)}', key '{key}' not found"
+                )
+                return data
+            current = current[key]
+
+        if isinstance(current, dict) and path[-1] in current:
+            del current[path[-1]]
+            log.debug(
+                f"Deleted key '{path[-1]}' at path "
+                f"'{'.'.join(str(k) for k in path[:-1])}'"
+            )
+        else:
+            log.warning(
+                f"Key '{path[-1]}' not found at path "
+                f"'{'.'.join(str(k) for k in path[:-1])}'"
+            )
+
         return data
 
     @staticmethod
@@ -1351,3 +1417,164 @@ class ConfigModel(BaseModel):
             )
 
         return "Configuration updated (uncommitted). Use 'commit' to save or 'show changes' to review."
+
+    @staticmethod
+    def _negate_run(shell_command: list, **kwargs: dict) -> str:
+        """
+        Run method for negation (deletion) operations. Removes keys from temp/config file.
+        Use 'commit' to persist changes.
+
+        Args:
+            shell_command (list): The shell command that triggered this run method.
+            **kwargs: Presence-flagged leaf fields indicating specific keys to remove.
+                      If empty, the entire command path sub-tree is removed.
+
+        Returns:
+            str: Status message.
+        """
+        model_config = ConfigModel.get_model_config(shell_command)
+        command_path = ConfigModel.get_command_path(shell_command)
+        config_file = model_config["config_file"]
+        temp_file = config_file + ".tmp"
+
+        # Strip the leading 'no' token from the command path
+        if command_path and command_path[0] == "no":
+            command_path = command_path[1:]
+
+        # Load config (prefer temp file to accumulate staged changes)
+        if Path(temp_file).exists():
+            config_content = ConfigModel.load_config(temp_file)
+        else:
+            config_content = ConfigModel.load_config(config_file)
+
+        # Use the last model's explicitly collected field values to determine which
+        # leaf keys to delete. This avoids treating VirtualDictModel key kwargs
+        # (e.g. worker_name="worker1") as leaf fields - those are path components,
+        # already incorporated into command_path by get_command_path.
+        last_model_fields = shell_command[-1].get("fields", [])
+        leaf_fields = [f["name"] for f in last_model_fields if f["values"] is not ...]
+
+        if leaf_fields:
+            for key in leaf_fields:
+                ConfigModel.delete_nested_value(config_content, command_path + [key])
+        elif command_path:
+            ConfigModel.delete_nested_value(config_content, command_path)
+
+        # Save to temp file
+        with open(temp_file, "w", encoding="utf-8") as f:
+            yaml.safe_dump(
+                config_content, f, default_flow_style=False, sort_keys=True, indent=2
+            )
+
+        return "Configuration negated (uncommitted). Use 'commit' to save or 'show changes' to review."
+
+    @staticmethod
+    def _build_negate_model(source_cls: type) -> type:
+        """
+        Recursively build a negation mirror model for *source_cls*.
+
+        The resulting model has the same field tree as *source_cls* (minus the
+        ConfigModel management fields) so that PICLE can provide full tab-completion
+        for ``no <path>`` commands.  Leaf fields are given ``presence=True`` so they
+        can be referenced without a value.  Nested model fields are recursively
+        replaced with their own negate mirrors.  The model's ``run()`` delegates to
+        ``ConfigModel._negate_run``.
+
+        Args:
+            source_cls (type): The ConfigModel subclass (or any nested BaseModel) to mirror.
+
+        Returns:
+            type: A dynamically created Pydantic model class.
+        """
+        field_definitions: dict = {}
+
+        for field_name, field_info in source_cls.model_fields.items():
+            if field_name in _CONFIG_MODEL_MANAGED_FIELDS:
+                continue
+
+            annotation = field_info.annotation
+            extra = dict(field_info.json_schema_extra or {})
+
+            # Common kwargs for the mirrored Field
+            field_kwargs: dict = {"default": None, "description": field_info.description}
+            if field_info.alias:
+                field_kwargs["alias"] = field_info.alias
+            if field_info.serialization_alias:
+                field_kwargs["serialization_alias"] = field_info.serialization_alias
+
+            if isinstance(annotation, ModelMetaclass):
+                # Nested Pydantic model – recurse
+                nested_negate = ConfigModel._build_negate_model(annotation)
+                field_kwargs["json_schema_extra"] = extra
+                field_definitions[field_name] = (
+                    nested_negate,
+                    Field(**field_kwargs),
+                )
+
+            elif (
+                get_origin(annotation) is dict
+                and extra.get("pkey")
+            ):
+                # Dynamic-dictionary field (Dict[K, V] with pkey) – preserve the
+                # pkey metadata so VirtualDictModel is still used for traversal.
+                args = get_args(annotation)
+                if len(args) > 1 and isinstance(args[1], ModelMetaclass):
+                    nested_negate = ConfigModel._build_negate_model(args[1])
+                    annotation = Dict[args[0], nested_negate]
+                field_kwargs["json_schema_extra"] = extra
+                field_definitions[field_name] = (
+                    annotation,
+                    Field(**field_kwargs),
+                )
+
+            else:
+                # Scalar / leaf field – mark with presence so it can be referenced
+                # without providing a value.
+                extra.pop("function", None)
+                extra["presence"] = True
+                field_kwargs["json_schema_extra"] = extra
+                field_definitions[field_name] = (
+                    annotation,
+                    Field(**field_kwargs),
+                )
+
+        NegateModel = create_model(
+            f"Negate{source_cls.__name__}",
+            **field_definitions,
+        )
+        NegateModel.run = staticmethod(ConfigModel._negate_run)
+        return NegateModel
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: dict) -> None:
+        """
+        Automatically inject a ``no`` field into every ConfigModel subclass.
+
+        Called by Pydantic **after** ``complete_model_class()`` so ``model_fields``
+        is already fully populated when we build the negate mirror.
+
+        The ``no`` field points to a dynamically built negation mirror of the
+        subclass, enabling commands like::
+
+            config interface eth0 ip 1.2.3.4   # sets a value
+            config no interface eth0 ip        # removes it (with full completion)
+
+        Args:
+            cls: The newly defined subclass.
+            **kwargs: Extra keyword arguments forwarded to ``super().__pydantic_init_subclass__``.
+        """
+        super().__pydantic_init_subclass__(**kwargs)
+
+        # Build the dynamic negate mirror for this subclass
+        negate_model = ConfigModel._build_negate_model(cls)
+
+        # Inject directly into __pydantic_fields__ so model_fields reflects the
+        # change immediately without needing model_rebuild (which does not
+        # re-run set_model_fields and therefore ignores __annotations__ changes).
+        no_field_info = FieldInfo(
+            annotation=negate_model,
+            default=None,
+            description="Negate/remove configuration",
+        )
+        cls.__pydantic_fields__["no"] = no_field_info
+        cls.__annotations__["no"] = negate_model
