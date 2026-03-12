@@ -1,3 +1,11 @@
+# 0.11.2
+
+## CHANGES
+
+1. ENhancing nested output to color code dictionary key levels if Rich in use
+
+---
+
 # 0.11.1
 
 ## FEATURES

@@ -203,13 +203,26 @@ class RichTableOutputter(BaseModel):
     def run(*args: list, **kwargs: dict):
         return Outputters.outputter_rich_table(*args, **kwargs)
 
+
 class PprintOutputterModel(BaseModel):
     """Model for pretty-print outputter"""
+
     indent: StrictInt = Field(4, description="Indentation added for each nesting level")
     width: StrictInt = Field(80, description="Maximum number of characters per line")
-    depth: StrictInt = Field(None, description="Maximum depth of nested structures to display")
-    compact: StrictBool = Field(False, description="Fit as many items as possible on each line", json_schema_extra={"presence": True})
-    sort_dicts: StrictBool = Field(True, description="Sort dictionary keys before display", alias="sort-dicts", json_schema_extra={"presence": True})
+    depth: StrictInt = Field(
+        None, description="Maximum depth of nested structures to display"
+    )
+    compact: StrictBool = Field(
+        False,
+        description="Fit as many items as possible on each line",
+        json_schema_extra={"presence": True},
+    )
+    sort_dicts: StrictBool = Field(
+        True,
+        description="Sort dictionary keys before display",
+        alias="sort-dicts",
+        json_schema_extra={"presence": True},
+    )
 
     class PicleConfig:
         pipe = "picle.models.PipeFunctionsModel"
@@ -221,9 +234,23 @@ class PprintOutputterModel(BaseModel):
 
 class NestedOutputterModel(BaseModel):
     """Model for nested outputter"""
-    initial_indent: int = Field(0, description="Initial indentation level for nested output", alias="initial-indent")
-    with_tables: bool = Field(False, description="Whether to format output in nested tables", alias="with-tables", json_schema_extra={"presence": True})
-    tabulate_kwargs: dict = Field(None, description="JSON string of additional keyword arguments for tabulate", alias="tabulate-kwargs")
+
+    initial_indent: int = Field(
+        0,
+        description="Initial indentation level for nested output",
+        alias="initial-indent",
+    )
+    with_tables: bool = Field(
+        False,
+        description="Whether to format output in nested tables",
+        alias="with-tables",
+        json_schema_extra={"presence": True},
+    )
+    tabulate_kwargs: dict = Field(
+        None,
+        description="JSON string of additional keyword arguments for tabulate",
+        alias="tabulate-kwargs",
+    )
 
     class PicleConfig:
         pipe = "picle.models.PipeFunctionsModel"
@@ -237,10 +264,24 @@ class NestedOutputterModel(BaseModel):
 
 class JsonOutputterModel(BaseModel):
     """Model for JSON outputter"""
+
     indent: StrictInt = Field(4, description="Indentation level for JSON output")
-    sort_keys: StrictBool = Field(True, description="Sort dictionary keys in output", alias="sort-keys", json_schema_extra={"presence": True})
-    ensure_ascii: StrictBool = Field(True, description="Escape non-ASCII characters in output", alias="ensure-ascii", json_schema_extra={"presence": True})
-    separators: StrictStr = Field(None, description="Item and key separators as 'item_sep,key_sep' (e.g. ',: ' for compact output)")
+    sort_keys: StrictBool = Field(
+        True,
+        description="Sort dictionary keys in output",
+        alias="sort-keys",
+        json_schema_extra={"presence": True},
+    )
+    ensure_ascii: StrictBool = Field(
+        True,
+        description="Escape non-ASCII characters in output",
+        alias="ensure-ascii",
+        json_schema_extra={"presence": True},
+    )
+    separators: StrictStr = Field(
+        None,
+        description="Item and key separators as 'item_sep,key_sep' (e.g. ',: ' for compact output)",
+    )
 
     class PicleConfig:
         pipe = "picle.models.PipeFunctionsModel"
@@ -255,12 +296,32 @@ class JsonOutputterModel(BaseModel):
 
 class YamlOutputterModel(BaseModel):
     """Model for YAML outputter"""
+
     indent: StrictInt = Field(2, description="Indentation level for YAML output")
-    absolute_indent: StrictInt = Field(0, description="Absolute indentation prepended to every output line", alias="absolute-indent")
-    sort_keys: StrictBool = Field(True, description="Sort dictionary keys in output", alias="sort-keys", json_schema_extra={"presence": True})
-    allow_unicode: StrictBool = Field(True, description="Allow Unicode characters instead of escaping them", alias="allow-unicode", json_schema_extra={"presence": True})
+    absolute_indent: StrictInt = Field(
+        0,
+        description="Absolute indentation prepended to every output line",
+        alias="absolute-indent",
+    )
+    sort_keys: StrictBool = Field(
+        True,
+        description="Sort dictionary keys in output",
+        alias="sort-keys",
+        json_schema_extra={"presence": True},
+    )
+    allow_unicode: StrictBool = Field(
+        True,
+        description="Allow Unicode characters instead of escaping them",
+        alias="allow-unicode",
+        json_schema_extra={"presence": True},
+    )
     width: StrictInt = Field(None, description="Maximum line width before wrapping")
-    default_flow_style: StrictBool = Field(False, description="Use flow style for collections", alias="default-flow-style", json_schema_extra={"presence": True})
+    default_flow_style: StrictBool = Field(
+        False,
+        description="Use flow style for collections",
+        alias="default-flow-style",
+        json_schema_extra={"presence": True},
+    )
 
     class PicleConfig:
         pipe = "picle.models.PipeFunctionsModel"
@@ -272,7 +333,10 @@ class YamlOutputterModel(BaseModel):
 
 class KvOutputterModel(BaseModel):
     """Model for key-value outputter"""
-    separator: StrictStr = Field(".", description="Separator used between nested key path segments")
+
+    separator: StrictStr = Field(
+        ".", description="Separator used between nested key path segments"
+    )
 
     class PicleConfig:
         pipe = "picle.models.PipeFunctionsModel"
@@ -280,6 +344,7 @@ class KvOutputterModel(BaseModel):
     @staticmethod
     def run(*args: list, **kwargs: dict):
         return Outputters.outputter_kv(*args, **kwargs)
+
 
 class Outputters(BaseModel):
     pprint: PprintOutputterModel = Field(
@@ -302,8 +367,7 @@ class Outputters(BaseModel):
         alias="markdown",
     )
     nested: NestedOutputterModel = Field(
-        None,
-        description="Print data in nested format"
+        None, description="Print data in nested format"
     )
     save: StrictStr = Field(
         None,
@@ -337,12 +401,22 @@ class Outputters(BaseModel):
         items = []
         if isinstance(data, dict):
             for key, value in data.items():
-                new_key = "{}{}{}".format(parent_key, separator, key) if parent_key else key
-                items.extend(Outputters.outputter_kv(value, new_key, separator, is_top=False).items())
+                new_key = (
+                    "{}{}{}".format(parent_key, separator, key) if parent_key else key
+                )
+                items.extend(
+                    Outputters.outputter_kv(
+                        value, new_key, separator, is_top=False
+                    ).items()
+                )
         elif isinstance(data, list):
             for k, v in enumerate(data):
                 new_key = "{}{}{}".format(parent_key, separator, k) if parent_key else k
-                items.extend(Outputters.outputter_kv({str(new_key): v}, separator=separator, is_top=False).items())
+                items.extend(
+                    Outputters.outputter_kv(
+                        {str(new_key): v}, separator=separator, is_top=False
+                    ).items()
+                )
         else:
             items.append((parent_key, data))
 
@@ -406,6 +480,13 @@ class Outputters(BaseModel):
         """
         tabulate_kwargs = tabulate_kwargs or {"tablefmt": "simple"}
 
+        key_styles = {
+            1: "bold green",
+            2: "bold blue",
+            3: "bold yellow",
+            4: "bold magenta",
+        }
+
         def is_dictionary_list(data):
             for item in data:
                 if not isinstance(item, Mapping):
@@ -420,7 +501,14 @@ class Outputters(BaseModel):
             fmt = "{0}{1}{2}{3}"
             return fmt.format(indent, prefix, msg, suffix)
 
-        def nest(ret, indent, prefix, out):
+        def style_key(key, level):
+            key = str(key)
+            style = key_styles.get(level)
+            if HAS_RICH and style:
+                return f"[{style}]{key}[/{style}]"
+            return key
+
+        def nest(ret, indent, prefix, out, key_level=0):
             if isinstance(ret, bytes):
                 try:
                     ret = ret.decode("utf-8")
@@ -441,23 +529,25 @@ class Outputters(BaseModel):
                 # make a text table if it is a flat list
                 if with_tables and is_dictionary_list(ret):
                     table = Outputters.outputter_tabulate_table(ret, **tabulate_kwargs)
-                    nest(table, indent + 2, prefix, out)
+                    nest(table, indent + 2, prefix, out, key_level)
                 else:
                     for ind in ret:
                         if isinstance(ind, (list, tuple, Mapping)):
                             out.append(ustring(indent, "|_"))
                             prefix = "" if isinstance(ind, Mapping) else "- "
-                            nest(ind, indent + 2, prefix, out)
+                            nest(ind, indent + 2, prefix, out, key_level)
                         else:
-                            nest(ind, indent, "- ", out)
+                            nest(ind, indent, "- ", out, key_level)
             elif isinstance(ret, Mapping):
                 if indent:
                     out.append(ustring(indent, "----------"))
 
                 for key in ret.keys():
                     val = ret[key]
-                    out.append(ustring(indent, key, suffix=":", prefix=prefix))
-                    nest(val, indent + 4, "", out)
+                    styled_key = style_key(key, key_level + 1)
+                    out.append(ustring(indent, styled_key, suffix=":", prefix=prefix))
+                    # Dict depth controls key coloring; list depth does not.
+                    nest(val, indent + 4, "", out, key_level + 1)
 
             return out
 
@@ -474,7 +564,7 @@ class Outputters(BaseModel):
         except Exception as e:
             log.warning(f"Nested outputter data sorting failed: '{e}'")
 
-        lines = nest(data, initial_indent, "", [])
+        lines = nest(data, initial_indent, "", [], key_level=0)
         lines = "\n".join(lines)
 
         return lines
@@ -1496,7 +1586,10 @@ class ConfigModel(BaseModel):
             extra = dict(field_info.json_schema_extra or {})
 
             # Common kwargs for the mirrored Field
-            field_kwargs: dict = {"default": None, "description": field_info.description}
+            field_kwargs: dict = {
+                "default": None,
+                "description": field_info.description,
+            }
             if field_info.alias:
                 field_kwargs["alias"] = field_info.alias
             if field_info.serialization_alias:
@@ -1511,10 +1604,7 @@ class ConfigModel(BaseModel):
                     Field(**field_kwargs),
                 )
 
-            elif (
-                get_origin(annotation) is dict
-                and extra.get("pkey")
-            ):
+            elif get_origin(annotation) is dict and extra.get("pkey"):
                 # Dynamic-dictionary field (Dict[K, V] with pkey) – preserve the
                 # pkey metadata so VirtualDictModel is still used for traversal.
                 args = get_args(annotation)

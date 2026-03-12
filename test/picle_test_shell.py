@@ -738,7 +738,7 @@ class Root(BaseModel):
         intro = "PICLE Sample app"
         newline = "\r\n"
         completekey = "tab"
-        use_rich = False
+        use_rich = True
 
 
 if __name__ == "__main__":

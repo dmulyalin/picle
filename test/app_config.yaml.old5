@@ -1,7 +1,0 @@
-workers:
-  worker1:
-    timeout: 1
-    worker_name: worker1
-  worker2:
-    timeout: 2
-    worker_name: worker2

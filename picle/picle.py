@@ -585,9 +585,7 @@ class App(cmd.Cmd):
                     )
                     break
                 elif pipe_config is None:
-                    log.error(
-                        f"'{current_model['model'].__name__}' pipe not found"
-                    )
+                    log.error(f"'{current_model['model'].__name__}' pipe not found")
                     break
                 # resolve pipe model
                 if pipe_config == "self":
@@ -1118,10 +1116,18 @@ class App(cmd.Cmd):
                     for i in range(count):
                         if _readline.get_history_item(i + 1):
                             line = f" {_readline.get_history_item(i + 1).strip()}"
-                            if line.strip() in ["history", "exit", "top", "pwd", "end", "cls", "help"]:
+                            if line.strip() in [
+                                "history",
+                                "exit",
+                                "top",
+                                "pwd",
+                                "end",
+                                "cls",
+                                "help",
+                            ]:
                                 continue
                             if line.endswith("?"):
-                                continue           
+                                continue
                             if line in lines:
                                 continue
                             lines.append(line)

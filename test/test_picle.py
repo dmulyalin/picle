@@ -1275,6 +1275,7 @@ def test_function_field_execution():
     print(f"shell output: '{shell_output}'")
     assert "action_executed" in shell_output
 
+
 def test_pipe_pprint_with_string_data():
     """Test pprint outputter with string data passes through"""
     from picle.models import Outputters
@@ -1393,6 +1394,54 @@ def test_outputter_nested_with_list_of_dicts():
     ]
     result = Outputters.outputter_nested(data)
     assert "item1" in result and "item2" in result
+
+
+def test_outputter_nested_rich_key_coloring_by_dict_level(monkeypatch):
+    """Test key coloring for first/second/third dictionary levels when Rich is enabled."""
+    import picle.models as models
+
+    monkeypatch.setattr(models, "HAS_RICH", True)
+
+    result = models.Outputters.outputter_nested(
+        {
+            "host1": {
+                "task1": {
+                    "k1": "value1",
+                }
+            }
+        }
+    )
+
+    assert "[bold green]host1[/bold green]:" in result
+    assert "[bold blue]task1[/bold blue]:" in result
+    assert "[bold yellow]k1[/bold yellow]:" in result
+
+
+def test_outputter_nested_rich_list_not_counted_as_level(monkeypatch):
+    """Test that list nesting does not increment dictionary key depth."""
+    import picle.models as models
+
+    monkeypatch.setattr(models, "HAS_RICH", True)
+
+    result = models.Outputters.outputter_nested(
+        [
+            {
+                "host1": {
+                    "task1": [
+                        {
+                            "k1": "value1",
+                        }
+                    ]
+                }
+            }
+        ]
+    )
+
+    # top-level list should start dictionary keys at level 1
+    assert "[bold green]host1[/bold green]:" in result
+    # nested key depth should ignore the list between task1 and k1
+    assert "[bold blue]task1[/bold blue]:" in result
+    assert "[bold yellow]k1[/bold yellow]:" in result
 
 
 def test_outputter_rich_table_with_sortby():
@@ -2084,12 +2133,14 @@ def test_outputter_kv_via_pipe():
     assert "list.0.more.dictionary: data" in shell_output
     assert "list.1.more.dictionary: data" in shell_output
 
+
 def test_pipe_kv_with_string_data():
     """Test kv outputter with string data passes through"""
     from picle.models import Outputters
 
     result = Outputters.outputter_kv("already a string")
     assert result == "already a string"
+
 
 def test_pipe_formatter_kv():
     shell.onecmd("top")  # go to top
