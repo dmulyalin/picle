@@ -1,6 +1,7 @@
-# Multi-line input
+# Multi-line Input
 
-If a field enables multi-line input, the user can type the literal value `input` to start collection.
+If a field enables multi-line input, the user can type the literal value `load-terminal` to start collection.
+
 PICLE reads lines until EOF (Ctrl+D) and uses the collected text (joined by `\n`) as the field value.
 
 ```python
@@ -8,13 +9,13 @@ from typing import Any
 from pydantic import BaseModel, Field, StrictStr
 
 
-class TestMultilineInput(BaseModel):
-    data: StrictStr = Field(
+class NotesCommand(BaseModel):
+    body: StrictStr = Field(
         None,
-        description="Multi line string",
+        description="Multi-line note body",
         json_schema_extra={"multiline": True},
     )
-    arg: Any = Field(None, description="Some field")
+    title: Any = Field(None, description="Note title")
 
     @staticmethod
     def run(**kwargs):
@@ -22,26 +23,28 @@ class TestMultilineInput(BaseModel):
 
 
 class Root(BaseModel):
-    test_multiline_input: TestMultilineInput = Field(
+    notes: NotesCommand = Field(
         None,
-        description="Multi-line input demo",
+        description="Create a note",
     )
 ```
 
-Help shows the `input` option when appropriate:
+Help shows the `load-terminal` option when appropriate:
 
 ```
-picle#test_multiline_input data ?
- <'data' value>    Multi line string
- input             Collect value using multi line input mode
+picle#notes body ?
+ <'body' value>    Multi-line note body
+ load-terminal     Collect value using multi line input mode
 ```
 
 Invoking multi-line collection:
 
 ```
-picle#test_multiline_input data input arg foo
+picle#notes body load-terminal
 Enter lines and hit Ctrl+D to finish multi line input
 line 1
 line 2
 <Ctrl+D>
 ```
+
+The collected value is then validated and passed to your callable as a single string containing embedded newlines.

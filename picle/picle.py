@@ -782,7 +782,13 @@ class App(cmd.Cmd):
                 lines[name] = ", ".join([str(i) for i in options])
             # check if model has method to source field choices
             elif hasattr(model["model"], f"source_{last_field['name']}"):
-                options = getattr(model["model"], f"source_{last_field['name']}")()
+                source_callable = getattr(
+                    model["model"], f"source_{last_field['name']}"
+                )
+                if callable_expects_argument(source_callable, "choice"):
+                    options = source_callable(choice="")
+                else:
+                    options = source_callable()
                 lines[name] = ", ".join([str(i) for i in options])
             else:
                 lines[name] = f"{field.description}"
@@ -907,7 +913,11 @@ class App(cmd.Cmd):
                     ]
                 # check if model has method to source field choices
                 elif hasattr(last_model, f"source_{last_field_name}"):
-                    fieldnames = getattr(last_model, f"source_{last_field_name}")()
+                    source_callable = getattr(last_model, f"source_{last_field_name}")
+                    if callable_expects_argument(source_callable, "choice"):
+                        fieldnames = source_callable(choice=text)
+                    else:
+                        fieldnames = source_callable()
                     # handle partial match
                     if last_field_value not in fieldnames:
                         fieldnames = [
@@ -918,9 +928,14 @@ class App(cmd.Cmd):
                     # remove already collected values from choice
                     collected_values = command_models[-1][-1]["fields"][-1]["values"]
                     if collected_values is not ...:
-                        fieldnames = [
-                            i for i in fieldnames if i not in collected_values
-                        ]
+                        if isinstance(collected_values, list):
+                            fieldnames = [
+                                i for i in fieldnames if i not in collected_values
+                            ]
+                        else:
+                            fieldnames = [
+                                i for i in fieldnames if i != collected_values
+                            ]
                 # auto complete 'load-terminal' for multi-line input mode
                 elif fparam.get("multiline") is True:
                     if (

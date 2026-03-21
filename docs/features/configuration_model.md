@@ -107,7 +107,7 @@ class MyConfigStore(ConfigModel):
     )
     class PicleConfig:
         subshell = True
-        prompt = "test-config-shell[cfg]#"
+        prompt = "config-shell[cfg]#"
         config_file = "app_config.yaml"  # Default config file path
 
 
@@ -125,7 +125,7 @@ class RootShell(BaseModel):
 
     class PicleConfig:
         pipe = PipeFunctionsModel
-        prompt = "test-config-shell#"
+        prompt = "config-shell#"
 
 
 # --------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 Above app constructs shell with this commands tree:
 
 ```
-test-config-shell#man tree configure_terminal
+config-shell#man tree configure_terminal
 
 R - required field, M - supports multiline input, D - dynamic key
 
@@ -168,22 +168,22 @@ root
         ├── timeout:    Worker timeout in seconds
         ├── num_threads:    Number of worker threads
         └── use_cache:    Whether to use cache for worker results
-test-config-shell#
+config-shell#
 ```
 
 And above shell can be used like this:
 
 ```
-test-config-shell#configure_terminal
-test-config-shell[cfg]#workers ?
+config-shell#configure_terminal
+config-shell[cfg]#workers ?
  <worker_name>    Name of the worker
-test-config-shell[cfg]#workers worker-1 ?
+config-shell[cfg]#workers worker-1 ?
  num_threads    Number of worker threads
  timeout        Worker timeout in seconds
  use_cache      Whether to use cache for worker results
-test-config-shell[cfg]#workers worker-1 num_threads 1 timeout 1 use_cache True
+config-shell[cfg]#workers worker-1 num_threads 1 timeout 1 use_cache True
 Configuration updated (uncommitted). Use 'commit' to save or 'show changes' to review.
-test-config-shell[cfg]#show changes
+config-shell[cfg]#show changes
 --- app_config.yaml
 +++ app_config.yaml.tmp
 @@ -1 +1,6 @@
@@ -194,10 +194,10 @@ test-config-shell[cfg]#show changes
 +    timeout: 1
 +    use_cache: true
 +    worker_name: worker-1
-test-config-shell[cfg]#commit
+config-shell[cfg]#commit
 Configuration committed successfully
-test-config-shell[cfg]#exit
-test-config-shell#
+config-shell[cfg]#exit
+config-shell#
 ```
 
 ## Negating configuration — the `no` command
@@ -211,9 +211,9 @@ Changes made with `no` are written to the temp file (same as regular set command
 Name one or more leaf fields after the path to remove those keys only:
 
 ```
-test-config-shell[cfg]#no workers worker-1 timeout
+config-shell[cfg]#no workers worker-1 timeout
 Configuration negated (uncommitted). Use 'commit' to save or 'show changes' to review.
-test-config-shell[cfg]#show changes
+config-shell[cfg]#show changes
 --- app_config.yaml
 +++ app_config.yaml.tmp
 @@ -1,6 +1,5 @@
@@ -223,14 +223,14 @@ test-config-shell[cfg]#show changes
 -    timeout: 1
      use_cache: true
      worker_name: worker-1
-test-config-shell[cfg]#commit
+config-shell[cfg]#commit
 Configuration committed successfully
 ```
 
 Multiple leaf fields can be removed in a single command:
 
 ```
-test-config-shell[cfg]#no workers worker-1 timeout num_threads
+config-shell[cfg]#no workers worker-1 timeout num_threads
 ```
 
 ### Deleting an entire sub-tree
@@ -238,9 +238,9 @@ test-config-shell[cfg]#no workers worker-1 timeout num_threads
 Omit leaf fields and the whole node is removed:
 
 ```
-test-config-shell[cfg]#no workers worker-1
+config-shell[cfg]#no workers worker-1
 Configuration negated (uncommitted). Use 'commit' to save or 'show changes' to review.
-test-config-shell[cfg]#show changes
+config-shell[cfg]#show changes
 --- app_config.yaml
 +++ app_config.yaml.tmp
 @@ -1,6 +1 @@
@@ -251,7 +251,7 @@ test-config-shell[cfg]#show changes
 -    use_cache: true
 -    worker_name: worker-1
 +{}
-test-config-shell[cfg]#commit
+config-shell[cfg]#commit
 Configuration committed successfully
 ```
 

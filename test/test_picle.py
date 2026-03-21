@@ -2155,3 +2155,18 @@ more.dictionary.0: data
 even.more.dictionary: data
 list.0.more.dictionary: data
 list.1.more.dictionary: data""" in shell_output
+
+
+def test_source_with_choice():
+    shell.onecmd("top")  # go to top
+
+    # test choice empty
+    shell_output = shell.completedefault(
+        "test_source_with_choice value ",
+        "test_source_with_choice value ",
+        0,
+        40
+    )
+    print(f" shell output: '{shell_output}'")
+    assert shell_output == ['False ', 'None ', 'True ', 'bar ', 'foo ']
+

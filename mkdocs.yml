@@ -16,11 +16,16 @@ nav:
   - Changelog: changelog.md
 - Getting Started: Getting Started.md
 - Features:
+  - Command Discovery: features/command_discovery.md
+  - Field Aliases: features/field_aliases.md
+  - Input Parsing: features/input_parsing.md
   - Pipes: features/pipes.md
+  - Filters and Outputters: features/filters_and_outputters.md
   - Presence: features/fields_presence.md
   - Processors: features/processors.md
   - Multiline Input: features/multiline_input.md
   - Result Specific Outputters: features/result_specific_outputters.md
+  - Subshells and Navigation: features/subshells_and_navigation.md
   - Mounting Shell Models: features/mounting_models_at_runtime.md
   - Configuration Model: features/configuration_model.md
   - Dynamic Dictionaries: features/dynamic_dictionary_input.md

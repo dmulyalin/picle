@@ -2,7 +2,15 @@
 
 ## CHANGES
 
-1. ENhancing nested output to color code dictionary key levels if Rich in use
+1. Enhancing nested output to color code dictionary key levels if Rich in use
+
+## FEATURES
+
+1. Adding support for model `source_<field name>` method to accept `choice` argument that holds current variable value
+
+## BUGS
+
+1. Fixing handling of field source collection when has only one value for the variable
 
 ---
 

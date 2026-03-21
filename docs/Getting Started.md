@@ -233,5 +233,7 @@ PICLE reads lines until EOF (Ctrl+D), then joins them with newlines and validate
 
 If you want copy/paste starting points, the repository includes a couple of small runnable examples:
 
-- `test/docs_sample_app_1.py`: a tiny “show version/clock” shell
-- `test/config_app_example.py`: a complete `ConfigModel` configuration shell example
+- `docs_sample_app_1.py`: a tiny “show version/clock” shell
+- `config_app_example.py`: a complete `ConfigModel` configuration shell example
+
+Search for those filenames in the repository to find the runnable source files.

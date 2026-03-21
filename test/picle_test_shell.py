@@ -645,6 +645,20 @@ class DynamicDicktKeysModel(BaseModel):
         return kwargs
 
 
+class model_TestSourceWithChoice(BaseModel):
+    value: Union[StrictBool, StrictStr, None] = Field(None, description="Value to test")
+
+    @staticmethod
+    def source_value(choice):
+        if choice.startswith("foo"):
+            return ["foof", "foobar"]
+        else:
+            return [True, False, None, "foo", "bar"]
+
+    @staticmethod
+    def run(**kwargs):
+        return kwargs
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -725,6 +739,9 @@ class Root(BaseModel):
     test_parent_pipe: model_TestParentPipe = Field(
         None, description="Test parent pipe inheritance via backtracing"
     )
+    test_source_with_choice: model_TestSourceWithChoice = Field(
+        None, description="Test source method with choice argument"
+    )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -738,7 +755,7 @@ class Root(BaseModel):
         intro = "PICLE Sample app"
         newline = "\r\n"
         completekey = "tab"
-        use_rich = True
+        use_rich = False
 
 
 if __name__ == "__main__":
