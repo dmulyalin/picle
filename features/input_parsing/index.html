@@ -12,31 +12,31 @@
         <meta name="author" content="Denis Mulyalin">
       
       
-        <link rel="canonical" href="https://picle.github.io/changelog/">
+        <link rel="canonical" href="https://picle.github.io/features/input_parsing/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../field_aliases/">
       
       
-        <link rel="next" href="../Getting%20Started/">
+        <link rel="next" href="../pipes/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>Changelog - PICLE</title>
+        <title>Input Parsing - PICLE</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,9 +55,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#0112" class="md-skip">
+        <a href="#input-parsing" class="md-skip">
           Skip to content
         </a>
       
@@ -98,9 +98,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="PICLE" class="md-header__button md-logo" aria-label="PICLE" data-md-component="logo">
+    <a href="../.." title="PICLE" class="md-header__button md-logo" aria-label="PICLE" data-md-component="logo">
       
-  <img src="../images/logo_small.jpg" alt="logo">
+  <img src="../../images/logo_small.jpg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Changelog
+              Input Parsing
             
           </span>
         </div>
@@ -220,13 +220,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href=".." class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -244,7 +242,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../Getting%20Started/" class="md-tabs__link">
+      <a href="../../Getting%20Started/" class="md-tabs__link">
         
   
   
@@ -261,11 +259,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../features/command_discovery/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../command_discovery/" class="md-tabs__link">
           
   
   
@@ -283,7 +283,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../api_reference/" class="md-tabs__link">
+      <a href="../../api_reference/" class="md-tabs__link">
         
   
   
@@ -324,9 +324,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="PICLE" class="md-nav__button md-logo" aria-label="PICLE" data-md-component="logo">
+    <a href="../.." title="PICLE" class="md-nav__button md-logo" aria-label="PICLE" data-md-component="logo">
       
-  <img src="../images/logo_small.jpg" alt="logo">
+  <img src="../../images/logo_small.jpg" alt="logo">
 
     </a>
     PICLE
@@ -345,6 +345,148 @@
     </div>
   
   <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Overview
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Getting%20Started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
     
       
       
@@ -371,17 +513,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    Features
   
 
     
@@ -392,12 +534,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_1">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Overview
+    Features
   
 
           </label>
@@ -410,14 +552,42 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../command_discovery/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    Command Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../field_aliases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Aliases
   
 
     
@@ -454,7 +624,7 @@
   <span class="md-ellipsis">
     
   
-    Changelog
+    Input Parsing
   
 
     
@@ -472,7 +642,7 @@
   <span class="md-ellipsis">
     
   
-    Changelog
+    Input Parsing
   
 
     
@@ -498,10 +668,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#changes" class="md-nav__link">
+  <a href="#example-models" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CHANGES
+        Example Models
       
     </span>
   </a>
@@ -509,10 +679,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#quoted-values" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FEATURES
+        Quoted Values
       
     </span>
   </a>
@@ -520,10 +690,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bugs" class="md-nav__link">
+  <a href="#json-like-chunks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BUGS
+        JSON-like Chunks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#json-fields-preserve-raw-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Json[...] Fields Preserve Raw Input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-scalar-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Scalar Conversion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#repeating-a-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeating A Field
       
     </span>
   </a>
@@ -539,92 +742,6 @@
 
               
             
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Getting%20Started/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Getting Started
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Features
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Features
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
               
                 
   
@@ -632,91 +749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/command_discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Command Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/field_aliases/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Field Aliases
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/input_parsing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Input Parsing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/pipes/" class="md-nav__link">
+      <a href="../pipes/" class="md-nav__link">
         
   
   
@@ -744,7 +777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/filters_and_outputters/" class="md-nav__link">
+      <a href="../filters_and_outputters/" class="md-nav__link">
         
   
   
@@ -772,7 +805,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/fields_presence/" class="md-nav__link">
+      <a href="../fields_presence/" class="md-nav__link">
         
   
   
@@ -800,7 +833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/processors/" class="md-nav__link">
+      <a href="../processors/" class="md-nav__link">
         
   
   
@@ -828,7 +861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/multiline_input/" class="md-nav__link">
+      <a href="../multiline_input/" class="md-nav__link">
         
   
   
@@ -856,7 +889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/result_specific_outputters/" class="md-nav__link">
+      <a href="../result_specific_outputters/" class="md-nav__link">
         
   
   
@@ -884,7 +917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/subshells_and_navigation/" class="md-nav__link">
+      <a href="../subshells_and_navigation/" class="md-nav__link">
         
   
   
@@ -912,7 +945,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/mounting_models_at_runtime/" class="md-nav__link">
+      <a href="../mounting_models_at_runtime/" class="md-nav__link">
         
   
   
@@ -940,7 +973,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/configuration_model/" class="md-nav__link">
+      <a href="../configuration_model/" class="md-nav__link">
         
   
   
@@ -968,7 +1001,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/dynamic_dictionary_input/" class="md-nav__link">
+      <a href="../dynamic_dictionary_input/" class="md-nav__link">
         
   
   
@@ -1003,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api_reference/" class="md-nav__link">
+      <a href="../../api_reference/" class="md-nav__link">
         
   
   
@@ -1050,10 +1083,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#changes" class="md-nav__link">
+  <a href="#example-models" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CHANGES
+        Example Models
       
     </span>
   </a>
@@ -1061,10 +1094,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#quoted-values" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FEATURES
+        Quoted Values
       
     </span>
   </a>
@@ -1072,10 +1105,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bugs" class="md-nav__link">
+  <a href="#json-like-chunks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BUGS
+        JSON-like Chunks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#json-fields-preserve-raw-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Json[...] Fields Preserve Raw Input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-scalar-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Scalar Conversion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#repeating-a-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeating A Field
       
     </span>
   </a>
@@ -1102,126 +1168,111 @@
   
 
 
-<h1 id="0112">0.11.2</h1>
-<h2 id="changes">CHANGES</h2>
-<ol>
-<li>Enhancing nested output to color code dictionary key levels if Rich in use</li>
-</ol>
-<h2 id="features">FEATURES</h2>
-<ol>
-<li>Adding support for model <code>source_&lt;field name&gt;</code> method to accept <code>choice</code> argument that holds current variable value</li>
-</ol>
-<h2 id="bugs">BUGS</h2>
-<ol>
-<li>Fixing handling of field source collection when has only one value for the variable</li>
-</ol>
-<hr />
-<h1 id="0111">0.11.1</h1>
-<h2 id="features_1">FEATURES</h2>
-<ol>
-<li>Improving pipe handling back backtracing it to parents models, if <code>pipe</code> set to False on the model <code>PicleConfig</code>, backtracing disabled</li>
-<li>Adding support negate <code>no</code> command to configuraiton model, negate arguments are dynamically constructed for every model</li>
-<li>Adding <code>last</code> filter to pipe functions to return last N lines of output</li>
-</ol>
-<h2 id="enhancements">ENHANCEMENTS</h2>
-<ol>
-<li>Updating outputter_kv to support flatenning arbitrary nested structures .</li>
-<li>
-<p>Added dedicated model for each outputter with configurable arguments: </p>
-</li>
-<li>
-<p><code>PprintOutputterModel</code> indent, width, depth, compact, sort-dicts</p>
-</li>
-<li><code>JsonOutputterModel</code> indent, sort-keys, ensure-ascii, separators</li>
-<li><code>YamlOutputterModel</code> indent, absolute-indent, sort-keys, allow-unicode, width, default-flow-style</li>
-<li><code>KvOutputterModel</code> separator</li>
-<li><code>NestedOutputterModel</code> initial_indent, with_tables, tabulate_kwargs</li>
-</ol>
-<hr />
-<h1 id="0110">0.11.0</h1>
-<h2 id="features_2">FEATURES</h2>
-<ol>
-<li>Adding commands history persistency across shells, added <code>picle_file</code> config attribute to indicate where to store commands, default is <code>picle_history.txt</code></li>
-<li>Support added to handle parsing of cli commands into dynamic dictionaries, added <code>pkey</code> and <code>pkey_description</code> config parameters to <code>json_schema_extra</code></li>
-</ol>
-<h2 id="changes_1">CHANGES</h2>
-<ol>
-<li>Enhanced MAN model to output tree for dynamic dictionaries models</li>
-<li>Changing history handling to use <code>pyreadline</code> module</li>
-</ol>
-<hr />
-<h1 id="0101">0.10.1</h1>
-<h2 id="bugs_1">BUGS</h2>
-<ol>
-<li>MAN fixing examples output when examples are anything but string</li>
-</ol>
-<h2 id="changes_2">CHANGES</h2>
-<ol>
-<li>Making mandatory fields to be at the top of help output and in bold cursor</li>
-<li>To invoke multiline input mode changing command from <code>input</code> to <code>load-terminal</code></li>
-</ol>
-<h2 id="features_3">FEATURES</h2>
-<ol>
-<li>Adding <code>history</code> command to output commands history, adding <code>history_length</code> PicleConfig class config attribute</li>
-<li>Improving message back to a user for incorrect command with suggesting possible completions</li>
-<li>Enhancing errors output printed to the screen by making it to be printed in red color</li>
-</ol>
-<hr />
-<h1 id="0100">0.10.0</h1>
-<h2 id="changes_3">CHANGES</h2>
-<ol>
-<li>Dependencies updates to loosen them up</li>
-<li>Adding type hints throughout and updating doc strings</li>
-<li>Fixed pydantic warnings about model_fields access and about using extra arguments on fields</li>
-</ol>
-<h2 id="features_4">FEATURES</h2>
-<ol>
-<li>Added ConfigModel model to picle to help with maintaininng configuration files using Picle interactive shell.</li>
-</ol>
-<h2 id="bugs_2">BUGS</h2>
-<ol>
-<li><strong>init</strong> ~L97 -PicleConfig accessed without hasattr guard — crash for models without it</li>
-<li>do_help ~L855 - Multi-word help silently discarded — never printed</li>
-<li>do_help ~L857 - Unhandled FieldLooseMatchOnly/FieldKeyError exceptions</li>
-<li>print_model_help - Medium    width not computed for all lines keys — misaligned output</li>
-<li>default ~L1004 - Partial alias match reports empty completions list</li>
-<li>do_exit ~L872 - Missing PicleConfig guard on prompt access</li>
-<li>do_top ~L883 - Same missing guard</li>
-</ol>
-<hr />
-<h1 id="093">0.9.3</h1>
-<h2 id="changes_4">CHANGES</h2>
-<ol>
-<li>Improving outputter models handling</li>
-</ol>
-<hr />
-<h1 id="092">0.9.2</h1>
-<h2 id="changes_5">CHANGES</h2>
-<ol>
-<li>Improved value conversion logic to not convert values to integers or bool etc if field annotation is <code>str</code> or <code>StrictStr</code></li>
-<li>Updated <code>pyproject.toml</code> file with dependency version for PyYAML and Tabulate modules</li>
-</ol>
-<hr />
-<h1 id="091">0.9.1</h1>
-<h2 id="features_5">FEATURES</h2>
-<ol>
-<li>Extending nested outputter with capability to include tables within nested output if data is a list of dictionaries</li>
-</ol>
-<hr />
-<h1 id="090">0.9.0</h1>
-<h2 id="changes_6">CHANGES</h2>
-<ol>
-<li>Removed support for using <code>Callable</code> annotation for calling model method</li>
-<li>Removed formatters from built in models, instead need to use outputter</li>
-<li>Improved pipe functions handling logic </li>
-<li>Rich is now a default outputter, can be disabled using <code>use_rich</code> config parameter in the root's model PicleConfig </li>
-</ol>
-<h2 id="features_6">FEATURES</h2>
-<ol>
-<li>Added Tabulate table outputter</li>
-<li>Added <code>save</code> outputter to save results into a file</li>
-<li>Added support for pipe attribute to reference <code>path.to.pipemodel</code> Python import string</li>
-</ol>
+<h1 id="input-parsing">Input Parsing</h1>
+<p>PICLE does more than split on spaces.</p>
+<p><code>App.parse_command()</code> has special handling for quoted strings, JSON-like chunks, JSON fields, and scalar conversion.</p>
+<h2 id="example-models">Example Models</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Json</span><span class="p">,</span> <span class="n">StrictInt</span><span class="p">,</span> <span class="n">StrictStr</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RunCommand</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">command</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Command text&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PayloadCommand</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Json</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;JSON payload&quot;</span><span class="p">)</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Label&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LimitsCommand</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">retries</span><span class="p">:</span> <span class="n">StrictInt</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Retry count&quot;</span><span class="p">)</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Job name&quot;</span><span class="p">)</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Threshold&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BatchCommand</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">items</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">StrictStr</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">StrictStr</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Collect multiple items&quot;</span>
+    <span class="p">)</span>
+    <span class="n">tag</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Batch tag&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Root</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">run_command</span><span class="p">:</span> <span class="n">RunCommand</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;run-command&quot;</span><span class="p">)</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="n">PayloadCommand</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">limits</span><span class="p">:</span> <span class="n">LimitsCommand</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">batch</span><span class="p">:</span> <span class="n">BatchCommand</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="quoted-values">Quoted Values</h2>
+<p>Single quotes and double quotes let you pass multi-word values as a single field value.</p>
+<div class="highlight"><pre><span></span><code>picle#run-command command &#39;show version | match &quot;Juniper: &quot;&#39;
+{&#39;command&#39;: &#39;show version | match &quot;Juniper: &quot;&#39;}
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#run-command command &quot;hello world&quot;
+{&#39;command&#39;: &#39;hello world&#39;}
+</code></pre></div>
+<p>Double-quoted single-word values work too:</p>
+<div class="highlight"><pre><span></span><code>picle#run-command command &quot;hello&quot;
+{&#39;command&#39;: &#39;hello&#39;}
+</code></pre></div>
+<h2 id="json-like-chunks">JSON-like Chunks</h2>
+<p>If a value starts with <code>{</code> or <code>[</code>, PICLE keeps collecting tokens until it sees a token that ends with the matching closing bracket.</p>
+<p>That makes it possible to pass JSON-like text through the shell.</p>
+<div class="highlight"><pre><span></span><code>picle#payload data [1, 2, 3] label demo
+{&#39;data&#39;: &#39;[1, 2, 3]&#39;, &#39;label&#39;: &#39;demo&#39;}
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#payload data {&quot;person&quot;:{&quot;name&quot;:&quot;John&quot;,&quot;age&quot;:30}} label demo
+{&#39;data&#39;: &#39;{&quot;person&quot;:{&quot;name&quot;:&quot;John&quot;,&quot;age&quot;:30}}&#39;, &#39;label&#39;: &#39;demo&#39;}
+</code></pre></div>
+<h2 id="json-fields-preserve-raw-input"><code>Json[...]</code> Fields Preserve Raw Input</h2>
+<p><code>Json[...]</code> fields are special-cased in the parser.</p>
+<p>PICLE keeps the raw text instead of converting values like <code>true</code>, <code>false</code>, or <code>null</code> before Pydantic sees them.</p>
+<div class="highlight"><pre><span></span><code>picle#payload data true label demo
+{&#39;data&#39;: &#39;true&#39;, &#39;label&#39;: &#39;demo&#39;}
+
+picle#payload data false label demo
+{&#39;data&#39;: &#39;false&#39;, &#39;label&#39;: &#39;demo&#39;}
+
+picle#payload data null label demo
+{&#39;data&#39;: &#39;null&#39;, &#39;label&#39;: &#39;demo&#39;}
+</code></pre></div>
+<h2 id="automatic-scalar-conversion">Automatic Scalar Conversion</h2>
+<p>For non-<code>str</code> fields, PICLE tries a lightweight conversion pass before validation.</p>
+<ul>
+<li><code>True</code>, <code>False</code>, and <code>None</code> become Python values.</li>
+<li>Digit-only values become <code>int</code>.</li>
+<li>Values containing <code>.</code> are tried as <code>float</code>.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>picle#limits retries 3 threshold 3.14 name nightly
+{&#39;retries&#39;: 3, &#39;threshold&#39;: 3.14, &#39;name&#39;: &#39;nightly&#39;}
+</code></pre></div>
+<p>String fields keep their string representation:</p>
+<div class="highlight"><pre><span></span><code>picle#limits name 123
+{&#39;name&#39;: &#39;123&#39;}
+</code></pre></div>
+<h2 id="repeating-a-field">Repeating A Field</h2>
+<p>If your field accepts list-like input, you can repeat the field name to collect multiple values.</p>
+<div class="highlight"><pre><span></span><code>picle#batch items val1 items val2 items val3 tag nightly
+{&#39;items&#39;: [&#39;val1&#39;, &#39;val2&#39;, &#39;val3&#39;], &#39;tag&#39;: &#39;nightly&#39;}
+</code></pre></div>
+<p>Use this pattern when you want explicit, readable shell grammar for list input.</p>
 
 
 
@@ -1304,10 +1355,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

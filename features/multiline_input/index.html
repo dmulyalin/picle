@@ -265,7 +265,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../pipes/" class="md-tabs__link">
+        <a href="../command_discovery/" class="md-tabs__link">
           
   
   
@@ -552,6 +552,90 @@
   
   
     <li class="md-nav__item">
+      <a href="../command_discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../field_aliases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Aliases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../input_parsing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input Parsing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../pipes/" class="md-nav__link">
         
   
@@ -560,6 +644,34 @@
     
   
     Pipes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filters_and_outputters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filters and Outputters
   
 
     
@@ -682,6 +794,34 @@
     
   
     Result Specific Outputters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../subshells_and_navigation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subshells and Navigation
   
 
     
@@ -851,20 +991,20 @@
   
 
 
-<h1 id="multi-line-input">Multi-line input</h1>
-<p>If a field enables multi-line input, the user can type the literal value <code>input</code> to start collection.
-PICLE reads lines until EOF (Ctrl+D) and uses the collected text (joined by <code>\n</code>) as the field value.</p>
+<h1 id="multi-line-input">Multi-line Input</h1>
+<p>If a field enables multi-line input, the user can type the literal value <code>load-terminal</code> to start collection.</p>
+<p>PICLE reads lines until EOF (Ctrl+D) and uses the collected text (joined by <code>\n</code>) as the field value.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">StrictStr</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">TestMultilineInput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">data</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NotesCommand</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">body</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="kc">None</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multi line string&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multi-line note body&quot;</span><span class="p">,</span>
         <span class="n">json_schema_extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;multiline&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="n">arg</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Some field&quot;</span><span class="p">)</span>
+    <span class="n">title</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Note title&quot;</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -872,23 +1012,24 @@ PICLE reads lines until EOF (Ctrl+D) and uses the collected text (joined by <cod
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Root</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">test_multiline_input</span><span class="p">:</span> <span class="n">TestMultilineInput</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="n">NotesCommand</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="kc">None</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multi-line input demo&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Create a note&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
-<p>Help shows the <code>input</code> option when appropriate:</p>
-<div class="highlight"><pre><span></span><code>picle#test_multiline_input data ?
- &lt;&#39;data&#39; value&gt;    Multi line string
- input             Collect value using multi line input mode
+<p>Help shows the <code>load-terminal</code> option when appropriate:</p>
+<div class="highlight"><pre><span></span><code>picle#notes body ?
+ &lt;&#39;body&#39; value&gt;    Multi-line note body
+ load-terminal     Collect value using multi line input mode
 </code></pre></div>
 <p>Invoking multi-line collection:</p>
-<div class="highlight"><pre><span></span><code>picle#test_multiline_input data input arg foo
+<div class="highlight"><pre><span></span><code>picle#notes body load-terminal
 Enter lines and hit Ctrl+D to finish multi line input
 line 1
 line 2
 &lt;Ctrl+D&gt;
 </code></pre></div>
+<p>The collected value is then validated and passed to your callable as a single string containing embedded newlines.</p>
 
 
 

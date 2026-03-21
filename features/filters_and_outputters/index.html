@@ -12,31 +12,31 @@
         <meta name="author" content="Denis Mulyalin">
       
       
-        <link rel="canonical" href="https://picle.github.io/changelog/">
+        <link rel="canonical" href="https://picle.github.io/features/filters_and_outputters/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../pipes/">
       
       
-        <link rel="next" href="../Getting%20Started/">
+        <link rel="next" href="../fields_presence/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>Changelog - PICLE</title>
+        <title>Filters and Outputters - PICLE</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,9 +55,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#0112" class="md-skip">
+        <a href="#filters-and-outputters" class="md-skip">
           Skip to content
         </a>
       
@@ -98,9 +98,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="PICLE" class="md-header__button md-logo" aria-label="PICLE" data-md-component="logo">
+    <a href="../.." title="PICLE" class="md-header__button md-logo" aria-label="PICLE" data-md-component="logo">
       
-  <img src="../images/logo_small.jpg" alt="logo">
+  <img src="../../images/logo_small.jpg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Changelog
+              Filters and Outputters
             
           </span>
         </div>
@@ -220,13 +220,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href=".." class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -244,7 +242,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../Getting%20Started/" class="md-tabs__link">
+      <a href="../../Getting%20Started/" class="md-tabs__link">
         
   
   
@@ -261,11 +259,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../features/command_discovery/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../command_discovery/" class="md-tabs__link">
           
   
   
@@ -283,7 +283,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../api_reference/" class="md-tabs__link">
+      <a href="../../api_reference/" class="md-tabs__link">
         
   
   
@@ -324,9 +324,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="PICLE" class="md-nav__button md-logo" aria-label="PICLE" data-md-component="logo">
+    <a href="../.." title="PICLE" class="md-nav__button md-logo" aria-label="PICLE" data-md-component="logo">
       
-  <img src="../images/logo_small.jpg" alt="logo">
+  <img src="../../images/logo_small.jpg" alt="logo">
 
     </a>
     PICLE
@@ -345,6 +345,148 @@
     </div>
   
   <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Overview
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Getting%20Started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
     
       
       
@@ -371,17 +513,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    Features
   
 
     
@@ -392,12 +534,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_1">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Overview
+    Features
   
 
           </label>
@@ -410,14 +552,98 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../command_discovery/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    Command Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../field_aliases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Aliases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../input_parsing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input Parsing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipes
   
 
     
@@ -454,7 +680,7 @@
   <span class="md-ellipsis">
     
   
-    Changelog
+    Filters and Outputters
   
 
     
@@ -472,7 +698,7 @@
   <span class="md-ellipsis">
     
   
-    Changelog
+    Filters and Outputters
   
 
     
@@ -498,10 +724,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#changes" class="md-nav__link">
+  <a href="#enabling-built-in-pipe-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CHANGES
+        Enabling Built-in Pipe Functions
       
     </span>
   </a>
@@ -509,10 +735,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#filters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FEATURES
+        Filters
       
     </span>
   </a>
@@ -520,10 +746,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bugs" class="md-nav__link">
+  <a href="#structured-outputters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BUGS
+        Structured Outputters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markdown-and-save" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Markdown And Save
       
     </span>
   </a>
@@ -539,92 +787,6 @@
 
               
             
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../Getting%20Started/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Getting Started
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Features
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Features
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
               
                 
   
@@ -632,147 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/command_discovery/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Command Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/field_aliases/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Field Aliases
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/input_parsing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Input Parsing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/pipes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Pipes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/filters_and_outputters/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Filters and Outputters
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../features/fields_presence/" class="md-nav__link">
+      <a href="../fields_presence/" class="md-nav__link">
         
   
   
@@ -800,7 +822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/processors/" class="md-nav__link">
+      <a href="../processors/" class="md-nav__link">
         
   
   
@@ -828,7 +850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/multiline_input/" class="md-nav__link">
+      <a href="../multiline_input/" class="md-nav__link">
         
   
   
@@ -856,7 +878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/result_specific_outputters/" class="md-nav__link">
+      <a href="../result_specific_outputters/" class="md-nav__link">
         
   
   
@@ -884,7 +906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/subshells_and_navigation/" class="md-nav__link">
+      <a href="../subshells_and_navigation/" class="md-nav__link">
         
   
   
@@ -912,7 +934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/mounting_models_at_runtime/" class="md-nav__link">
+      <a href="../mounting_models_at_runtime/" class="md-nav__link">
         
   
   
@@ -940,7 +962,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/configuration_model/" class="md-nav__link">
+      <a href="../configuration_model/" class="md-nav__link">
         
   
   
@@ -968,7 +990,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../features/dynamic_dictionary_input/" class="md-nav__link">
+      <a href="../dynamic_dictionary_input/" class="md-nav__link">
         
   
   
@@ -1003,7 +1025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api_reference/" class="md-nav__link">
+      <a href="../../api_reference/" class="md-nav__link">
         
   
   
@@ -1050,10 +1072,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#changes" class="md-nav__link">
+  <a href="#enabling-built-in-pipe-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CHANGES
+        Enabling Built-in Pipe Functions
       
     </span>
   </a>
@@ -1061,10 +1083,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#filters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FEATURES
+        Filters
       
     </span>
   </a>
@@ -1072,10 +1094,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bugs" class="md-nav__link">
+  <a href="#structured-outputters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BUGS
+        Structured Outputters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#table-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markdown-and-save" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Markdown And Save
       
     </span>
   </a>
@@ -1102,126 +1146,163 @@
   
 
 
-<h1 id="0112">0.11.2</h1>
-<h2 id="changes">CHANGES</h2>
-<ol>
-<li>Enhancing nested output to color code dictionary key levels if Rich in use</li>
-</ol>
-<h2 id="features">FEATURES</h2>
-<ol>
-<li>Adding support for model <code>source_&lt;field name&gt;</code> method to accept <code>choice</code> argument that holds current variable value</li>
-</ol>
-<h2 id="bugs">BUGS</h2>
-<ol>
-<li>Fixing handling of field source collection when has only one value for the variable</li>
-</ol>
-<hr />
-<h1 id="0111">0.11.1</h1>
-<h2 id="features_1">FEATURES</h2>
-<ol>
-<li>Improving pipe handling back backtracing it to parents models, if <code>pipe</code> set to False on the model <code>PicleConfig</code>, backtracing disabled</li>
-<li>Adding support negate <code>no</code> command to configuraiton model, negate arguments are dynamically constructed for every model</li>
-<li>Adding <code>last</code> filter to pipe functions to return last N lines of output</li>
-</ol>
-<h2 id="enhancements">ENHANCEMENTS</h2>
-<ol>
-<li>Updating outputter_kv to support flatenning arbitrary nested structures .</li>
-<li>
-<p>Added dedicated model for each outputter with configurable arguments: </p>
-</li>
-<li>
-<p><code>PprintOutputterModel</code> indent, width, depth, compact, sort-dicts</p>
-</li>
-<li><code>JsonOutputterModel</code> indent, sort-keys, ensure-ascii, separators</li>
-<li><code>YamlOutputterModel</code> indent, absolute-indent, sort-keys, allow-unicode, width, default-flow-style</li>
-<li><code>KvOutputterModel</code> separator</li>
-<li><code>NestedOutputterModel</code> initial_indent, with_tables, tabulate_kwargs</li>
-</ol>
-<hr />
-<h1 id="0110">0.11.0</h1>
-<h2 id="features_2">FEATURES</h2>
-<ol>
-<li>Adding commands history persistency across shells, added <code>picle_file</code> config attribute to indicate where to store commands, default is <code>picle_history.txt</code></li>
-<li>Support added to handle parsing of cli commands into dynamic dictionaries, added <code>pkey</code> and <code>pkey_description</code> config parameters to <code>json_schema_extra</code></li>
-</ol>
-<h2 id="changes_1">CHANGES</h2>
-<ol>
-<li>Enhanced MAN model to output tree for dynamic dictionaries models</li>
-<li>Changing history handling to use <code>pyreadline</code> module</li>
-</ol>
-<hr />
-<h1 id="0101">0.10.1</h1>
-<h2 id="bugs_1">BUGS</h2>
-<ol>
-<li>MAN fixing examples output when examples are anything but string</li>
-</ol>
-<h2 id="changes_2">CHANGES</h2>
-<ol>
-<li>Making mandatory fields to be at the top of help output and in bold cursor</li>
-<li>To invoke multiline input mode changing command from <code>input</code> to <code>load-terminal</code></li>
-</ol>
-<h2 id="features_3">FEATURES</h2>
-<ol>
-<li>Adding <code>history</code> command to output commands history, adding <code>history_length</code> PicleConfig class config attribute</li>
-<li>Improving message back to a user for incorrect command with suggesting possible completions</li>
-<li>Enhancing errors output printed to the screen by making it to be printed in red color</li>
-</ol>
-<hr />
-<h1 id="0100">0.10.0</h1>
-<h2 id="changes_3">CHANGES</h2>
-<ol>
-<li>Dependencies updates to loosen them up</li>
-<li>Adding type hints throughout and updating doc strings</li>
-<li>Fixed pydantic warnings about model_fields access and about using extra arguments on fields</li>
-</ol>
-<h2 id="features_4">FEATURES</h2>
-<ol>
-<li>Added ConfigModel model to picle to help with maintaininng configuration files using Picle interactive shell.</li>
-</ol>
-<h2 id="bugs_2">BUGS</h2>
-<ol>
-<li><strong>init</strong> ~L97 -PicleConfig accessed without hasattr guard — crash for models without it</li>
-<li>do_help ~L855 - Multi-word help silently discarded — never printed</li>
-<li>do_help ~L857 - Unhandled FieldLooseMatchOnly/FieldKeyError exceptions</li>
-<li>print_model_help - Medium    width not computed for all lines keys — misaligned output</li>
-<li>default ~L1004 - Partial alias match reports empty completions list</li>
-<li>do_exit ~L872 - Missing PicleConfig guard on prompt access</li>
-<li>do_top ~L883 - Same missing guard</li>
-</ol>
-<hr />
-<h1 id="093">0.9.3</h1>
-<h2 id="changes_4">CHANGES</h2>
-<ol>
-<li>Improving outputter models handling</li>
-</ol>
-<hr />
-<h1 id="092">0.9.2</h1>
-<h2 id="changes_5">CHANGES</h2>
-<ol>
-<li>Improved value conversion logic to not convert values to integers or bool etc if field annotation is <code>str</code> or <code>StrictStr</code></li>
-<li>Updated <code>pyproject.toml</code> file with dependency version for PyYAML and Tabulate modules</li>
-</ol>
-<hr />
-<h1 id="091">0.9.1</h1>
-<h2 id="features_5">FEATURES</h2>
-<ol>
-<li>Extending nested outputter with capability to include tables within nested output if data is a list of dictionaries</li>
-</ol>
-<hr />
-<h1 id="090">0.9.0</h1>
-<h2 id="changes_6">CHANGES</h2>
-<ol>
-<li>Removed support for using <code>Callable</code> annotation for calling model method</li>
-<li>Removed formatters from built in models, instead need to use outputter</li>
-<li>Improved pipe functions handling logic </li>
-<li>Rich is now a default outputter, can be disabled using <code>use_rich</code> config parameter in the root's model PicleConfig </li>
-</ol>
-<h2 id="features_6">FEATURES</h2>
-<ol>
-<li>Added Tabulate table outputter</li>
-<li>Added <code>save</code> outputter to save results into a file</li>
-<li>Added support for pipe attribute to reference <code>path.to.pipemodel</code> Python import string</li>
-</ol>
+<h1 id="filters-and-outputters">Filters And Outputters</h1>
+<p>This page complements <a href="../pipes/">Pipes</a>.</p>
+<p><code>picle.models.PipeFunctionsModel</code> bundles ready-to-use filters and outputters that you can expose with <code>PicleConfig.pipe</code>.</p>
+<p>The same outputter callables can also be attached directly to fields or to <code>PicleConfig.outputter</code>.</p>
+<h2 id="enabling-built-in-pipe-functions">Enabling Built-in Pipe Functions</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">StrictStr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">picle.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipeFunctionsModel</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ShowCommands</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">joke</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Show a joke&quot;</span><span class="p">,</span>
+        <span class="n">json_schema_extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;show_joke&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Produce structured data&quot;</span><span class="p">,</span>
+        <span class="n">json_schema_extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;produce_data&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">inventory</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Produce tabular data&quot;</span><span class="p">,</span>
+        <span class="n">json_schema_extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;produce_inventory&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">show_joke</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">Why did the network engineer always carry a ladder?</span>
+
+<span class="s2">Because he wanted to reach the highest levels of connectivity.</span>
+
+<span class="s2">The End.</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">produce_data</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;some&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dictionary&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}},</span>
+            <span class="s2">&quot;more&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dictionary&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]},</span>
+            <span class="s2">&quot;even&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;more&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dictionary&quot;</span><span class="p">:</span> <span class="s2">&quot;data&quot;</span><span class="p">}},</span>
+            <span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">&quot;more&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dictionary&quot;</span><span class="p">:</span> <span class="s2">&quot;data&quot;</span><span class="p">}},</span>
+                <span class="p">{</span><span class="s2">&quot;more&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dictionary&quot;</span><span class="p">:</span> <span class="s2">&quot;data&quot;</span><span class="p">}},</span>
+            <span class="p">],</span>
+        <span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">produce_inventory</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;name3&quot;</span><span class="p">,</span> <span class="s2">&quot;key1&quot;</span><span class="p">:</span> <span class="s2">&quot;key1_value3&quot;</span><span class="p">,</span> <span class="s2">&quot;key2&quot;</span><span class="p">:</span> <span class="s2">&quot;key2_value3&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;name1&quot;</span><span class="p">,</span> <span class="s2">&quot;key1&quot;</span><span class="p">:</span> <span class="s2">&quot;key1_value1&quot;</span><span class="p">,</span> <span class="s2">&quot;key2&quot;</span><span class="p">:</span> <span class="s2">&quot;key2_value1&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;name2&quot;</span><span class="p">,</span> <span class="s2">&quot;key1&quot;</span><span class="p">:</span> <span class="s2">&quot;key1_value2&quot;</span><span class="p">,</span> <span class="s2">&quot;key2&quot;</span><span class="p">:</span> <span class="s2">&quot;key2_value2&quot;</span><span class="p">},</span>
+        <span class="p">]</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+        <span class="n">pipe</span> <span class="o">=</span> <span class="n">PipeFunctionsModel</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Notes</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Markdown or plain text&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+        <span class="n">pipe</span> <span class="o">=</span> <span class="n">PipeFunctionsModel</span>
+</code></pre></div>
+<h2 id="filters">Filters</h2>
+<p><code>PipeFunctionsModel</code> includes three text filters.</p>
+<ul>
+<li><code>include</code>: keep only lines that contain the requested pattern.</li>
+<li><code>exclude</code>: drop lines that contain the requested pattern.</li>
+<li><code>last</code>: keep only the last <code>N</code> lines.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>picle#show joke | include Why
+Why did the network engineer always carry a ladder?
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show joke | exclude Why
+ ... the line containing `Why` is removed ...
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show joke | last 1
+The End.
+</code></pre></div>
+<p>Filters are chainable:</p>
+<div class="highlight"><pre><span></span><code>picle#show joke | include d | exclude End
+</code></pre></div>
+<h2 id="structured-outputters">Structured Outputters</h2>
+<p>The built-in outputters cover common CLI presentation needs.</p>
+<ul>
+<li><code>pprint</code>: Python pretty-print formatting.</li>
+<li><code>json</code>: JSON with configurable indentation and sorting.</li>
+<li><code>yaml</code>: YAML output when <code>pyyaml</code> is installed.</li>
+<li><code>nested</code>: recursive nested formatting, optionally with tabulated lists.</li>
+<li><code>kv</code>: flatten nested data into <code>key.path: value</code> lines.</li>
+<li><code>table</code>: text tables via <code>tabulate</code>.</li>
+<li><code>rich-table</code>: Rich table rendering when Rich is installed.</li>
+<li><code>markdown</code>: Rich Markdown rendering when Rich is installed.</li>
+<li><code>save</code>: write output to a file.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>picle#show data | pprint
+{&#39;even&#39;: {&#39;more&#39;: {&#39;dictionary&#39;: &#39;data&#39;}}, ...}
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show data | json
+{
+    &quot;even&quot;: {
+        &quot;more&quot;: {
+            &quot;dictionary&quot;: &quot;data&quot;
+        }
+    },
+    ...
+}
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show data | yaml
+even:
+  more:
+    dictionary: data
+...
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show data | kv
+some.dictionary.data: None
+more.dictionary.0: data
+even.more.dictionary: data
+list.0.more.dictionary: data
+list.1.more.dictionary: data
+</code></pre></div>
+<p><code>yaml</code> requires <code>pyyaml</code>. <code>table</code> requires <code>tabulate</code>. <code>rich-table</code> and <code>markdown</code> require <code>rich</code>.</p>
+<h2 id="table-output">Table Output</h2>
+<p>The <code>table</code> outputter is a pipe model with its own fields.</p>
+<div class="highlight"><pre><span></span><code>picle#show inventory | table
++----+--------+-------------+-------------+
+|    | name   | key1        | key2        |
++====+========+=============+=============+
+|  1 | name3  | key1_value3 | key2_value3 |
+|  2 | name1  | key1_value1 | key2_value1 |
+|  3 | name2  | key1_value2 | key2_value2 |
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show inventory | table tablefmt plain
+name    key1         key2
+ 1  name3   key1_value3  key2_value3
+ 2  name1   key1_value1  key2_value1
+ 3  name2   key1_value2  key2_value2
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show inventory | table sortby name reverse
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#show inventory | table headers-exclude key2
+</code></pre></div>
+<h2 id="markdown-and-save">Markdown And Save</h2>
+<p>Any pipe-enabled command that returns text can be rendered as Markdown or saved to disk.</p>
+<div class="highlight"><pre><span></span><code>picle#notes text &quot;# Hello World&quot; | markdown
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>picle#notes text &quot;hello&quot; | save .\output.txt
+</code></pre></div>
+<p><code>save</code> creates parent directories if needed, writes the data to the requested file, and still returns the original result.</p>
 
 
 
@@ -1304,10 +1385,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
