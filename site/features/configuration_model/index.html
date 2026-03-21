@@ -265,7 +265,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../pipes/" class="md-tabs__link">
+        <a href="../command_discovery/" class="md-tabs__link">
           
   
   
@@ -552,6 +552,90 @@
   
   
     <li class="md-nav__item">
+      <a href="../command_discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../field_aliases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Aliases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../input_parsing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input Parsing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../pipes/" class="md-nav__link">
         
   
@@ -560,6 +644,34 @@
     
   
     Pipes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filters_and_outputters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filters and Outputters
   
 
     
@@ -672,6 +784,34 @@
     
   
     Result Specific Outputters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../subshells_and_navigation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subshells and Navigation
   
 
     
@@ -1137,7 +1277,7 @@ class MyConfigStore(ConfigModel):
     )
     class PicleConfig:
         subshell = True
-        prompt = &quot;test-config-shell[cfg]#&quot;
+        prompt = &quot;config-shell[cfg]#&quot;
         config_file = &quot;app_config.yaml&quot;  # Default config file path
 
 
@@ -1155,7 +1295,7 @@ class RootShell(BaseModel):
 
     class PicleConfig:
         pipe = PipeFunctionsModel
-        prompt = &quot;test-config-shell#&quot;
+        prompt = &quot;config-shell#&quot;
 
 
 # --------------------------------------------------------------------------------
@@ -1168,7 +1308,7 @@ if __name__ == &quot;__main__&quot;:
     shell.start()
 </code></pre></div>
 <p>Above app constructs shell with this commands tree:</p>
-<div class="highlight"><pre><span></span><code>test-config-shell#man tree configure_terminal
+<div class="highlight"><pre><span></span><code>config-shell#man tree configure_terminal
 
 R - required field, M - supports multiline input, D - dynamic key
 
@@ -1194,19 +1334,19 @@ root
         ├── timeout:    Worker timeout in seconds
         ├── num_threads:    Number of worker threads
         └── use_cache:    Whether to use cache for worker results
-test-config-shell#
+config-shell#
 </code></pre></div>
 <p>And above shell can be used like this:</p>
-<div class="highlight"><pre><span></span><code>test-config-shell#configure_terminal
-test-config-shell[cfg]#workers ?
+<div class="highlight"><pre><span></span><code>config-shell#configure_terminal
+config-shell[cfg]#workers ?
  &lt;worker_name&gt;    Name of the worker
-test-config-shell[cfg]#workers worker-1 ?
+config-shell[cfg]#workers worker-1 ?
  num_threads    Number of worker threads
  timeout        Worker timeout in seconds
  use_cache      Whether to use cache for worker results
-test-config-shell[cfg]#workers worker-1 num_threads 1 timeout 1 use_cache True
+config-shell[cfg]#workers worker-1 num_threads 1 timeout 1 use_cache True
 Configuration updated (uncommitted). Use &#39;commit&#39; to save or &#39;show changes&#39; to review.
-test-config-shell[cfg]#show changes
+config-shell[cfg]#show changes
 --- app_config.yaml
 +++ app_config.yaml.tmp
 @@ -1 +1,6 @@
@@ -1217,19 +1357,19 @@ test-config-shell[cfg]#show changes
 +    timeout: 1
 +    use_cache: true
 +    worker_name: worker-1
-test-config-shell[cfg]#commit
+config-shell[cfg]#commit
 Configuration committed successfully
-test-config-shell[cfg]#exit
-test-config-shell#
+config-shell[cfg]#exit
+config-shell#
 </code></pre></div>
 <h2 id="negating-configuration-the-no-command">Negating configuration — the <code>no</code> command</h2>
 <p>Every <code>ConfigModel</code> subclass automatically gains a <code>no</code> command that mirrors the full configuration field tree. It provides the same tab-completion as regular set commands and lets you delete individual keys or entire sub-trees from the staged configuration.</p>
 <p>Changes made with <code>no</code> are written to the temp file (same as regular set commands) and only become permanent after <code>commit</code>.</p>
 <h3 id="deleting-a-specific-leaf-field">Deleting a specific leaf field</h3>
 <p>Name one or more leaf fields after the path to remove those keys only:</p>
-<div class="highlight"><pre><span></span><code>test-config-shell[cfg]#no workers worker-1 timeout
+<div class="highlight"><pre><span></span><code>config-shell[cfg]#no workers worker-1 timeout
 Configuration negated (uncommitted). Use &#39;commit&#39; to save or &#39;show changes&#39; to review.
-test-config-shell[cfg]#show changes
+config-shell[cfg]#show changes
 --- app_config.yaml
 +++ app_config.yaml.tmp
 @@ -1,6 +1,5 @@
@@ -1239,17 +1379,17 @@ test-config-shell[cfg]#show changes
 -    timeout: 1
      use_cache: true
      worker_name: worker-1
-test-config-shell[cfg]#commit
+config-shell[cfg]#commit
 Configuration committed successfully
 </code></pre></div>
 <p>Multiple leaf fields can be removed in a single command:</p>
-<div class="highlight"><pre><span></span><code>test-config-shell[cfg]#no workers worker-1 timeout num_threads
+<div class="highlight"><pre><span></span><code>config-shell[cfg]#no workers worker-1 timeout num_threads
 </code></pre></div>
 <h3 id="deleting-an-entire-sub-tree">Deleting an entire sub-tree</h3>
 <p>Omit leaf fields and the whole node is removed:</p>
-<div class="highlight"><pre><span></span><code>test-config-shell[cfg]#no workers worker-1
+<div class="highlight"><pre><span></span><code>config-shell[cfg]#no workers worker-1
 Configuration negated (uncommitted). Use &#39;commit&#39; to save or &#39;show changes&#39; to review.
-test-config-shell[cfg]#show changes
+config-shell[cfg]#show changes
 --- app_config.yaml
 +++ app_config.yaml.tmp
 @@ -1,6 +1 @@
@@ -1260,7 +1400,7 @@ test-config-shell[cfg]#show changes
 -    use_cache: true
 -    worker_name: worker-1
 +{}
-test-config-shell[cfg]#commit
+config-shell[cfg]#commit
 Configuration committed successfully
 </code></pre></div>
 
