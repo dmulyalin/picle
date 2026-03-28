@@ -200,6 +200,8 @@ config-shell[cfg]#exit
 config-shell#
 ```
 
+For comprehensive example refer [configuration app in test folder of PICLE repository](https://github.com/dmulyalin/picle/blob/master/test/example_config_app.py)
+
 ## Negating configuration — the `no` command
 
 Every `ConfigModel` subclass automatically gains a `no` command that mirrors the full configuration field tree. It provides the same tab-completion as regular set commands and lets you delete individual keys or entire sub-trees from the staged configuration.

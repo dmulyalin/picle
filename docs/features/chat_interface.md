@@ -49,6 +49,8 @@ picle#
 
 The loop continues until the user presses **Ctrl+D** (EOF) or types `/exit`.
 
+For comprehensive chat app example refer to [sample chat app in PICLE test folder](https://github.com/dmulyalin/picle/blob/master/test/example_chat_app.py)
+
 ## PicleConfig options
 
 | Option | Default | Description |
