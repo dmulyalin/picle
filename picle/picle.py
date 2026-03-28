@@ -423,45 +423,38 @@ class App(cmd.Cmd):
                     multiline_buffer.append(line)
             self._save_collected_value(field, "\n".join(multiline_buffer), replace=True)
 
-    def _run_chat(
+    def _run_chat_shell(
         self,
         run_function: callable,
         kw: dict,
-        field_name: str,
-        json_schema_extra: dict,
+        picle_config: Any,
+        chat_commands_model: Any,
     ) -> Optional[bool]:
         """
-        Run an interactive chat loop.
+        Run an interactive chat shell with mounted command model.
 
         Repeatedly prompts the user for input and calls the run function with
-        each line. Lines starting with the command prefix (default ``/``) are
-        dispatched to the PICLE shell. The loop exits on ``Ctrl+D`` (EOF) or
-        when the user types the ``/exit`` command.
-
-        If the run function returns ``None`` or ``True``, the chat loop exits
-        and the value is returned to the caller (``default()``).
+        each line as the first positional argument. Lines starting with `/` are
+        dispatched to the chat_commands_model. Exits on Ctrl+D or `/exit`.
 
         Args:
             run_function: The function to call for each user message.
             kw: Base keyword arguments to pass to the function.
-            field_name: The name of the field that receives the user message.
-            json_schema_extra: The json_schema_extra dict of the chat field.
+            picle_config: The PicleConfig instance for chat settings.
+            chat_commands_model: The Pydantic model class for `/` commands.
 
         Returns:
-            Optional[bool]: None or True to signal the shell should exit,
-                False otherwise.
+            Optional[bool]: None or True to signal the shell should exit.
         """
         self.is_chat = True
-        chat_prompt = json_schema_extra.get("chat_prompt", "> ")
+        chat_prompt = getattr(picle_config, "chat_prompt", "> ")
+        response_style = getattr(picle_config, "chat_response_style", None)
+        response_prefix = getattr(picle_config, "chat_response_prefix", "")
         cmd_prefix = "/"
-        response_style = json_schema_extra.get("chat_response_style")
-        response_prefix = json_schema_extra.get("chat_response_prefix", "")
-        outputter = json_schema_extra.get("outputter")
-        outputter_kwargs = json_schema_extra.get("outputter_kwargs", {})
 
         while True:
             try:
-                line = input(chat_prompt)
+                line = input(chat_prompt).strip()
             except EOFError:
                 self.stdout.write(self.newline)
                 break
@@ -469,39 +462,29 @@ class App(cmd.Cmd):
                 self.stdout.write(self.newline)
                 return True
 
-            if not line.strip():
+            if not line:
                 continue
 
-            # dispatch /commands to PICLE shell
+            # dispatch /commands to the chat_commands_model
             if line.startswith(cmd_prefix):
-                picle_command = line[len(cmd_prefix):].strip()
-                if picle_command.lower() == "exit":
+                picle_command = line[len(cmd_prefix) :]
+                if picle_command == "exit":
+                    self.do_exit(picle_command)
                     break
                 self.onecmd(picle_command)
                 continue
 
-            # call the function with user input
-            chat_kw = {**kw, field_name: line}
+            # call the function with user input as first positional arg
             try:
-                ret = run_function(**chat_kw)
+                ret = run_function(line, **kw)
             except Exception as e:
                 self.write_error(str(e))
                 continue
 
-            # exit chat if ret is None or True - relay to default()
-            if ret is None:
+            # exit chat if ret is None or True
+            if ret in [None, True]:
                 self.is_chat = False
-                return None
-            if ret is True:
-                return True
-
-
-            # support (result, outputter) and (result, outputter, kwargs) tuples
-            if isinstance(ret, tuple) and len(ret) == 2:
-                ret, outputter = ret
-                outputter_kwargs = {}
-            elif isinstance(ret, tuple) and len(ret) == 3:
-                ret, outputter, outputter_kwargs = ret
+                return ret
 
             # streaming: if ret is a generator/iterator, print chunks as they arrive
             if hasattr(ret, "__next__"):
@@ -515,15 +498,12 @@ class App(cmd.Cmd):
                     pass
                 self.stdout.write(self.newline)
                 self.stdout.flush()
-            elif callable(outputter):
-                self.write(outputter(ret, **outputter_kwargs))
             elif ret:
                 text = f"{response_prefix}{ret}" if response_prefix else ret
-                # apply Rich styling only when Rich is available
                 if response_style and self.use_rich and HAS_RICH:
                     text = f"[{response_style}]{text}[/{response_style}]"
                 self.write(text)
-        
+
         self.is_chat = False
 
     def build_command_data(self, models: list) -> dict:
@@ -835,14 +815,6 @@ class App(cmd.Cmd):
             value = current_field["json_schema_extra"]["presence"]
             self._save_collected_value(current_field, value)
 
-        # check chat for last parameter - treat like presence, set value to True
-        if (
-            is_help is False
-            and current_field.get("values") is ...
-            and "chat" in current_field.get("json_schema_extra", {})
-        ):
-            self._save_collected_value(current_field, True)
-
         # iterate over collected models and fields to see
         # if need to collect multi-line input
         if collect_multiline:
@@ -1003,8 +975,8 @@ class App(cmd.Cmd):
         """
         fieldnames = []
         try:
-            if line.strip().startswith("/") and self.is_chat:
-                line = line.strip().lstrip("/")
+            if self.is_chat and line.lstrip().startswith("/"):
+                line = line.lstrip("/").lstrip()
             command_models = self.parse_command(line, is_help=True)
             last_model = command_models[-1][-1]["model"]
             # check if last model has fields collected
@@ -1208,6 +1180,8 @@ class App(cmd.Cmd):
         """Exit to top shell, resetting the shell stack."""
         if "?" in arg:
             self.write(" top    Exit to top shell")
+        elif self.is_chat:
+            self.write("top command not supported in chat mode")
         else:
             self.shell = self.shells[0]
             if hasattr(self.shell, "PicleConfig") and getattr(
@@ -1477,31 +1451,23 @@ class App(cmd.Cmd):
                     if not self._validate_values(command):
                         return
 
-                    # check if chat mode is requested - after validation
-                    if json_schema_extra.get("chat"):
-                        chat_value = json_schema_extra["chat"]
+                    # check if chat shell mode is requested - after validation
+                    if getattr(picle_config, "chat_shell", None) is True:
+                        chat_commands_model = getattr(
+                            picle_config, "chat_commands_model", None
+                        )
+                        if chat_commands_model:
+                            self.shell = chat_commands_model
+                            self.shells.append(chat_commands_model)
                         kw = {}
-                        if callable_expects_argument(run_function, "shell_command"):
-                            kw["shell_command"] = command
-                        if callable_expects_argument(run_function, "root_model"):
-                            kw["root_model"] = self.root
-                        if callable_expects_argument(run_function, "picle_app"):
-                            kw["picle_app"] = self
                         kw.update(self.shell_defaults)
                         kw.update(command_defaults)
                         kw.update(command_arguments)
-                        # "chat": "arg_name" maps input to that kwarg
-                        # "chat": True defaults to "message"
-                        field_name = (
-                            chat_value
-                            if isinstance(chat_value, str)
-                            else "message"
-                        )
-                        return self._run_chat(
+                        return self._run_chat_shell(
                             run_function=run_function,
                             kw=kw,
-                            field_name=field_name,
-                            json_schema_extra=json_schema_extra,
+                            picle_config=picle_config,
+                            chat_commands_model=chat_commands_model,
                         )
 
                     # build kwargs and call the method

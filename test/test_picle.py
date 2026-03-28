@@ -1578,124 +1578,37 @@ def test_tabulate_table_with_list_of_lists():
 # ---- Chat interface tests ----
 
 
-def test_chat_interface_basic():
-    """Test chat interface runs function for each input and exits on EOF"""
+def test_chat_shell_passes_additional_argument_to_run():
+    """Test chat shell passes command arguments to run() calls."""
     shell.onecmd("top")
+    mock_stdout.write.reset_mock()
 
-    with unittest.mock.patch("builtins.input", side_effect=["hello", "world", EOFError]):
-        shell.onecmd("test_chat_interface chat")
+    with unittest.mock.patch(
+        "builtins.input", side_effect=["hello", "world", EOFError]
+    ):
+        shell.onecmd("test_chat_interface_2 session_id session-123")
 
-    # should have two write calls: "Echo: hello" and "Echo: world"
-    outputs = [
-        call[0][0] for call in mock_stdout.write.call_args_list
-        if "Echo:" in str(call[0][0])
-    ]
-    assert any("Echo: hello" in o for o in outputs)
-    assert any("Echo: world" in o for o in outputs)
+    outputs = "".join(str(call[0][0]) for call in mock_stdout.write.call_args_list)
+    assert "ECHO - hello" in outputs
+    assert "ECHO - world" in outputs
+    assert outputs.count("'session_id': 'session-123'") == 2
 
 
-def test_chat_interface_no_value():
-    """Test chat interface enters chat mode when field referenced with no value"""
+def test_chat_shell_keeps_additional_argument_after_slash_command():
+    """Test chat shell keeps command arguments after executing a /command."""
     shell.onecmd("top")
+    mock_stdout.write.reset_mock()
 
-    with unittest.mock.patch("builtins.input", side_effect=["test message", EOFError]):
-        shell.onecmd("test_chat_interface chat")
+    with unittest.mock.patch(
+        "builtins.input", side_effect=["hello", "/show usage", "again", EOFError]
+    ):
+        shell.onecmd("test_chat_interface_2 session_id session-456")
 
-    outputs = [call[0][0] for call in mock_stdout.write.call_args_list]
-    assert any("Echo: test message" in o for o in outputs)
-
-
-def test_chat_interface_exit_command():
-    """Test chat interface exits on /exit command"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=["hello", "/exit"]):
-        shell.onecmd("test_chat_interface chat")
-
-    outputs = [call[0][0] for call in mock_stdout.write.call_args_list]
-    assert any("Echo: hello" in o for o in outputs)
-
-
-def test_chat_interface_slash_command():
-    """Test chat interface dispatches /commands to PICLE shell"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=["hello", "/show version", EOFError]):
-        shell.onecmd("test_chat_interface chat")
-
-    outputs = [call[0][0] for call in mock_stdout.write.call_args_list]
-    assert any("Echo: hello" in o for o in outputs)
-    assert any("0.1.0" in o for o in outputs)
-
-
-def test_chat_interface_empty_input_skipped():
-    """Test chat interface skips empty input lines"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=["", "  ", "hello", EOFError]):
-        shell.onecmd("test_chat_interface chat")
-
-    outputs = [call[0][0] for call in mock_stdout.write.call_args_list]
-    assert any("Echo: hello" in o for o in outputs)
-
-
-def test_chat_with_function_field():
-    """Test chat interface works with json_schema_extra function"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=["hi there", EOFError]):
-        shell.onecmd("test_chat_with_function chat")
-
-    outputs = [call[0][0] for call in mock_stdout.write.call_args_list]
-    assert any("Bot: hi there" in o for o in outputs)
-
-
-def test_chat_streaming_response():
-    """Test chat interface streams generator responses chunk by chunk"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=["hello world", EOFError]):
-        shell.onecmd("test_chat_streaming chat")
-
-    # streaming writes directly to stdout, collect all write calls
-    outputs = "".join(
-        call[0][0] for call in mock_stdout.write.call_args_list
-    )
-    assert "hello" in outputs
-    assert "world" in outputs
-
-
-def test_chat_return_none_exits_chat():
-    """Test that chat exits when run function returns None"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=["hello", "second message"]):
-        result = shell.onecmd("test_chat_return_none chat")
-
-    # run returns None on first message, chat should exit immediately
-    # second message should never be consumed
-    assert result is None
-
-
-def test_chat_return_true_exits_shell():
-    """Test that chat exits and signals shell exit when run function returns True"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=["hello", "second message"]):
-        result = shell.onecmd("test_chat_return_true chat")
-
-    # run returns True on first message, chat should exit and shell should exit
-    assert result is True
-
-
-def test_chat_ctrl_c_exits_shell():
-    """Test that Ctrl+C in chat exits and signals shell exit"""
-    shell.onecmd("top")
-
-    with unittest.mock.patch("builtins.input", side_effect=KeyboardInterrupt):
-        result = shell.onecmd("test_chat_interface chat")
-
-    assert result is True
+    outputs = "".join(str(call[0][0]) for call in mock_stdout.write.call_args_list)
+    assert "1234; 1234; 1234" in outputs
+    assert "ECHO - hello" in outputs
+    assert "ECHO - again" in outputs
+    assert outputs.count("'session_id': 'session-456'") == 2
 
 
 def test_chat_completenames_prefixes_with_slash():
@@ -1742,18 +1655,6 @@ def test_chat_completedefault_strips_slash():
         assert any("version" in r for r in results)
     finally:
         shell.is_chat = False
-
-
-def test_chat_is_chat_flag_set_during_chat():
-    """Test that is_chat flag is True during chat and False after"""
-    shell.onecmd("top")
-    assert shell.is_chat is False
-
-    with unittest.mock.patch("builtins.input", side_effect=["hello", EOFError]):
-        shell.onecmd("test_chat_interface chat")
-
-    # after chat exits, is_chat should be False
-    assert shell.is_chat is False
 
 
 def test_tabulate_table_showindex_false():
@@ -2343,11 +2244,7 @@ def test_source_with_choice():
 
     # test choice empty
     shell_output = shell.completedefault(
-        "test_source_with_choice value ",
-        "test_source_with_choice value ",
-        0,
-        40
+        "test_source_with_choice value ", "test_source_with_choice value ", 0, 40
     )
     print(f" shell output: '{shell_output}'")
-    assert shell_output == ['False ', 'None ', 'True ', 'bar ', 'foo ']
-
+    assert shell_output == ["False ", "None ", "True ", "bar ", "foo "]

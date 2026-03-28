@@ -3,50 +3,42 @@
 The chat interface provides an interactive loop where a user sends messages
 and receives responses, similar to chatting with an AI agent or LLM.
 
-Enable it by setting `"chat"` in a field's `json_schema_extra`. The chat
-field behaves like `presence` — when the user types the field name with no
-value, it is set to `True` and the command passes through Pydantic
-validation before entering the chat loop.
+Enable it by setting `chat_shell = True` in a model's `PicleConfig` inner
+class. When the user invokes that model without arguments PICLE enters the
+chat loop and repeatedly prompts for input, passing each line as the first
+positional argument to the model's `run` method.
 
-The `"chat"` value controls which parameter of the `run` method receives
-the user's message:
-
-- `"chat": True` — passes user input as `message` (default argument name).
-- `"chat": "message"` — same as above, explicitly naming the argument.
-- `"chat": "prompt"` — passes user input as `prompt` keyword argument.
+Lines starting with `/` are dispatched to a dedicated command model
+(`chat_commands_model`) instead of the chat function. `/exit` always exits
+the loop and returns to the normal shell prompt.
 
 ## Basic example
 
 ```python
-from typing import Any
 from pydantic import BaseModel, Field
 from picle import App
 
 
-class ChatCommand(BaseModel):
-    chat: Any = Field(
-        None,
-        description="Start a chat session",
-        json_schema_extra={
-            "chat": "message",
-            "chat_prompt": "You> ",
-        },
-    )
+class AgentModel(BaseModel):
+    model: str = Field(None, description="LLM model name")
 
     @staticmethod
-    def run(message: str = None, **kwargs):
+    def run(message, **kwargs):
         # Replace with your LLM / agent call
         return f"Assistant: I received '{message}'"
 
+    class PicleConfig:
+        chat_shell = True
+        chat_prompt = "You> "
+        chat_commands_model = None   # set to a model for /commands support
+
 
 class Root(BaseModel):
-    agent: ChatCommand = Field(None, description="AI agent")
+    agent: AgentModel = Field(None, description="AI agent chat")
 ```
 
-Starting the chat:
-
 ```
-picle#agent chat
+picle# agent
 You> Hello!
 Assistant: I received 'Hello!'
 You> How are you?
@@ -57,82 +49,71 @@ picle#
 
 The loop continues until the user presses **Ctrl+D** (EOF) or types `/exit`.
 
-!!! note
-    The chat field type should be `Any` (not `StrictStr`) since entering
-    chat mode sets the field value to `True` for validation purposes.
+## PicleConfig options
 
-## json_schema_extra keys
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `chat` | — | Set to `"message"` (or any string) to map user input to that `run` parameter, or `True` to default to `"message"`. Behaves like `presence` — sets the field value to `True` when no value is provided. |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `chat_shell` | `False` | Set to `True` to enable chat loop when the model is invoked. |
 | `chat_prompt` | `"> "` | Prompt string shown before each user input. |
-| `chat_response_style` | `None` | Rich markup style applied to responses (e.g. `"green"`, `"bold cyan"`). Only used when Rich is available; no styling is applied otherwise. |
+| `chat_response_style` | `None` | Rich markup style applied to responses (e.g. `"green"`, `"bold cyan"`). Only used when Rich is installed. |
 | `chat_response_prefix` | `""` | Text prepended to each response (e.g. `"AI> "`). |
+| `chat_commands_model` | `None` | Pydantic model class whose fields are available as `/commands` inside the chat loop. |
 
 ## Slash commands
 
-Lines that start with `/` are dispatched to the PICLE shell instead of the
-chat function. This lets you run any shell command
-without leaving the chat:
+Lines that start with `/` are dispatched to `chat_commands_model` instead
+of the chat function. This lets users run sub-commands without leaving
+the chat:
 
 ```
 You> tell me a joke
 Assistant: Why did the programmer quit? Because he didn't get arrays.
-You> /show version
-0.1.0
-You> /help
-...
+You> /show usage
+1234; 1234; 1234
 You> /exit
 picle#
 ```
 
-`/exit` exits the chat loop and returns to the normal shell prompt.
-
-## Using a custom function
-
-You can combine `"chat"` with `"function"` to call a specific staticmethod
-instead of `run`:
+`/exit` always exits the chat loop. `chat_commands_model` must be provided
+for any other slash commands to work.
 
 ```python
-class AgentChat(BaseModel):
-    invoke: Any = Field(
-        None,
-        description="Talk to the agent",
-        json_schema_extra={
-            "chat": "message",
-            "function": "ask_agent",
-            "chat_prompt": "agent> ",
-        },
-    )
+class ShowCommands(BaseModel):
+    usage: Any = Field(None, json_schema_extra={"function": "show_usage"})
 
     @staticmethod
-    def ask_agent(message: str = None, **kwargs):
-        return f"Agent says: {message}"
+    def show_usage():
+        return "1234; 1234; 1234"
+
+
+class AgentModel(BaseModel):
+    model: str = Field(None, description="LLM model name")
+
+    @staticmethod
+    def run(message, **kwargs):
+        return f"Echo: {message}"
+
+    class PicleConfig:
+        chat_shell = True
+        chat_commands_model = ShowCommands
 ```
 
 ## Rich styled responses
 
 When Rich is installed and `use_rich` is enabled, you can style agent
-responses to visually distinguish them from user input. If Rich is not
-available, no styling is applied — the response prints as plain text.
+responses to visually distinguish them from user input.
 
 ```python
-class StyledChat(BaseModel):
-    chat: Any = Field(
-        None,
-        description="Chat with styled output",
-        json_schema_extra={
-            "chat": "message",
-            "chat_prompt": "You> ",
-            "chat_response_style": "green",
-            "chat_response_prefix": "AI> ",
-        },
-    )
-
+class AgentModel(BaseModel):
     @staticmethod
-    def run(message: str = None, **kwargs):
+    def run(message, **kwargs):
         return f"I received: {message}"
+
+    class PicleConfig:
+        chat_shell = True
+        chat_prompt = "You> "
+        chat_response_style = "green"
+        chat_response_prefix = "AI> "
 ```
 
 ```
@@ -144,121 +125,51 @@ You>
 Any Rich console markup style is supported: `"bold cyan"`, `"italic yellow"`,
 `"dim"`, etc.
 
-## Accessing the App instance
-
-If your chat function needs access to the PICLE app (for example to call
-other commands programmatically), declare a `picle_app` parameter:
-
-```python
-@staticmethod
-def run(message: str = None, picle_app=None, **kwargs):
-    # picle_app is the App instance
-    ...
-```
-
-The same mechanism works for `root_model` and `shell_command`.
-
-## Result specific outputters
-
-The `run` method can return a tuple to override how the response is
-displayed, exactly like regular PICLE commands:
-
-- `(result, outputter)` — use a custom outputter callable.
-- `(result, outputter, outputter_kwargs)` — outputter with extra keyword arguments.
-
-```python
-from picle.models import Outputters
-
-
-class AgentChat(BaseModel):
-    chat: Any = Field(
-        None,
-        description="Chat with agent",
-        json_schema_extra={"chat": "message"},
-    )
-
-    @staticmethod
-    def run(message: str = None, **kwargs):
-        response = {"role": "assistant", "content": f"Reply to: {message}"}
-        return response, Outputters.outputter_rich_json
-```
-
-This works the same way as
-[Result Specific Outputters](result_specific_outputters.md) for regular
-commands — the chat loop applies the returned outputter to each response.
-
 ## Streaming responses
 
-If the `run` method returns a **generator** (or any iterator), the chat loop
-prints each chunk to stdout as it arrives rather than waiting for the full
-response. This is essential for LLM integrations where tokens are produced
-incrementally.
+If `run` returns a generator (or any iterator), the chat loop writes each
+chunk to stdout as it arrives instead of waiting for the full response.
 
 ```python
-class StreamingChat(BaseModel):
-    chat: Any = Field(
-        None,
-        description="Chat with streaming",
-        json_schema_extra={"chat": "message"},
-    )
-
+class StreamingAgent(BaseModel):
     @staticmethod
-    def run(message: str = None, **kwargs):
-        import openai
+    def run(message, **kwargs):
+        def stream():
+            for token in message.split():
+                yield token + " "
+        return stream()
 
-        client = openai.OpenAI()
-        stream = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": message}],
-            stream=True,
-        )
-
-        def generate():
-            for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-
-        return generate()
+    class PicleConfig:
+        chat_shell = True
 ```
 
-The streaming output is written directly to stdout, flushing after each
-chunk so tokens appear immediately. Pressing **Ctrl+C** during streaming
-cancels the current response without exiting the chat loop.
+This is useful for LLM token streaming and other incremental output flows.
+Pressing **Ctrl+C** while streaming cancels the current response and returns
+to the chat prompt.
 
 ## Exiting the chat from the run function
 
 The chat loop normally continues until the user presses **Ctrl+D** or types
-`/exit`. However, there are additional ways the chat can exit:
+`/exit`. The `run` method can also control loop exit:
 
-- **Ctrl+C** — exits the chat loop **and** terminates the current shell.
 - **`return None`** — exits the chat loop and returns to the shell prompt.
-- **`return True`** — exits the chat loop **and** terminates the current shell
-  (same as the `exit` built-in command).
+- **`return True`** — exits the chat loop **and** terminates the current shell.
 
-This is useful when the agent or LLM decides the conversation is finished, or
-when an error condition requires leaving the chat programmatically.
+**Ctrl+C** behavior depends on context:
+
+- During streaming output: cancels the current response and returns to the chat prompt.
+- At the chat prompt (waiting for input): exits the chat loop and terminates the current shell.
 
 ```python
-class GracefulChat(BaseModel):
-    chat: Any = Field(
-        None,
-        description="Chat that can end itself",
-        json_schema_extra={"chat": "message"},
-    )
-
+class AgentModel(BaseModel):
     @staticmethod
-    def run(message: str = None, **kwargs):
+    def run(message, **kwargs):
         if message.lower() == "bye":
-            return None  # exit chat, return to shell
+            return None      # exit chat, return to shell
         if message.lower() == "shutdown":
-            return True  # exit chat and terminate shell
+            return True      # exit chat and terminate shell
         return f"Echo: {message}"
-```
 
-```
-picle#agent chat
-> hello
-Echo: hello
-> bye
-picle#
+    class PicleConfig:
+        chat_shell = True
 ```

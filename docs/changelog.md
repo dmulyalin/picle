@@ -1,3 +1,11 @@
+# 0.12.0
+
+## FEATURES
+
+1. Adding new chat shell mode
+
+---
+
 # 0.11.2
 
 ## CHANGES
