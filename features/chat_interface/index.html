@@ -12,13 +12,13 @@
         <meta name="author" content="Denis Mulyalin">
       
       
-        <link rel="canonical" href="https://picle.github.io/features/multiline_input/">
+        <link rel="canonical" href="https://picle.github.io/features/chat_interface/">
       
       
-        <link rel="prev" href="../processors/">
+        <link rel="prev" href="../multiline_input/">
       
       
-        <link rel="next" href="../chat_interface/">
+        <link rel="next" href="../result_specific_outputters/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Multiline Input - PICLE</title>
+        <title>Chat Interface - PICLE</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#multi-line-input" class="md-skip">
+        <a href="#chat-interface" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Multiline Input
+              Chat Interface
             
           </span>
         </div>
@@ -745,19 +745,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../multiline_input/" class="md-nav__link">
         
   
   
@@ -773,7 +764,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -783,10 +773,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../chat_interface/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat Interface
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -802,6 +819,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#picleconfig-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PicleConfig options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#slash-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slash commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rich-styled-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rich styled responses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming responses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exiting-the-chat-from-the-run-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exiting the chat from the run function
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1029,6 +1132,80 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#picleconfig-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PicleConfig options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#slash-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slash commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rich-styled-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rich styled responses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming responses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exiting-the-chat-from-the-run-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exiting the chat from the run function
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1047,45 +1224,177 @@
   
 
 
-<h1 id="multi-line-input">Multi-line Input</h1>
-<p>If a field enables multi-line input, the user can type the literal value <code>load-terminal</code> to start collection.</p>
-<p>PICLE reads lines until EOF (Ctrl+D) and uses the collected text (joined by <code>\n</code>) as the field value.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">StrictStr</span>
+<h1 id="chat-interface">Chat Interface</h1>
+<p>The chat interface provides an interactive loop where a user sends messages
+and receives responses, similar to chatting with an AI agent or LLM.</p>
+<p>Enable it by setting <code>chat_shell = True</code> in a model's <code>PicleConfig</code> inner
+class. When the user invokes that model without arguments PICLE enters the
+chat loop and repeatedly prompts for input, passing each line as the first
+positional argument to the model's <code>run</code> method.</p>
+<p>Lines starting with <code>/</code> are dispatched to a dedicated command model
+(<code>chat_commands_model</code>) instead of the chat function. <code>/exit</code> always exits
+the loop and returns to the normal shell prompt.</p>
+<h2 id="basic-example">Basic example</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">picle</span><span class="w"> </span><span class="kn">import</span> <span class="n">App</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">NotesCommand</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">body</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="kc">None</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multi-line note body&quot;</span><span class="p">,</span>
-        <span class="n">json_schema_extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;multiline&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-    <span class="p">)</span>
-    <span class="n">title</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Note title&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;LLM model name&quot;</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">kwargs</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Replace with your LLM / agent call</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Assistant: I received &#39;</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+        <span class="n">chat_shell</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">chat_prompt</span> <span class="o">=</span> <span class="s2">&quot;You&gt; &quot;</span>
+        <span class="n">chat_commands_model</span> <span class="o">=</span> <span class="kc">None</span>   <span class="c1"># set to a model for /commands support</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Root</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">notes</span><span class="p">:</span> <span class="n">NotesCommand</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="kc">None</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Create a note&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="n">agent</span><span class="p">:</span> <span class="n">AgentModel</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;AI agent chat&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>Help shows the <code>load-terminal</code> option when appropriate:</p>
-<div class="highlight"><pre><span></span><code>picle#notes body ?
- &lt;&#39;body&#39; value&gt;    Multi-line note body
- load-terminal     Collect value using multi line input mode
+<div class="highlight"><pre><span></span><code>picle# agent
+You&gt; Hello!
+Assistant: I received &#39;Hello!&#39;
+You&gt; How are you?
+Assistant: I received &#39;How are you?&#39;
+You&gt; &lt;Ctrl+D&gt;
+picle#
 </code></pre></div>
-<p>Invoking multi-line collection:</p>
-<div class="highlight"><pre><span></span><code>picle#notes body load-terminal
-Enter lines and hit Ctrl+D to finish multi line input
-line 1
-line 2
-&lt;Ctrl+D&gt;
+<p>The loop continues until the user presses <strong>Ctrl+D</strong> (EOF) or types <code>/exit</code>.</p>
+<h2 id="picleconfig-options">PicleConfig options</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>chat_shell</code></td>
+<td><code>False</code></td>
+<td>Set to <code>True</code> to enable chat loop when the model is invoked.</td>
+</tr>
+<tr>
+<td><code>chat_prompt</code></td>
+<td><code>"&gt; "</code></td>
+<td>Prompt string shown before each user input.</td>
+</tr>
+<tr>
+<td><code>chat_response_style</code></td>
+<td><code>None</code></td>
+<td>Rich markup style applied to responses (e.g. <code>"green"</code>, <code>"bold cyan"</code>). Only used when Rich is installed.</td>
+</tr>
+<tr>
+<td><code>chat_response_prefix</code></td>
+<td><code>""</code></td>
+<td>Text prepended to each response (e.g. <code>"AI&gt; "</code>).</td>
+</tr>
+<tr>
+<td><code>chat_commands_model</code></td>
+<td><code>None</code></td>
+<td>Pydantic model class whose fields are available as <code>/commands</code> inside the chat loop.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="slash-commands">Slash commands</h2>
+<p>Lines that start with <code>/</code> are dispatched to <code>chat_commands_model</code> instead
+of the chat function. This lets users run sub-commands without leaving
+the chat:</p>
+<div class="highlight"><pre><span></span><code>You&gt; tell me a joke
+Assistant: Why did the programmer quit? Because he didn&#39;t get arrays.
+You&gt; /show usage
+1234; 1234; 1234
+You&gt; /exit
+picle#
 </code></pre></div>
-<p>The collected value is then validated and passed to your callable as a single string containing embedded newlines.</p>
+<p><code>/exit</code> always exits the chat loop. <code>chat_commands_model</code> must be provided
+for any other slash commands to work.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ShowCommands</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">usage</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">json_schema_extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;show_usage&quot;</span><span class="p">})</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">show_usage</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;1234; 1234; 1234&quot;</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;LLM model name&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Echo: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+        <span class="n">chat_shell</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">chat_commands_model</span> <span class="o">=</span> <span class="n">ShowCommands</span>
+</code></pre></div>
+<h2 id="rich-styled-responses">Rich styled responses</h2>
+<p>When Rich is installed and <code>use_rich</code> is enabled, you can style agent
+responses to visually distinguish them from user input.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AgentModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;I received: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+        <span class="n">chat_shell</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">chat_prompt</span> <span class="o">=</span> <span class="s2">&quot;You&gt; &quot;</span>
+        <span class="n">chat_response_style</span> <span class="o">=</span> <span class="s2">&quot;green&quot;</span>
+        <span class="n">chat_response_prefix</span> <span class="o">=</span> <span class="s2">&quot;AI&gt; &quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>You&gt; Hello
+AI&gt; I received: Hello       &lt;-- printed in green when Rich is available
+You&gt;
+</code></pre></div>
+<p>Any Rich console markup style is supported: <code>"bold cyan"</code>, <code>"italic yellow"</code>,
+<code>"dim"</code>, etc.</p>
+<h2 id="streaming-responses">Streaming responses</h2>
+<p>If <code>run</code> returns a generator (or any iterator), the chat loop writes each
+chunk to stdout as it arrives instead of waiting for the full response.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StreamingAgent</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">stream</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+                <span class="k">yield</span> <span class="n">token</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+        <span class="k">return</span> <span class="n">stream</span><span class="p">()</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+        <span class="n">chat_shell</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
+<p>This is useful for LLM token streaming and other incremental output flows.
+Pressing <strong>Ctrl+C</strong> while streaming cancels the current response and returns
+to the chat prompt.</p>
+<h2 id="exiting-the-chat-from-the-run-function">Exiting the chat from the run function</h2>
+<p>The chat loop normally continues until the user presses <strong>Ctrl+D</strong> or types
+<code>/exit</code>. The <code>run</code> method can also control loop exit:</p>
+<ul>
+<li><strong><code>return None</code></strong> — exits the chat loop and returns to the shell prompt.</li>
+<li><strong><code>return True</code></strong> — exits the chat loop <strong>and</strong> terminates the current shell.</li>
+</ul>
+<p><strong>Ctrl+C</strong> behavior depends on context:</p>
+<ul>
+<li>During streaming output: cancels the current response and returns to the chat prompt.</li>
+<li>At the chat prompt (waiting for input): exits the chat loop and terminates the current shell.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AgentModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;bye&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>      <span class="c1"># exit chat, return to shell</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;shutdown&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>      <span class="c1"># exit chat and terminate shell</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Echo: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">PicleConfig</span><span class="p">:</span>
+        <span class="n">chat_shell</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
 
 
 

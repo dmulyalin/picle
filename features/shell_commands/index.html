@@ -12,13 +12,13 @@
         <meta name="author" content="Denis Mulyalin">
       
       
-        <link rel="canonical" href="https://picle.github.io/features/multiline_input/">
+        <link rel="canonical" href="https://picle.github.io/features/shell_commands/">
       
       
-        <link rel="prev" href="../processors/">
+        <link rel="prev" href="../subshells_and_navigation/">
       
       
-        <link rel="next" href="../chat_interface/">
+        <link rel="next" href="../mounting_models_at_runtime/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Multiline Input - PICLE</title>
+        <title>Shell Commands - PICLE</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#multi-line-input" class="md-skip">
+        <a href="#shell-commands" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Multiline Input
+              Shell Commands
             
           </span>
         </div>
@@ -745,19 +745,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../multiline_input/" class="md-nav__link">
         
   
   
@@ -773,7 +764,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -867,10 +857,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../shell_commands/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shell Commands
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -886,6 +903,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform Behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-and-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output And Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Help
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Note
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1029,6 +1121,69 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform Behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-and-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output And Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Help
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Note
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1047,45 +1202,50 @@
   
 
 
-<h1 id="multi-line-input">Multi-line Input</h1>
-<p>If a field enables multi-line input, the user can type the literal value <code>load-terminal</code> to start collection.</p>
-<p>PICLE reads lines until EOF (Ctrl+D) and uses the collected text (joined by <code>\n</code>) as the field value.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">StrictStr</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">NotesCommand</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">body</span><span class="p">:</span> <span class="n">StrictStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="kc">None</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Multi-line note body&quot;</span><span class="p">,</span>
-        <span class="n">json_schema_extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;multiline&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-    <span class="p">)</span>
-    <span class="n">title</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Note title&quot;</span><span class="p">)</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">kwargs</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Root</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">notes</span><span class="p">:</span> <span class="n">NotesCommand</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="kc">None</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Create a note&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+<h1 id="shell-commands">Shell Commands</h1>
+<p>PICLE provides a built-in <code>shell</code> command to execute operating system shell commands directly from the interactive prompt.</p>
+<p>This command works on Windows and Linux.</p>
+<h2 id="basic-usage">Basic Usage</h2>
+<p>Use the command as:</p>
+<div class="highlight"><pre><span></span><code>shell &lt;command&gt;
 </code></pre></div>
-<p>Help shows the <code>load-terminal</code> option when appropriate:</p>
-<div class="highlight"><pre><span></span><code>picle#notes body ?
- &lt;&#39;body&#39; value&gt;    Multi-line note body
- load-terminal     Collect value using multi line input mode
+<p>Examples:</p>
+<div class="highlight"><pre><span></span><code>picle#shell echo hello
+hello
+
+picle#shell python --version
+Python 3.x.x
 </code></pre></div>
-<p>Invoking multi-line collection:</p>
-<div class="highlight"><pre><span></span><code>picle#notes body load-terminal
-Enter lines and hit Ctrl+D to finish multi line input
-line 1
-line 2
-&lt;Ctrl+D&gt;
+<p>The command is global, so it can be used from the top prompt and from subshells.</p>
+<h2 id="platform-behavior">Platform Behavior</h2>
+<p><code>shell</code> executes commands via Python <code>subprocess.run(...)</code> with <code>shell=True</code>.</p>
+<ul>
+<li>On Windows, commands run through the system shell (for example <code>cmd.exe</code>).</li>
+<li>On Linux, commands run through the default shell (for example <code>/bin/sh</code>).</li>
+</ul>
+<p>This means you can use native shell commands for each platform.</p>
+<div class="highlight"><pre><span></span><code># Windows
+picle#shell dir
+
+# Linux
+picle#shell ls -la
 </code></pre></div>
-<p>The collected value is then validated and passed to your callable as a single string containing embedded newlines.</p>
+<h2 id="output-and-errors">Output And Errors</h2>
+<p>PICLE captures and prints both standard output and error output:</p>
+<ul>
+<li><code>stdout</code> is printed as regular command output.</li>
+<li><code>stderr</code> is printed using error output formatting.</li>
+<li>If a command exits with a non-zero code and produced no <code>stderr</code>, PICLE prints the exit code.</li>
+</ul>
+<p>If no command is provided, PICLE returns:</p>
+<div class="highlight"><pre><span></span><code>shell command is required
+</code></pre></div>
+<h2 id="getting-help">Getting Help</h2>
+<p>Use built-in help to see command documentation:</p>
+<div class="highlight"><pre><span></span><code>picle#help shell
+</code></pre></div>
+<h2 id="security-note">Security Note</h2>
+<p><code>shell</code> runs commands on the host operating system, so avoid passing untrusted input directly into it.</p>
 
 
 
