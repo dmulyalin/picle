@@ -24,6 +24,7 @@ nav:
   - Presence: features/fields_presence.md
   - Processors: features/processors.md
   - Multiline Input: features/multiline_input.md
+  - Chat Interface: features/chat_interface.md
   - Result Specific Outputters: features/result_specific_outputters.md
   - Subshells and Navigation: features/subshells_and_navigation.md
   - Mounting Shell Models: features/mounting_models_at_runtime.md

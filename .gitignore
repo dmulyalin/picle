@@ -3,6 +3,7 @@
 Data/*
 dist/*
 build/*
+site/*
 private/*
 docs/build/*
 docs/make.bat

@@ -659,6 +659,99 @@ class model_TestSourceWithChoice(BaseModel):
     def run(**kwargs):
         return kwargs
 
+
+class model_TestChatInterface(BaseModel):
+    chat: Any = Field(
+        None,
+        description="Start chat session",
+        json_schema_extra={"chat": "message", "chat_prompt": "You> "},
+    )
+
+    @staticmethod
+    def run(message: str = None, **kwargs):
+        return f"Echo: {message}"
+
+
+class model_TestChatWithFunction(BaseModel):
+    chat: Any = Field(
+        None,
+        description="Start chat session",
+        json_schema_extra={"chat": "message", "function": "do_chat"},
+    )
+
+    @staticmethod
+    def do_chat(message: str = None, **kwargs):
+        return f"Bot: {message}"
+
+
+class model_TestChatStreaming(BaseModel):
+    chat: Any = Field(
+        None,
+        description="Start streaming chat session",
+        json_schema_extra={"chat": "message"},
+    )
+
+    @staticmethod
+    def run(message: str = None, **kwargs):
+        def stream():
+            for word in message.split():
+                yield word + " "
+        return stream()
+
+
+class model_TestChatReturnNone(BaseModel):
+    chat: Any = Field(
+        None,
+        description="Chat that returns None",
+        json_schema_extra={"chat": "message"},
+    )
+
+    @staticmethod
+    def run(message: str = None, **kwargs):
+        return None
+
+
+class model_TestChatReturnTrue(BaseModel):
+    chat: Any = Field(
+        None,
+        description="Chat that returns True",
+        json_schema_extra={"chat": "message"},
+    )
+
+    @staticmethod
+    def run(message: str = None, **kwargs):
+        return True
+
+class ChatModelShowCommands(BaseModel):
+    usage: Any = Field(None, descritpion="Show usage", json_schema_extra={"function": "show_usage"})
+
+    @staticmethod
+    def show_usage():
+        return "1234; 1234; 1234"
+
+class ChatModel(BaseModel):
+    model: Any = Field(None, description="Select model")
+    show: ChatModelShowCommands = Field(None, description="Show commands")
+
+    @staticmethod
+    def source_model():
+        return ["model1", "model2"]
+
+class model_TestChatInterface2(BaseModel):
+    session_id: StrictStr = Field(None, description="Chat session id")
+    
+    @staticmethod
+    def run(message, **kwargs):
+        return f"ECHO - {message}, {kwargs}"
+
+    class PicleConfig:
+        prompt = "YourPrompt> "
+        chat_shell = True
+        chat_response_style = "green"
+        chat_command_prefix = "/"
+        chat_commands_model = ChatModel
+
+
 class Root(BaseModel):
     salt: model_salt = Field(None, description="SaltStack Execution Modules")
     show: model_show = Field(None, description="Show commands")
@@ -741,6 +834,24 @@ class Root(BaseModel):
     )
     test_source_with_choice: model_TestSourceWithChoice = Field(
         None, description="Test source method with choice argument"
+    )
+    test_chat_interface: model_TestChatInterface = Field(
+        None, description="Test chat interface"
+    )
+    test_chat_with_function: model_TestChatWithFunction = Field(
+        None, description="Test chat with function field"
+    )
+    test_chat_streaming: model_TestChatStreaming = Field(
+        None, description="Test chat streaming"
+    )
+    test_chat_return_none: model_TestChatReturnNone = Field(
+        None, description="Test chat returning None"
+    )
+    test_chat_return_true: model_TestChatReturnTrue = Field(
+        None, description="Test chat returning True"
+    )
+    test_chat_interface_2: model_TestChatInterface2 = Field(
+        None, description="Test chat interface 2"
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

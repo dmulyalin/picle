@@ -131,6 +131,7 @@ class App(cmd.Cmd):
         self.shell = self.root.model_construct()
         self.shell_defaults = {}
         self.shells = [self.shell]
+        self.is_chat = False
 
         # extract configuration from shell model
         if hasattr(self.shell, "PicleConfig"):
@@ -421,6 +422,109 @@ class App(cmd.Cmd):
                 else:
                     multiline_buffer.append(line)
             self._save_collected_value(field, "\n".join(multiline_buffer), replace=True)
+
+    def _run_chat(
+        self,
+        run_function: callable,
+        kw: dict,
+        field_name: str,
+        json_schema_extra: dict,
+    ) -> Optional[bool]:
+        """
+        Run an interactive chat loop.
+
+        Repeatedly prompts the user for input and calls the run function with
+        each line. Lines starting with the command prefix (default ``/``) are
+        dispatched to the PICLE shell. The loop exits on ``Ctrl+D`` (EOF) or
+        when the user types the ``/exit`` command.
+
+        If the run function returns ``None`` or ``True``, the chat loop exits
+        and the value is returned to the caller (``default()``).
+
+        Args:
+            run_function: The function to call for each user message.
+            kw: Base keyword arguments to pass to the function.
+            field_name: The name of the field that receives the user message.
+            json_schema_extra: The json_schema_extra dict of the chat field.
+
+        Returns:
+            Optional[bool]: None or True to signal the shell should exit,
+                False otherwise.
+        """
+        self.is_chat = True
+        chat_prompt = json_schema_extra.get("chat_prompt", "> ")
+        cmd_prefix = "/"
+        response_style = json_schema_extra.get("chat_response_style")
+        response_prefix = json_schema_extra.get("chat_response_prefix", "")
+        outputter = json_schema_extra.get("outputter")
+        outputter_kwargs = json_schema_extra.get("outputter_kwargs", {})
+
+        while True:
+            try:
+                line = input(chat_prompt)
+            except EOFError:
+                self.stdout.write(self.newline)
+                break
+            except KeyboardInterrupt:
+                self.stdout.write(self.newline)
+                return True
+
+            if not line.strip():
+                continue
+
+            # dispatch /commands to PICLE shell
+            if line.startswith(cmd_prefix):
+                picle_command = line[len(cmd_prefix):].strip()
+                if picle_command.lower() == "exit":
+                    break
+                self.onecmd(picle_command)
+                continue
+
+            # call the function with user input
+            chat_kw = {**kw, field_name: line}
+            try:
+                ret = run_function(**chat_kw)
+            except Exception as e:
+                self.write_error(str(e))
+                continue
+
+            # exit chat if ret is None or True - relay to default()
+            if ret is None:
+                self.is_chat = False
+                return None
+            if ret is True:
+                return True
+
+
+            # support (result, outputter) and (result, outputter, kwargs) tuples
+            if isinstance(ret, tuple) and len(ret) == 2:
+                ret, outputter = ret
+                outputter_kwargs = {}
+            elif isinstance(ret, tuple) and len(ret) == 3:
+                ret, outputter, outputter_kwargs = ret
+
+            # streaming: if ret is a generator/iterator, print chunks as they arrive
+            if hasattr(ret, "__next__"):
+                if response_prefix:
+                    self.stdout.write(response_prefix)
+                try:
+                    for chunk in ret:
+                        self.stdout.write(str(chunk))
+                        self.stdout.flush()
+                except KeyboardInterrupt:
+                    pass
+                self.stdout.write(self.newline)
+                self.stdout.flush()
+            elif callable(outputter):
+                self.write(outputter(ret, **outputter_kwargs))
+            elif ret:
+                text = f"{response_prefix}{ret}" if response_prefix else ret
+                # apply Rich styling only when Rich is available
+                if response_style and self.use_rich and HAS_RICH:
+                    text = f"[{response_style}]{text}[/{response_style}]"
+                self.write(text)
+        
+        self.is_chat = False
 
     def build_command_data(self, models: list) -> dict:
         """
@@ -722,7 +826,7 @@ class App(cmd.Cmd):
                 self._save_collected_value(current_field, parameter)
             else:
                 raise FieldKeyError(current_model, parameter)
-        # check presence for last parameter is not is_help
+        # check presence for last parameter if not is_help
         if (
             is_help is False
             and current_field.get("values") is ...
@@ -730,6 +834,14 @@ class App(cmd.Cmd):
         ):
             value = current_field["json_schema_extra"]["presence"]
             self._save_collected_value(current_field, value)
+
+        # check chat for last parameter - treat like presence, set value to True
+        if (
+            is_help is False
+            and current_field.get("values") is ...
+            and "chat" in current_field.get("json_schema_extra", {})
+        ):
+            self._save_collected_value(current_field, True)
 
         # iterate over collected models and fields to see
         # if need to collect multi-line input
@@ -891,6 +1003,8 @@ class App(cmd.Cmd):
         """
         fieldnames = []
         try:
+            if line.strip().startswith("/") and self.is_chat:
+                line = line.strip().lstrip("/")
             command_models = self.parse_command(line, is_help=True)
             last_model = command_models[-1][-1]["model"]
             # check if last model has fields collected
@@ -1011,6 +1125,8 @@ class App(cmd.Cmd):
             list[str]: List of completion suggestions.
         """
         fieldnames = []
+        if line.strip().startswith("/") and self.is_chat:
+            line = line.strip().lstrip("/")
         # collect global methods
         for method_name in dir(self):
             if method_name.startswith("do_"):
@@ -1029,7 +1145,11 @@ class App(cmd.Cmd):
                     fieldnames.append(display)
         except FieldKeyError:
             pass
-        return sorted([f"{i} " for i in fieldnames])
+
+        if self.is_chat:
+            return sorted([f"/{i} " for i in fieldnames])
+        else:
+            return sorted([f"{i} " for i in fieldnames])
 
     def do_help(self, arg: str) -> None:
         """Print help message for the given command or model."""
@@ -1356,6 +1476,33 @@ class App(cmd.Cmd):
                     # validate command data and exit if failed
                     if not self._validate_values(command):
                         return
+
+                    # check if chat mode is requested - after validation
+                    if json_schema_extra.get("chat"):
+                        chat_value = json_schema_extra["chat"]
+                        kw = {}
+                        if callable_expects_argument(run_function, "shell_command"):
+                            kw["shell_command"] = command
+                        if callable_expects_argument(run_function, "root_model"):
+                            kw["root_model"] = self.root
+                        if callable_expects_argument(run_function, "picle_app"):
+                            kw["picle_app"] = self
+                        kw.update(self.shell_defaults)
+                        kw.update(command_defaults)
+                        kw.update(command_arguments)
+                        # "chat": "arg_name" maps input to that kwarg
+                        # "chat": True defaults to "message"
+                        field_name = (
+                            chat_value
+                            if isinstance(chat_value, str)
+                            else "message"
+                        )
+                        return self._run_chat(
+                            run_function=run_function,
+                            kw=kw,
+                            field_name=field_name,
+                            json_schema_extra=json_schema_extra,
+                        )
 
                     # build kwargs and call the method
                     kw = {}
