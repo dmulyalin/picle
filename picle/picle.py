@@ -17,6 +17,7 @@ import os
 import platform
 import inspect
 import difflib
+import subprocess
 
 from typing import Any, Optional, Union, get_args, get_origin, Dict
 from pydantic import ValidationError, Json
@@ -1253,6 +1254,29 @@ class App(cmd.Cmd):
                 os.system("clear")
             elif "WINDOWS" in platform.system().upper():
                 os.system("cls")
+
+    def do_shell(self, line: str) -> None:
+        """Run an OS shell command"""
+        command = line.strip()
+
+        if not command:
+            self.write_error("shell command is required")
+            return
+
+        completed = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            errors="replace",
+        )
+
+        if completed.stdout:
+            self.write(completed.stdout)
+        if completed.stderr:
+            self.write_error(completed.stderr)
+        if completed.returncode != 0 and not completed.stderr:
+            self.write_error(f"Command exited with code {completed.returncode}")
 
     def _get_model_name(self, model) -> str:
         """

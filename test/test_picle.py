@@ -1,6 +1,7 @@
 import unittest
 import unittest.mock
 import sys
+import subprocess
 import pytest
 
 from picle import App
@@ -1041,6 +1042,49 @@ def test_do_cls_help():
     shell.do_cls("?")
     shell_output = mock_stdout.write.call_args_list[-1][0][0]
     assert "cls" in shell_output.lower() or "Clear" in shell_output
+
+
+def test_do_shell_writes_stdout_and_uses_subprocess_run():
+    """Test shell command executes via subprocess.run and prints stdout."""
+    shell.onecmd("top")
+    with unittest.mock.patch(
+        "picle.picle.subprocess.run",
+        return_value=subprocess.CompletedProcess(
+            args="echo hello",
+            returncode=0,
+            stdout="hello from shell\n",
+            stderr="",
+        ),
+    ) as mocked_run:
+        shell.do_shell("echo hello")
+
+    mocked_run.assert_called_once_with(
+        "echo hello",
+        shell=True,
+        capture_output=True,
+        text=True,
+        errors="replace",
+    )
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    assert "hello from shell" in shell_output
+
+
+def test_do_shell_writes_stderr_for_failed_command():
+    """Test shell command prints stderr for non-zero exit code."""
+    shell.onecmd("top")
+    with unittest.mock.patch(
+        "picle.picle.subprocess.run",
+        return_value=subprocess.CompletedProcess(
+            args="bad command",
+            returncode=1,
+            stdout="",
+            stderr="command not found",
+        ),
+    ):
+        shell.do_shell("bad command")
+
+    shell_output = mock_stdout.write.call_args_list[-1][0][0]
+    assert "command not found" in shell_output
 
 
 def test_incorrect_command():

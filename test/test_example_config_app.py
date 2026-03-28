@@ -1,5 +1,5 @@
 """
-Tests for ConfigModel functionality using config_app_example.py sample app.
+Tests for ConfigModel functionality using example_config_app.py sample app.
 """
 
 import os
@@ -14,7 +14,7 @@ from pathlib import Path
 from picle import App
 from picle.models import ConfigModel
 
-from .config_app_example import RootShell, MyConfigStore
+from .example_config_app import RootShell, MyConfigStore
 
 # ============================================================
 # Helpers
@@ -727,7 +727,7 @@ class TestEnumDefaultExtraction:
 
     def test_extract_model_defaults_converts_enum_to_value(self):
         """extract_model_defaults should convert Enum defaults to plain values."""
-        from test.config_app_example import FileLoggingConfig
+        from test.example_config_app import FileLoggingConfig
 
         shell, _ = _make_shell()
         defaults = shell.extract_model_defaults(FileLoggingConfig)
@@ -738,7 +738,7 @@ class TestEnumDefaultExtraction:
 
     def test_extract_model_defaults_preserves_non_enum(self):
         """Non-Enum defaults should be preserved as-is."""
-        from test.config_app_example import FileLoggingConfig
+        from test.example_config_app import FileLoggingConfig
 
         shell, _ = _make_shell()
         defaults = shell.extract_model_defaults(FileLoggingConfig)
@@ -871,7 +871,7 @@ class TestBuildNegateModel:
 
     def test_negate_model_leaf_fields_have_presence(self):
         """Scalar leaf fields in the negate model should carry presence=True."""
-        from test.config_app_example import TerminalLoggingConfig
+        from test.example_config_app import TerminalLoggingConfig
 
         negate_cls = ConfigModel._build_negate_model(TerminalLoggingConfig)
         for field_name, field_info in negate_cls.model_fields.items():
@@ -897,7 +897,7 @@ class TestBuildNegateModel:
 
     def test_negate_model_preserves_aliases(self):
         """Field aliases should be preserved in the negate model."""
-        from test.config_app_example import TerminalLoggingConfig
+        from test.example_config_app import TerminalLoggingConfig
 
         # TerminalLoggingConfig.format has alias="format" - trivially the same,
         # but let's use a model that has a non-trivial alias: FileLoggingConfig has none.

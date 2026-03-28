@@ -3,6 +3,7 @@
 ## FEATURES
 
 1. Adding new chat shell mode
+2. Adding `do_shell` method to run OS shell commands
 
 ---
 
