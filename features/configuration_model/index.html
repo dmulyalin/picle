@@ -1418,6 +1418,7 @@ Configuration committed successfully
 config-shell[cfg]#exit
 config-shell#
 </code></pre></div>
+<p>For comprehensive example refer <a href="https://github.com/dmulyalin/picle/blob/master/test/example_config_app.py">configuration app in test folder of PICLE repository</a></p>
 <h2 id="negating-configuration-the-no-command">Negating configuration — the <code>no</code> command</h2>
 <p>Every <code>ConfigModel</code> subclass automatically gains a <code>no</code> command that mirrors the full configuration field tree. It provides the same tab-completion as regular set commands and lets you delete individual keys or entire sub-trees from the staged configuration.</p>
 <p>Changes made with <code>no</code> are written to the temp file (same as regular set commands) and only become permanent after <code>commit</code>.</p>
