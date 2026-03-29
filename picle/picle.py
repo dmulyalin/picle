@@ -194,7 +194,7 @@ class App(cmd.Cmd):
         """
         return None
 
-    def write(self, output: str) -> None:
+    def write(self, output: str, end: str = "\n") -> None:
         """
         Write output to stdout.
 
@@ -202,11 +202,11 @@ class App(cmd.Cmd):
             output (str): Output to write to stdout.
         """
         if self.use_rich and HAS_RICH:
-            RICHCONSOLE.print(output)
+            RICHCONSOLE.print(output, end=end)
         else:
             if not isinstance(output, str):
                 output = str(output)
-            if not output.endswith(self.newline):
+            if end and not output.endswith(self.newline):
                 output += self.newline
             self.stdout.write(output)
         self.stdout.flush()
@@ -487,23 +487,40 @@ class App(cmd.Cmd):
                 self.is_chat = False
                 return ret
 
-            # streaming: if ret is a generator/iterator, print chunks as they arrive
+            # streaming if ret is a generator/iterator, print chunks as they arrive
             if hasattr(ret, "__next__"):
                 if response_prefix:
-                    self.stdout.write(response_prefix)
+                    self.write(response_prefix, end="")
                 try:
                     for chunk in ret:
-                        self.stdout.write(str(chunk))
-                        self.stdout.flush()
+                        if response_style and self.use_rich and HAS_RICH:
+                            chunk = f"[{response_style}]{chunk}[/{response_style}]"
+                        self.write(chunk, end="")
                 except KeyboardInterrupt:
                     pass
-                self.stdout.write(self.newline)
-                self.stdout.flush()
+                self.write(self.newline)
             elif ret:
-                text = f"{response_prefix}{ret}" if response_prefix else ret
-                if response_style and self.use_rich and HAS_RICH:
-                    text = f"[{response_style}]{text}[/{response_style}]"
-                self.write(text)
+                outputter = None
+                # resolve outputter
+                if isinstance(ret, tuple) and len(ret) == 2:
+                    ret, outputter = ret
+                    outputter_kwargs = {}
+                elif isinstance(ret, tuple) and len(ret) == 3:
+                    ret, outputter, outputter_kwargs = ret
+                elif picle_config and hasattr(picle_config, "outputter"):
+                    outputter = picle_config.outputter
+                    outputter_kwargs = getattr(picle_config, "outputter_kwargs", {})
+
+                # run outputter
+                if callable(outputter):
+                    self.write(outputter(ret, **outputter_kwargs))
+                elif outputter is True:
+                    self.write(ret)
+                else:
+                    ret = f"{response_prefix}{ret}" if response_prefix else ret
+                    if response_style and self.use_rich and HAS_RICH:
+                        ret = f"[{response_style}]{ret}[/{response_style}]"
+                    self.write(ret)
 
         self.is_chat = False
 
@@ -564,11 +581,10 @@ class App(cmd.Cmd):
             # validate against current shell model
             else:
                 self.shell(**data)
+            return True
         except ValidationError as e:
             self.write_error(e)
             return None
-
-        return data
 
     def extract_model_defaults(self, model: Any) -> dict:
         """

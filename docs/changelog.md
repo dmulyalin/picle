@@ -1,3 +1,13 @@
+# 0.12.1
+
+## BUGS
+
+1. Fixing command validation handling to make sure if validation succeeds but no data returned its not blocking the command
+2. Enhancing outputters handling for chat shell model
+3. Fixing streaming mode newline handling for write method
+
+---
+
 # 0.12.0
 
 ## FEATURES
